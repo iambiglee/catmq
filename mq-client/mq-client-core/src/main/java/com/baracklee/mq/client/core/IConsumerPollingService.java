@@ -1,2 +1,7 @@
-package com.baracklee.mq.client.core;public class IConsumerPollingService {
+package com.baracklee.mq.client.core;
+
+import java.util.Map;
+
+public interface IConsumerPollingService extends IMqClientService{
+    Map<String, IMMqGroupExecutorService> getMqExecutors();
 }

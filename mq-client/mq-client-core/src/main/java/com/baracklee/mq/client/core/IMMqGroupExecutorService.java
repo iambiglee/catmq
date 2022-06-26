@@ -1,2 +1,4 @@
-package com.baracklee.mq.client.core;public interface IMqGroupExcutorService {
+package com.baracklee.mq.client.core;
+
+public interface IMMqGroupExecutorService {
 }

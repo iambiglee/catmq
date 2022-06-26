@@ -1,2 +1,4 @@
-package com.baracklee.mq.client.core;public interface IMqBrokerUrlRefreshService {
+package com.baracklee.mq.client.core;
+
+public interface IMqBrokerUrlRefreshService extends IMqClientService{
 }
