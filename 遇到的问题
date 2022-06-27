@@ -1,6 +1,9 @@
 1. 为什么log都是要输入单前类
 2. /home/barack/develop/java/myMessageQueue/mq-client/mq-core/src/main/java/com/baracklee/mq/biz/common/util/ConsumerUtil.java里面的写法太2了，还限制死了数量，单词还写错了
-
+3. /home/barack/develop/java/myMessageQueue/mq-client/mq-client-core/pom.xml 里面应该不用加版本号
+4. final 修饰为什么要构造方法
 
 Time Line
 写到了：IMqQueueExecutorService
+
+写到了：message, 遇到父类构造方法的问题
