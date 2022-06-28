@@ -7,3 +7,5 @@ Time Line
 写到了：IMqQueueExecutorService
 
 写到了：message, 遇到父类构造方法的问题
+
+写到了：IPutil获取当前IP的逻辑 1111
