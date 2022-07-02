@@ -1,6 +1,6 @@
 package com.baracklee.mq.client.core;
 
-import com.baracklee.mq.biz.dto.client.ConsumerGroupOneDto;
+import com.baracklee.mq.biz.dto.base.ConsumerGroupOneDto;
 
 import java.util.Map;
 

@@ -2,6 +2,9 @@
 2. /home/barack/develop/java/myMessageQueue/mq-client/mq-core/src/main/java/com/baracklee/mq/biz/common/util/ConsumerUtil.java里面的写法太2了，还限制死了数量，单词还写错了
 3. /home/barack/develop/java/myMessageQueue/mq-client/mq-client-core/pom.xml 里面应该不用加版本号
 4. final 修饰为什么要构造方法
+5. 他的消息偏移request 或者response 是怎么工作的
+6. spring-boot-dependencies 是一种新的代码管理方式
+7. 类上面加泛型是什么概念
 
 Time Line
 写到了：IMqQueueExecutorService
@@ -9,3 +12,9 @@ Time Line
 写到了：message, 遇到父类构造方法的问题
 
 写到了：IPutil获取当前IP的逻辑 1111
+
+写到了：client core 各个抽象request和respose 1452
+
+写到了：GetConsumerGroupResponse 然后看他的后台设计去了
+
+写到了：/mq/biz/dal/common/ConsumerServiceImpl.java
