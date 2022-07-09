@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.baracklee.mq.biz.dal.meta.ConsumerRepository">
+    <!-- 业务逻辑sql请写在这个文件内 -->
+    <resultMap id="BaseResultMap" type="com.baracklee.mq.biz.entity.ConsumerEntity">
+        <result column="id" property="id"></result>
+        <result column="ip" property="ip"></result>
+        <result column="name" property="name"></result>
+        <result column="consumer_group_names" property="consumerGroupNames"/>
+        <result column="sdk_version" property="sdkVersion"/>
+        <result column="lan" property="lan"/>
+        <result column="heart_time" property="heartTime"/>
+        <result column="insert_by" property="insertBy"/>
+        <result column="insert_time" property="insertTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="is_active" property="isActive"/>
+    </resultMap>
+
+    <insert id="register"
+            parameterType="com.baracklee.mq.biz.entity.ConsumerEntity"
+            useGeneratedKeys="true" keyProperty="id"
+    >
+        insert into consumer(ip, name, consumer_group_name, sdk_version, lan, heart_time)
+        values (#{ip},
+                #{name},
+                #{consumerGroupNames},
+                #{sdkVersion},
+                #{lan},
+                current_timestamp;
+        )
+
+    </insert>
+    <select id="heartbeat" resultType="java.lang.Integer"></select>
+
+    <select id="getById" resultMap="BaseResultMap" useCache="false">
+        select * from consumer where id=#{id}
+    </select>
+</mapper>
