@@ -10,6 +10,6 @@ import com.baracklee.mq.biz.service.common.BaseService;
 
 import java.util.Map;
 
-public interface ConsumerGroupService extends BaseService<ConsumerEntity> {
+public interface ConsumerGroupService extends BaseService<ConsumerGroupEntity> {
     Map<String, ConsumerGroupEntity> getCache();
 }

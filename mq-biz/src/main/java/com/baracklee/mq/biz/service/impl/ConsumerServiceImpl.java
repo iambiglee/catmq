@@ -9,7 +9,9 @@ import com.baracklee.mq.biz.dto.client.ConsumerRegisterRequest;
 import com.baracklee.mq.biz.dto.client.ConsumerRegisterResponse;
 import com.baracklee.mq.biz.entity.ConsumerEntity;
 import com.baracklee.mq.biz.entity.ConsumerGroupEntity;
+import com.baracklee.mq.biz.entity.ConsumerGroupTopicEntity;
 import com.baracklee.mq.biz.service.ConsumerGroupService;
+import com.baracklee.mq.biz.service.ConsumerGroupTopicService;
 import com.baracklee.mq.biz.service.ConsumerService;
 import com.baracklee.mq.biz.service.LogService;
 import com.baracklee.mq.biz.service.common.AbstractBaseService;
@@ -33,7 +35,8 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
     private LogService logService;
     @Resource
     private ConsumerGroupService consumerGroupService;
-
+    @Autowired
+    private ConsumerGroupTopicService consumerGroupTopicService;
     @Resource
     SoaConfig soaConfig;
 
@@ -89,6 +92,7 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
             response.setSuc(false);
             response.setMsg("消费者组不能为空");
         }
+        // 后续有删除操作，此处注意ConcurrentModificationException 异常
         List<String> consumerGroupNames= new ArrayList<>(request.getConsumerGroupNames().keySet());
         for (String name : consumerGroupNames) {
             if(!cache.containsKey(name)){
@@ -97,6 +101,8 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
                 return;
             }
         }
+        Map<Long, Map<String, ConsumerGroupTopicEntity>> gtopicMap=consumerGroupTopicService.getCache();
+
     }
 
     private ConsumerEntity doRegisterConsumer(ConsumerRegisterRequest request) {
