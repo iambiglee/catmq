@@ -70,7 +70,7 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
         }
         response.setBroadcastConsumerGroupName(new HashMap<>());
         response.setConsumerGroupNameNew(new HashMap<>());
-        //检查广播模式
+        //检查广播模式，广播模式数据可以被每一个消费者消费
         checkBroadcastAndSubEnv(request,response);
         doRegisterConsumerGroup(request,response,consumerEntity);
         if (!response.isSuc()){
