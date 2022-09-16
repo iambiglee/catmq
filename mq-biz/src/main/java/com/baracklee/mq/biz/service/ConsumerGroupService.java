@@ -8,8 +8,16 @@ import com.baracklee.mq.biz.entity.ConsumerEntity;
 import com.baracklee.mq.biz.entity.ConsumerGroupEntity;
 import com.baracklee.mq.biz.service.common.BaseService;
 
+import java.util.List;
 import java.util.Map;
 
 public interface ConsumerGroupService extends BaseService<ConsumerGroupEntity> {
     Map<String, ConsumerGroupEntity> getCache();
+    void copyAndNewConsumerGroup(ConsumerGroupEntity consumerGroupEntityOld,ConsumerGroupEntity consumerGroupEntityNew);
+
+    void updateCache();
+    void forceUpdateCache();
+    Map<String,ConsumerGroupEntity> getByNames(List<String> names);
+
+    void notifyRb(List<Long> ids);
 }

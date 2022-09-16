@@ -13,7 +13,7 @@ public class ConsumerGroupEntity {
 
     private String ownerIds;
 
-    private String ownerName;
+    private String ownerNames;
 
     private String alarmEmails;
 
@@ -60,6 +60,17 @@ public class ConsumerGroupEntity {
     //1 表示实时推送 0 表示实时推送
     private String subEnv;
 
+    public int getPushFlag() {
+        return pushFlag;
+    }
+
+    public void setPushFlag(int pushFlag) {
+        this.pushFlag = pushFlag;
+    }
+
+    private int pushFlag;
+
+
     public long getId() {
         return id;
     }
@@ -100,12 +111,12 @@ public class ConsumerGroupEntity {
         this.ownerIds = ownerIds;
     }
 
-    public String getOwnerName() {
-        return ownerName;
+    public String getOwnerNames() {
+        return ownerNames;
     }
 
-    public void setOwnerName(String ownerName) {
-        this.ownerName = ownerName;
+    public void setOwnerNames(String ownerNames) {
+        this.ownerNames = ownerNames;
     }
 
     public String getAlarmEmails() {
@@ -303,7 +314,7 @@ public class ConsumerGroupEntity {
             return false;
         if (getOwnerIds() != null ? !getOwnerIds().equals(that.getOwnerIds()) : that.getOwnerIds() != null)
             return false;
-        if (getOwnerName() != null ? !getOwnerName().equals(that.getOwnerName()) : that.getOwnerName() != null)
+        if (getOwnerNames() != null ? !getOwnerNames().equals(that.getOwnerNames()) : that.getOwnerNames() != null)
             return false;
         if (getAlarmEmails() != null ? !getAlarmEmails().equals(that.getAlarmEmails()) : that.getAlarmEmails() != null)
             return false;
@@ -336,7 +347,7 @@ public class ConsumerGroupEntity {
         result = 31 * result + (getDptName() != null ? getDptName().hashCode() : 0);
         result = 31 * result + (getTopicNames() != null ? getTopicNames().hashCode() : 0);
         result = 31 * result + (getOwnerIds() != null ? getOwnerIds().hashCode() : 0);
-        result = 31 * result + (getOwnerName() != null ? getOwnerName().hashCode() : 0);
+        result = 31 * result + (getOwnerNames() != null ? getOwnerNames().hashCode() : 0);
         result = 31 * result + (getAlarmEmails() != null ? getAlarmEmails().hashCode() : 0);
         result = 31 * result + (getTels() != null ? getTels().hashCode() : 0);
         result = 31 * result + (getIpWhiteList() != null ? getIpWhiteList().hashCode() : 0);

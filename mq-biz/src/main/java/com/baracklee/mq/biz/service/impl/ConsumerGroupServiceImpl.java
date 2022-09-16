@@ -5,10 +5,15 @@ import com.baracklee.mq.biz.dal.meta.ConsumerGroupRepository;
 
 import com.baracklee.mq.biz.entity.ConsumerGroupEntity;
 import com.baracklee.mq.biz.entity.LastUpdateEntity;
+import com.baracklee.mq.biz.entity.NotifyMessageEntity;
 import com.baracklee.mq.biz.service.CacheUpdateService;
 import com.baracklee.mq.biz.service.ConsumerGroupService;
+import com.baracklee.mq.biz.service.NotifyMessageService;
 import com.baracklee.mq.biz.service.common.AbstractBaseService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
@@ -20,6 +25,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 @Service
 public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupEntity>
@@ -30,7 +38,11 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
     }
 
     private AtomicBoolean updateFlag = new AtomicBoolean(false);
+
+    @Resource
     private ConsumerGroupRepository consumerGroupRepository;
+    @Resource
+    private NotifyMessageService notifyMessageService;
 
     protected AtomicReference<Map<String, ConsumerGroupEntity>> consumerGroupRefMap = new AtomicReference<>(
             new HashMap<>());
@@ -62,6 +74,26 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
                 }
             }
         return rs;
+    }
+
+    @Override
+    public void copyAndNewConsumerGroup(ConsumerGroupEntity consumerGroupEntityOld,
+                                        ConsumerGroupEntity consumerGroupEntityNew) {
+        consumerGroupEntityNew.setId(0);
+        insert(consumerGroupEntityNew);
+        Map<String, ConsumerGroupEntity> consumerGroupByName = getConsumerGroupByName(consumerGroupEntityOld.getName());
+
+    }
+
+    private Map<String, ConsumerGroupEntity> getConsumerGroupByName(String name) {
+        HashMap<String, Object> conditions = new HashMap<>();
+        conditions.put("originName",name);
+        List<ConsumerGroupEntity> consumerGroupEntities = getList(conditions);
+        Map<String, ConsumerGroupEntity> map=new HashMap<>();
+        consumerGroupEntities.forEach(t->{
+            map.put(t.getName(),t);
+        });
+        return map;
     }
 
     @Override
@@ -129,6 +161,42 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
         }else {
             lastUpdateEntity=null;
         }
+    }
+
+    @Override
+    public Map<String, ConsumerGroupEntity> getByNames(List<String> names) {
+        if(CollectionUtils.isEmpty(names)) return new HashMap<>();
+        List<ConsumerGroupEntity> consumerGroupEntities = consumerGroupRepository.getByNames(names);
+        Map<String, ConsumerGroupEntity> map =
+                consumerGroupEntities.stream().collect(Collectors.toMap(ConsumerGroupEntity::getName,
+                        Function.identity()));
+        return map;
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void notifyRb(List<Long> ids) {
+        if(CollectionUtils.isEmpty(ids)) return;
+        updateRbVersion(ids);
+        List<NotifyMessageEntity> notifyMessageEntities = new ArrayList<>();
+        for (Long id : ids) {
+            NotifyMessageEntity notifyMessageEntity = new NotifyMessageEntity();
+            notifyMessageEntity.setConsumerGroupId(id);
+            notifyMessageEntity.setMessageType(1);
+            notifyMessageEntities.add(notifyMessageEntity);
+
+            notifyMessageEntity = new NotifyMessageEntity();
+            notifyMessageEntity.setConsumerGroupId(id);
+            notifyMessageEntity.setMessageType(2);
+            notifyMessageEntities.add(notifyMessageEntity);
+        }
+        notifyMessageService.insertBatch(notifyMessageEntities);
+    }
+
+    private void updateRbVersion(List<Long> ids) {
+        if (CollectionUtils.isEmpty(ids)) return;
+        consumerGroupRepository.updateRbVersion(ids);
+
     }
 
     @Override

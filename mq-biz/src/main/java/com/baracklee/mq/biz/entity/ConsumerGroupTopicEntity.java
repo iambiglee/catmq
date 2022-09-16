@@ -10,7 +10,7 @@ public class ConsumerGroupTopicEntity {
     private String topicName;
     private String originTopicName;
     //1表示正常，2表示失败
-    private String topicType;
+    private int topicType;
     private String retryCount;
     private String threadSize;
     private String maxLag;
@@ -55,5 +55,187 @@ public class ConsumerGroupTopicEntity {
      */
     private int timeOut;
 
+    public long getId() {
+        return id;
+    }
 
+    public void setId(long id) {
+        this.id = id;
+    }
+
+    public long getConsumerGroupId() {
+        return consumerGroupId;
+    }
+
+    public void setConsumerGroupId(long consumerGroupId) {
+        this.consumerGroupId = consumerGroupId;
+    }
+
+    public String getConsumerGroupName() {
+        return consumerGroupName;
+    }
+
+    public void setConsumerGroupName(String consumerGroupName) {
+        this.consumerGroupName = consumerGroupName;
+    }
+
+    public String getTopicId() {
+        return topicId;
+    }
+
+    public void setTopicId(String topicId) {
+        this.topicId = topicId;
+    }
+
+    public String getTopicName() {
+        return topicName;
+    }
+
+    public void setTopicName(String topicName) {
+        this.topicName = topicName;
+    }
+
+    public String getOriginTopicName() {
+        return originTopicName;
+    }
+
+    public void setOriginTopicName(String originTopicName) {
+        this.originTopicName = originTopicName;
+    }
+
+    public int getTopicType() {
+        return topicType;
+    }
+
+    public void setTopicType(int topicType) {
+        this.topicType = topicType;
+    }
+
+    public String getRetryCount() {
+        return retryCount;
+    }
+
+    public void setRetryCount(String retryCount) {
+        this.retryCount = retryCount;
+    }
+
+    public String getThreadSize() {
+        return threadSize;
+    }
+
+    public void setThreadSize(String threadSize) {
+        this.threadSize = threadSize;
+    }
+
+    public String getMaxLag() {
+        return maxLag;
+    }
+
+    public void setMaxLag(String maxLag) {
+        this.maxLag = maxLag;
+    }
+
+    public String getTag() {
+        return tag;
+    }
+
+    public void setTag(String tag) {
+        this.tag = tag;
+    }
+
+    public int getDelayProcessTime() {
+        return delayProcessTime;
+    }
+
+    public void setDelayProcessTime(int delayProcessTime) {
+        this.delayProcessTime = delayProcessTime;
+    }
+
+    public int getPullBatchSize() {
+        return pullBatchSize;
+    }
+
+    public void setPullBatchSize(int pullBatchSize) {
+        this.pullBatchSize = pullBatchSize;
+    }
+
+    public int getConsumerBatchSize() {
+        return consumerBatchSize;
+    }
+
+    public void setConsumerBatchSize(int consumerBatchSize) {
+        this.consumerBatchSize = consumerBatchSize;
+    }
+
+    public int getMaxPullTime() {
+        return maxPullTime;
+    }
+
+    public void setMaxPullTime(int maxPullTime) {
+        this.maxPullTime = maxPullTime;
+    }
+
+    public String getAlarmEmails() {
+        return alarmEmails;
+    }
+
+    public void setAlarmEmails(String alarmEmails) {
+        this.alarmEmails = alarmEmails;
+    }
+
+    public String getInsertBy() {
+        return insertBy;
+    }
+
+    public void setInsertBy(String insertBy) {
+        this.insertBy = insertBy;
+    }
+
+    public Date getInsertTime() {
+        return insertTime;
+    }
+
+    public void setInsertTime(Date insertTime) {
+        this.insertTime = insertTime;
+    }
+
+    public String getUpdateBy() {
+        return updateBy;
+    }
+
+    public void setUpdateBy(String updateBy) {
+        this.updateBy = updateBy;
+    }
+
+    public Date getUpdateTime() {
+        return updateTime;
+    }
+
+    public void setUpdateTime(Date updateTime) {
+        this.updateTime = updateTime;
+    }
+
+    public int getIsActive() {
+        return isActive;
+    }
+
+    public void setIsActive(int isActive) {
+        this.isActive = isActive;
+    }
+
+    public Date getMetaUpdateTime() {
+        return metaUpdateTime;
+    }
+
+    public void setMetaUpdateTime(Date metaUpdateTime) {
+        this.metaUpdateTime = metaUpdateTime;
+    }
+
+    public int getTimeOut() {
+        return timeOut;
+    }
+
+    public void setTimeOut(int timeOut) {
+        this.timeOut = timeOut;
+    }
 }

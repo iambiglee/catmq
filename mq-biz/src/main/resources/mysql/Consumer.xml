@@ -35,4 +35,19 @@
     <select id="getById" resultMap="BaseResultMap" useCache="false">
         select * from consumer where id=#{id}
     </select>
+
+    <update id="update"
+            parameterType="com.baracklee.mq.biz.entity.ConsumerEntity">
+        update consumer set
+                            `ip` = #{ip},
+                            `name` = #{name},
+                            `consumer_group_names` = #{consumerGroupNames},
+                            `sdk_version` = #{sdkVersion},
+                            `lan` = #{lan},
+                            `heart_time` = #{heartTime},
+                            `update_by` = #{updateBy},
+                            `is_active` = #{isActive}
+        where id = #{id}
+    </update>
+
 </mapper>
