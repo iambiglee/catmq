@@ -5,6 +5,8 @@
 5. 他的消息偏移request 或者response 是怎么工作的
 6. spring-boot-dependencies 是一种新的代码管理方式
 7. 类上面加泛型是什么概念
+8. Soaconfig env 是怎么设计的
+9. com.ppdai.infrastructure.mq.biz.service.impl.MqLockServiceImpl#isLoad 这样写没意思啊
 
 Time Line
 写到了：IMqQueueExecutorService
@@ -28,3 +30,5 @@ Time Line
 com.baracklee.mq.biz.service.impl.ConsumerServiceImpl.checkBroadcastAndSubEnv(com.baracklee.mq.biz.dto.client.ConsumerGroupRegisterRequest, java.util.List<java.lang.String>, java.util.Map<java.lang.String,com.baracklee.mq.biz.entity.ConsumerGroupEntity>, com.baracklee.mq.biz.dto.client.ConsumerGroupRegisterResponse)
 
 com/baracklee/mq/biz/service/impl/ConsumerServiceImpl.java:146
+
+com.baracklee.mq.biz.polling.AbstractTimerService.doHeartbeat 和work 代码没写

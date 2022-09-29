@@ -44,7 +44,11 @@ public class SoaConfig {
         }
         return getMqMetaRebuildMaxInterval;
     }
-
+    private final String env_enableTimer_key = "mq.enableTimer";
+    private final String env_enableTimer_defaultValue = "1";
+    public boolean enableTimer() {
+        return "1".equals(env.getProperty(env_enableTimer_key, env_enableTimer_defaultValue));
+    }
     private void onChange() {
         executor.execute(()->{
             for (Runnable runnable : changed.keySet()) {
@@ -55,5 +59,33 @@ public class SoaConfig {
                 }
             }
         });
+    }
+
+    private volatile String _getMqLockHeartBeatTime = "";
+    private volatile int getMqLockHeartBeatTime = 0;
+    private final String env_getMqLockHeartBeatTime_key = "mq.lock.heartbeat.time";
+    private final String env_getMqLockHeartBeatTime_defaultValue = "15";
+    private final String env_getMqLockHeartBeatTime_des = "锁心跳发送时间间隔";
+
+    // 锁心跳发送时间间隔
+    public int getMqLockHeartBeatTime() {
+        try {
+            if (!_getMqLockHeartBeatTime
+                    .equals(env.getProperty(env_getMqLockHeartBeatTime_key, env_getMqLockHeartBeatTime_defaultValue))) {
+                _getMqLockHeartBeatTime = env.getProperty(env_getMqLockHeartBeatTime_key,
+                        env_getMqLockHeartBeatTime_defaultValue);
+                getMqLockHeartBeatTime = Integer.parseInt(
+                        env.getProperty(env_getMqLockHeartBeatTime_key, env_getMqLockHeartBeatTime_defaultValue));
+                if (getMqLockHeartBeatTime < 15) {
+                    getMqLockHeartBeatTime = 15;
+                }
+                onChange();
+            }
+        } catch (Exception e) {
+            getMqLockHeartBeatTime = 15;
+            onChange();
+        }
+        return getMqLockHeartBeatTime;
+
     }
 }

@@ -2,6 +2,8 @@ package com.baracklee.mq.biz.common.util;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Timer;
+import java.util.concurrent.TimeUnit;
 
 public class Util {
 
@@ -24,5 +26,14 @@ public class Util {
         } catch (Throwable e) {
             return null;
         }
+    }
+
+    public static void sleep(int milliseconds) {
+        try {
+            TimeUnit.MILLISECONDS.sleep(milliseconds);
+        } catch (InterruptedException ignored) {
+
+        }
+
     }
 }
