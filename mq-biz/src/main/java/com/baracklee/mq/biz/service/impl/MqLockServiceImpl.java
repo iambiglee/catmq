@@ -40,7 +40,13 @@ public class MqLockServiceImpl extends AbstractBaseService<MqLockEntity> impleme
         if(!isLoad()) return false;
         init();
         boolean temp=checkMaster();
-        if(temp!=isMaster)
+        if(temp!=isMaster){
+            isMaster=temp;
+            if(temp) log.warn("ip_{}_key{} 获取到锁",ip,key);
+            else log.warn("ip_{}_key{} 失去锁",ip,key);
+            isMaster=temp;
+            return isMaster;
+        }
         return false;
     }
 
