@@ -3,10 +3,15 @@ package com.baracklee.mq.biz.service.impl;
 import com.baracklee.mq.biz.common.util.SoaConfig;
 import com.baracklee.mq.biz.dal.meta.MqLockRepository;
 import com.baracklee.mq.biz.entity.MqLockEntity;
+import com.baracklee.mq.biz.service.DbService;
 import com.baracklee.mq.biz.service.MqLockService;
 import com.baracklee.mq.biz.service.common.AbstractBaseService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 public class MqLockServiceImpl extends AbstractBaseService<MqLockEntity> implements MqLockService {
 
@@ -48,6 +53,66 @@ public class MqLockServiceImpl extends AbstractBaseService<MqLockEntity> impleme
             return isMaster;
         }
         return false;
+    }
+
+    private boolean checkMaster() {
+        if(isInLock()){
+            doCheckMaster();
+        }else {
+            return false;
+        }
+    }
+
+    private boolean doCheckMaster() {
+        Map<String,Object> mapCond=new HashMap<>();
+        mapCond.put(MqLockEntity.FdKey1,key);
+        MqLockEntity mqLockEntity = mqLockRepository.get(mapCond);
+        if(mqLockEntity==null){
+            clearAndInit();
+            mqLockEntity=mqLockRepository.get(mapCond);
+        }
+        Date dbNow = dbService.getDbTime();
+        id=mqLockEntity.getId();
+        if(mqLockEntity.getHeartTime().getTime()<dbNow.getTime()-getExpired()*1000){
+            mqLockRepository.updateHeartTimeByKey1(ip,key,getExpired());
+            boolean flag1=count>0;
+            return flag1;
+        }else {
+            return checkMaster(mqLockEntity,dbNow);
+        }
+
+    }
+
+    private int getExpired() {
+        return getHeartBeatTime() * 2 + 3;
+    }
+
+    private int getHeartBeatTime() {
+        try {
+            return this.heartbeatProperty.getValue();
+        } catch (Exception e) {
+            return soaConfig.getMqLockHeartBeatTime();
+        }
+    }
+
+    private void clearAndInit() {
+        Map<String,Object> mapCond=new HashMap<>();
+        mapCond.put(MqLockEntity.FdKey1,key);
+        MqLockEntity mqLockEntity = mqLockRepository.get(mapCond);
+        if(mqLockEntity==null){
+            insert();
+        }
+    }
+
+    public void insert(){
+        MqLockEntity entity = new MqLockEntity();
+        entity.setIp(ip);
+        entity.setKey1(key);
+        mqLockRepository.insert1(entity);
+    }
+    private boolean checkMaster(MqLockEntity mqLockEntity, Date dbNow) {
+        boolean flag1=mqLockEntity.getIp().equals(ip);
+        return flag1;
     }
 
     @Override

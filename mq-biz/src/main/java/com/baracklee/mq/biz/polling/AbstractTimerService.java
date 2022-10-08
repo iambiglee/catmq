@@ -23,7 +23,6 @@ public abstract class AbstractTimerService implements PortalTimerService {
     private SoaConfig soaConfig;
     private MqLockService mqLockService;
     private ThreadPoolExecutor executor=null;
-    private TraceMessage traceMessage;
     private boolean isMaster=false;
     private boolean isRunning=false;
     private final Object lockObj=new Object();

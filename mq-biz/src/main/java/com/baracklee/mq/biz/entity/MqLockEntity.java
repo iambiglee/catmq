@@ -119,4 +119,6 @@ public class MqLockEntity {
     public void setIsActive(int isActive) {
         this.isActive = isActive;
     }
+
+    public static String FdKey1 = "key1";
 }
