@@ -6,4 +6,10 @@
             id=#{id} and
             ip=#{ip}
     </update>
+
+    <update id="updateHeartTimeByKey1">
+    <![CDATA[
+        update mq_lock set heart_time=CURRENT_TIMESTAMP , ip=#{ip} where key1=#{key1} and	heart_time< TIMESTAMPADD(second, -#{lockInterval}, current_timestamp )
+        ]]>
+	</update>
 </mapper>

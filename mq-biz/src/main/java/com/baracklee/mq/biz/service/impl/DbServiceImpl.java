@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.Resource;
 import java.util.Date;
+import java.util.Map;
 
 public class DbServiceImpl implements DbService {
 
@@ -18,11 +19,18 @@ public class DbServiceImpl implements DbService {
 
     @Override
     public String getMaxConnectionsCount() {
-        return null;
+        Map<String, String> map = dbRepository.getMaxConnectionsCount();
+        if (map.size() == 0)
+            return "0";
+        else
+            return map.get("Value");
     }
 
     @Override
     public Integer getConnectionsCount() {
-        return null;
+        Integer count = dbRepository.getConnectionsCount();
+        if (count == null)
+            return 0;
+        return count;
     }
 }

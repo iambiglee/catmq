@@ -32,3 +32,5 @@ com.baracklee.mq.biz.service.impl.ConsumerServiceImpl.checkBroadcastAndSubEnv(co
 com/baracklee/mq/biz/service/impl/ConsumerServiceImpl.java:146
 
 com.baracklee.mq.biz.polling.AbstractTimerService.doHeartbeat 和work 代码没写
+
+com.baracklee.mq.biz.service.impl.MqLockServiceImpl.doCheckMaster

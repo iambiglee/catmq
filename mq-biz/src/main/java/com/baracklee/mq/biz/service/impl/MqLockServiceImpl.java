@@ -74,7 +74,7 @@ public class MqLockServiceImpl extends AbstractBaseService<MqLockEntity> impleme
         Date dbNow = dbService.getDbTime();
         id=mqLockEntity.getId();
         if(mqLockEntity.getHeartTime().getTime()<dbNow.getTime()-getExpired()*1000){
-            mqLockRepository.updateHeartTimeByKey1(ip,key,getExpired());
+            int count=mqLockRepository.updateHeartTimeByKey1(ip,key,getExpired());
             boolean flag1=count>0;
             return flag1;
         }else {
