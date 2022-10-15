@@ -22,6 +22,7 @@ public class ConsumerGroupRbService extends AbstractTimerService{
     @Autowired
     private SoaConfig soaConfig;
 
+
     @Resource
     ConsumerGroupService consumerGroupService;
     @Override
