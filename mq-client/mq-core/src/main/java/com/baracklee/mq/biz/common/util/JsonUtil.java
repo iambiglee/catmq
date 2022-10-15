@@ -11,7 +11,7 @@ import java.text.SimpleDateFormat;
 
 public class JsonUtil {
 
-    private static Logger log= LoggerFactory.getLogger(this.getClass());
+    private static Logger log= LoggerFactory.getLogger(JsonUtil.class);
 
     private static ObjectMapper objectMapper;
 

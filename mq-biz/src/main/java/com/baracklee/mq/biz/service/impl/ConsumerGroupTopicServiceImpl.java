@@ -1,7 +1,7 @@
 package com.baracklee.mq.biz.service.impl;
 
 import com.baracklee.mq.biz.common.thread.SoaThreadFactory;
-import com.baracklee.mq.biz.common.util.SoaConfig;
+import com.baracklee.mq.biz.common.SoaConfig;
 import com.baracklee.mq.biz.dal.meta.ConsumerGroupTopicRepository;
 import com.baracklee.mq.biz.entity.ConsumerGroupTopicEntity;
 import com.baracklee.mq.biz.entity.LastUpdateEntity;
@@ -11,7 +11,6 @@ import com.baracklee.mq.biz.service.common.AbstractBaseService;
 import com.baracklee.mq.biz.service.common.MqReadMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;

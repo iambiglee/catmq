@@ -1,6 +1,6 @@
 package com.baracklee.mq.biz.service.impl;
 
-import com.baracklee.mq.biz.common.util.SoaConfig;
+import com.baracklee.mq.biz.common.SoaConfig;
 import com.baracklee.mq.biz.dal.meta.ConsumerGroupRepository;
 
 import com.baracklee.mq.biz.entity.ConsumerGroupEntity;
@@ -10,7 +10,6 @@ import com.baracklee.mq.biz.service.CacheUpdateService;
 import com.baracklee.mq.biz.service.ConsumerGroupService;
 import com.baracklee.mq.biz.service.NotifyMessageService;
 import com.baracklee.mq.biz.service.common.AbstractBaseService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -26,7 +25,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 @Service

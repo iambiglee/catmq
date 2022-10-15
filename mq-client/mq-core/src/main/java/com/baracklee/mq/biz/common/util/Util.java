@@ -1,5 +1,7 @@
 package com.baracklee.mq.biz.common.util;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Timer;
@@ -35,5 +37,11 @@ public class Util {
 
         }
 
+    }
+
+    public static Integer getProcessId() {
+        RuntimeMXBean runtime= ManagementFactory.getRuntimeMXBean();
+        String name=runtime.getName();
+        return Integer.parseInt(name.substring(0,name.indexOf("@")));
     }
 }

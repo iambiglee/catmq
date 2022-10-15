@@ -2,9 +2,7 @@ package com.baracklee.mq.biz.polling;
 
 import com.baracklee.mq.biz.common.inf.PortalTimerService;
 import com.baracklee.mq.biz.common.thread.SoaThreadFactory;
-import com.baracklee.mq.biz.common.trace.TraceFactory;
-import com.baracklee.mq.biz.common.trace.TraceMessage;
-import com.baracklee.mq.biz.common.util.SoaConfig;
+import com.baracklee.mq.biz.common.SoaConfig;
 import com.baracklee.mq.biz.common.util.Util;
 import com.baracklee.mq.biz.service.MqLockService;
 import com.baracklee.mq.biz.service.impl.MqLockServiceImpl;
@@ -34,7 +32,6 @@ public abstract class AbstractTimerService implements PortalTimerService {
                 SoaThreadFactory.create(key, true), new ThreadPoolExecutor.DiscardOldestPolicy());
         this.interval = interval;
         this.soaConfig = soaConfig;
-        this.traceMessage = TraceFactory.getInstance(key);
     }
     public void updateInterval(int interval){
         this.interval=interval;

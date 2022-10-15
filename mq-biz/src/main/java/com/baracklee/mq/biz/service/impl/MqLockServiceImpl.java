@@ -1,6 +1,9 @@
 package com.baracklee.mq.biz.service.impl;
 
-import com.baracklee.mq.biz.common.util.SoaConfig;
+import com.baracklee.mq.biz.common.util.IPUtil;
+import com.baracklee.mq.biz.common.SoaConfig;
+import com.baracklee.mq.biz.common.util.SpringUtil;
+import com.baracklee.mq.biz.common.util.Util;
 import com.baracklee.mq.biz.dal.meta.MqLockRepository;
 import com.baracklee.mq.biz.entity.MqLockEntity;
 import com.baracklee.mq.biz.service.DbService;
@@ -28,16 +31,22 @@ public class MqLockServiceImpl extends AbstractBaseService<MqLockEntity> impleme
     private SoaConfig soaConfig;
     private MqLockRepository mqLockRepository;
     private DbService dbService;
-    private EmailUtil emailUtil;
     private HeartbeatProperty heartbeatProperty;
 
-    public MqLockServiceImpl(String key) {
-        this.key = key;
-    }
 
     public MqLockServiceImpl(MqLockRepository repository){
         this.mqLockRepository=repository;
         setBaseRepository(repository);
+    }
+
+    public MqLockServiceImpl(String key) {
+        this.key = key;
+        this.heartbeatProperty = new HeartbeatProperty() {
+            @Override
+            public int getValue() {
+                return soaConfig.getMqLockHeartBeatTime();
+            }
+        };
     }
 
     @Override
@@ -57,7 +66,7 @@ public class MqLockServiceImpl extends AbstractBaseService<MqLockEntity> impleme
 
     private boolean checkMaster() {
         if(isInLock()){
-            doCheckMaster();
+            return doCheckMaster();
         }else {
             return false;
         }
@@ -138,10 +147,7 @@ public class MqLockServiceImpl extends AbstractBaseService<MqLockEntity> impleme
         if (dbService == null) {
             dbService = SpringUtil.getBean(DbService.class);
         }
-        if (emailUtil == null) {
-            emailUtil = SpringUtil.getBean(EmailUtil.class);
-        }
-        objInit = (mqLockRepository != null && soaConfig != null && dbService != null && emailUtil != null);
+        objInit = (mqLockRepository != null && soaConfig != null && dbService != null);
         return objInit;
     }
 
@@ -153,6 +159,27 @@ public class MqLockServiceImpl extends AbstractBaseService<MqLockEntity> impleme
 
 
     public void init(){
-
+        if(!flag){
+            synchronized (lockObj){
+                if(!flag){
+                    flag=true;
+                    ip = String.format("%s_%s_%s", IPUtil.getLocalIP().replaceAll("\\.", "_"), Util.getProcessId(),
+                            System.currentTimeMillis() % 10000);
+                    if(!clearOld()){
+                        Util.sleep(getExpired() * 1000);
+                    }
+                    clearAndInit();
+                }
+            }
+        }
     }
+
+    private boolean clearOld() {
+        return mqLockRepository.deleteOld(key, getExpired()) > 0;
+    }
+
+    public interface HeartbeatProperty{
+        int getValue();
+    }
+
 }

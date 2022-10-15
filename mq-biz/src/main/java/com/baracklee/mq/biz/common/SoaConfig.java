@@ -1,6 +1,7 @@
-package com.baracklee.mq.biz.common.util;
+package com.baracklee.mq.biz.common;
 
 import com.baracklee.mq.biz.common.thread.SoaThreadFactory;
+import com.baracklee.mq.biz.common.util.PropUtil;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
@@ -88,4 +89,27 @@ public class SoaConfig {
         return getMqLockHeartBeatTime;
 
     }
+
+    private volatile String _isEnableRb = "";
+    private volatile boolean isEnableRb = true;
+    private final String env_isEnableRb_key = "mq.rb.enable";
+    private final String env_isEnableRb_defaultValue = "true";
+    private final String env_isEnableRb_des = "是否开启重平衡功能";
+
+    // 是否开启重平衡功能
+    public boolean isEnableRb() {
+        try {
+            if (!_isEnableRb.equals(env.getProperty(env_isEnableRb_key, env_isEnableRb_defaultValue))) {
+                _isEnableRb = env.getProperty(env_isEnableRb_key, env_isEnableRb_defaultValue);
+                isEnableRb = Boolean.parseBoolean(env.getProperty(env_isEnableRb_key, env_isEnableRb_defaultValue));
+                onChange();
+            }
+            return isEnableRb;
+        } catch (Exception e) {
+            isEnableRb = true;
+            onChange();
+            return true;
+        }
+    }
+
 }
