@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.baracklee.mq.biz.dal.meta.ConsumerGroupConsumerRepository">
+
+    <resultMap id="BaseResultMap"
+               type="com.baracklee.mq.biz.entity.ConsumerGroupConsumerEntity">
+        <result column="id" property="id"/>
+        <result column="consumer_id" property="consumerId"/>
+        <result column="consumer_name" property="consumerName"/>
+        <result column="ip" property="ip"/>
+        <result column="consumer_group_id" property="consumerGroupId"/>
+        <result column="insert_by" property="insertBy"/>
+        <result column="insert_time" property="insertTime"/>
+        <result column="update_by" property="updateBy"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="is_active" property="isActive"/>
+    </resultMap>
+
+    <delete id="deleteUnActiveConsumer">
+        delete from consumer_group_consumer where consumer_id=#{consumerId}
+    </delete>
+    <select id="getByConsumerGroupIds" resultMap="BaseResultMap"
+            useCache="false">
+        select *
+        from consumer_group_consumer
+        where consumer_group_id in
+        (
+        <foreach collection="consumerGroupIds" item="item" index="index"
+                 separator=",">#{item}</foreach>
+        ) and consumer_id in (select id from consumer)
+    </select>
+</mapper>

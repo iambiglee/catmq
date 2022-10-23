@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.baracklee.mq.biz.dal.meta.QueueOffsetRepository">
+    <resultMap id="BaseResultMap"
+               type="com.baracklee.mq.biz.entity.QueueOffsetEntity">
+        <result column="id" property="id"/>
+        <result column="consumer_group_id" property="consumerGroupId"/>
+        <result column="consumer_group_name" property="consumerGroupName"/>
+        <result column="consumer_name" property="consumerName"/>
+        <result column="consumer_id" property="consumerId"/>
+        <result column="topic_id" property="topicId"/>
+        <result column="topic_name" property="topicName"/>
+        <result column="origin_topic_name" property="originTopicName"/>
+        <result column="topic_type" property="topicType"/>
+        <result column="queue_id" property="queueId"/>
+        <result column="offset" property="offset"/>
+        <result column="start_offset" property="startOffset"/>
+        <result column="offset_version" property="offsetVersion"/>
+        <result column="stop_flag" property="stopFlag"/>
+        <result column="db_info" property="dbInfo"/>
+        <result column="insert_by" property="insertBy"/>
+        <result column="insert_time" property="insertTime"/>
+        <result column="update_by" property="updateBy"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="is_active" property="isActive"/>
+        <result column="meta_update_time" property="metaUpdateTime"/>
+        <result column="origin_consumer_group_name" property="originConsumerGroupName"/>
+        <result column="consumer_group_mode" property="consumerGroupMode"/>
+
+    </resultMap>
+    <update id="updateConsumerId"
+    parameterType="com.baracklee.mq.biz.entity.QueueOffsetEntity">
+        update queue_offset set
+                                consumer_name = #{consumerName},
+                                consumer_id = #{consumerId},meta_update_time = current_timestamp
+        where id = #{id}
+    </update>
+
+    <select id="getByConsumerGroupIds" resultMap="BaseResultMap"
+            useCache="false">
+        select *
+        from queue_offset
+        where consumer_group_id in
+        (
+        <foreach collection="consumerGroupIds" item="item" index="index"
+                 separator=",">#{item}</foreach>
+        )
+    </select></mapper>

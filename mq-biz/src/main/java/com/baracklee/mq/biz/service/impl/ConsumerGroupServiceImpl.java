@@ -6,9 +6,11 @@ import com.baracklee.mq.biz.dal.meta.ConsumerGroupRepository;
 import com.baracklee.mq.biz.entity.ConsumerGroupEntity;
 import com.baracklee.mq.biz.entity.LastUpdateEntity;
 import com.baracklee.mq.biz.entity.NotifyMessageEntity;
+import com.baracklee.mq.biz.entity.QueueOffsetEntity;
 import com.baracklee.mq.biz.service.CacheUpdateService;
 import com.baracklee.mq.biz.service.ConsumerGroupService;
 import com.baracklee.mq.biz.service.NotifyMessageService;
+import com.baracklee.mq.biz.service.QueueOffsetService;
 import com.baracklee.mq.biz.service.common.AbstractBaseService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +18,7 @@ import org.springframework.util.CollectionUtils;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -36,6 +39,8 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
     }
 
     private AtomicBoolean updateFlag = new AtomicBoolean(false);
+    @Resource
+    QueueOffsetService queueOffsetService;
 
     @Resource
     private ConsumerGroupRepository consumerGroupRepository;
@@ -188,6 +193,25 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
             notifyMessageEntity.setMessageType(2);
             notifyMessageEntities.add(notifyMessageEntity);
         }
+        notifyMessageService.insertBatch(notifyMessageEntities);
+    }
+
+    @Override
+    public List<ConsumerGroupEntity> getLastRbConsumerGroup(long lastNotifyMessageId, long currentMaxId) {
+        return consumerGroupRepository.getLastConsumerGroup(minMessageId,maxMessageId, MessageType.Rb);
+    }
+
+    @Override
+    public void rb(List<QueueOffsetEntity> queueOffsetEntities) {
+        Map<Long, String> idsMap = new HashMap<>(30);
+        List<NotifyMessageEntity> notifyMessageEntities = new ArrayList<>(30);
+        queueOffsetEntities.forEach(t1->{
+            idsMap.put(t1.getConsumerGroupId(), "");
+            // 更新consumerid 和consumername
+            queueOffsetService.updateConsumerId(t1);
+        });
+        //保证重平衡版本号
+        updateRbVersion(new ArrayList<>(idsMap.keySet()));
         notifyMessageService.insertBatch(notifyMessageEntities);
     }
 

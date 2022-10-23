@@ -83,6 +83,14 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
         return response;
     }
 
+    @Override
+    public List<ConsumerGroupConsumerEntity> getConsumerGroupByConsumerGroupIds(ArrayList<Long> consumerGroupIds) {
+        if(CollectionUtils.isEmpty(consumerGroupIds)){
+            return new ArrayList<>();
+        }
+        return consumerGroupConsumerService.getByConsumerGroupIds(consumerGroupIds);
+    }
+
     private void doRegisterConsumerGroup(ConsumerGroupRegisterRequest request, ConsumerGroupRegisterResponse response, ConsumerEntity consumerEntity) {
         response.setSuc(true);
         Map<String, ConsumerGroupEntity> consumerGroupMap = checkTopic(request, response);

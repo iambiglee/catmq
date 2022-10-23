@@ -18,7 +18,7 @@ public interface ConsumerRepository extends BaseRepository<ConsumerEntity> {
 
     long register(ConsumerEntity t);
 
-    ConsumerEntity getConsumerByConsumerGroupId(@Param("consumerGroupId") long consumerGroupId);
+    ConsumerEntity getConsumerByConsumerGroupId(@Param("consumerGroupId") Long consumerGroupId);
 
     long countBy(Map<String, Object> conditionMap);
 
