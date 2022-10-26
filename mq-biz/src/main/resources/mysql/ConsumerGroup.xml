@@ -56,4 +56,10 @@ select max(meta_update_time) as lastDate,max(id) as maxId,count(1) as 'count' fr
             #{item}
         </foreach>
     </select>
-</mapper>
+    <select id="getLastConsumerGroup" resultMap="BaseResultMap"
+            useCache="false">
+		<![CDATA[
+        select * from consumer_group where id in (select distinct consumer_group_id
+                                                  from notify_message where	id>#{minMessageId} and id<=#{maxMessageId} and message_type=#{messageType})
+        ]]>
+	</select></mapper>

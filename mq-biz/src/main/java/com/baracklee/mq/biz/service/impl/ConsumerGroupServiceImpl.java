@@ -3,15 +3,13 @@ package com.baracklee.mq.biz.service.impl;
 import com.baracklee.mq.biz.common.SoaConfig;
 import com.baracklee.mq.biz.dal.meta.ConsumerGroupRepository;
 
-import com.baracklee.mq.biz.entity.ConsumerGroupEntity;
-import com.baracklee.mq.biz.entity.LastUpdateEntity;
-import com.baracklee.mq.biz.entity.NotifyMessageEntity;
-import com.baracklee.mq.biz.entity.QueueOffsetEntity;
+import com.baracklee.mq.biz.entity.*;
 import com.baracklee.mq.biz.service.CacheUpdateService;
 import com.baracklee.mq.biz.service.ConsumerGroupService;
 import com.baracklee.mq.biz.service.NotifyMessageService;
 import com.baracklee.mq.biz.service.QueueOffsetService;
 import com.baracklee.mq.biz.service.common.AbstractBaseService;
+import com.baracklee.mq.biz.service.common.MessageType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -51,14 +49,14 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
             new HashMap<>());
     protected AtomicReference<Map<Long, ConsumerGroupEntity>> consumerGroupByIdRefMap = new AtomicReference<>(
             new HashMap<>());
-    private AtomicReference<List<String>> subEnvList = new AtomicReference<>(new ArrayList<>());
+    private final AtomicReference<List<String>> subEnvList = new AtomicReference<>(new ArrayList<>());
 
 
     private Lock cacheLocal=new ReentrantLock();
     @Resource
     private SoaConfig soaConfig;
 
-    private AtomicBoolean first= new AtomicBoolean(true);
+    private final AtomicBoolean first= new AtomicBoolean(true);
     @Override
     public Map<String, ConsumerGroupEntity> getCache() {
         Map<String, ConsumerGroupEntity> rs = consumerGroupRefMap.get();
@@ -85,7 +83,32 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
         consumerGroupEntityNew.setId(0);
         insert(consumerGroupEntityNew);
         Map<String, ConsumerGroupEntity> consumerGroupByName = getConsumerGroupByName(consumerGroupEntityOld.getName());
-
+        Map<Long, Map<String, ConsumerGroupTopicEntity>> ctMap = consumerGroupTopicService.getCache();
+        Map<String, ConsumerGroupTopicEntity> consumerTopics = ctMap.get(consumerGroupEntityOld.getId());
+        if(consumerTopics!=null){
+            for (Map.Entry<String, ConsumerGroupTopicEntity> entry : consumerTopics.entrySet()) {
+                if (entry.getValue().getTopicType() == 1) {
+                    ConsumerGroupTopicCreateRequest request2 = new ConsumerGroupTopicCreateRequest();
+                    request2.setAlarmEmails(entry.getValue().getAlarmEmails());
+                    request2.setConsumerBatchSize(entry.getValue().getConsumerBatchSize());
+                    request2.setConsumerGroupId(consumerGroupEntityNew.getId());
+                    request2.setConsumerGroupName(consumerGroupEntityNew.getName());
+                    request2.setDelayProcessTime(entry.getValue().getDelayProcessTime());
+                    request2.setDelayPullTime(entry.getValue().getMaxPullTime());
+                    request2.setMaxLag(entry.getValue().getMaxLag());
+                    request2.setOriginTopicName(entry.getValue().getOriginTopicName());
+                    request2.setPullBatchSize(entry.getValue().getPullBatchSize());
+                    request2.setRetryCount(entry.getValue().getRetryCount());
+                    request2.setTag(entry.getValue().getTag());
+                    request2.setThreadSize(entry.getValue().getThreadSize());
+                    request2.setTopicId(entry.getValue().getTopicId());
+                    request2.setTopicName(entry.getValue().getTopicName());
+                    request2.setTopicType(entry.getValue().getTopicType());
+                    request2.setTimeOut(entry.getValue().getTimeOut());
+                    consumerGroupTopicService.subscribe(request2,consumerGroupMap);
+                }
+            }
+        }
     }
 
     private Map<String, ConsumerGroupEntity> getConsumerGroupByName(String name) {
@@ -93,9 +116,7 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
         conditions.put("originName",name);
         List<ConsumerGroupEntity> consumerGroupEntities = getList(conditions);
         Map<String, ConsumerGroupEntity> map=new HashMap<>();
-        consumerGroupEntities.forEach(t->{
-            map.put(t.getName(),t);
-        });
+        consumerGroupEntities.forEach(t-> map.put(t.getName(),t));
         return map;
     }
 
@@ -197,8 +218,8 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
     }
 
     @Override
-    public List<ConsumerGroupEntity> getLastRbConsumerGroup(long lastNotifyMessageId, long currentMaxId) {
-        return consumerGroupRepository.getLastConsumerGroup(minMessageId,maxMessageId, MessageType.Rb);
+    public List<ConsumerGroupEntity> getLastRbConsumerGroup(long minMessageId, long maxMessageId) {
+        return consumerGroupRepository.getLastConsumerGroup(minMessageId, maxMessageId, MessageType.Rb);
     }
 
     @Override
