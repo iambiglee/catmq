@@ -1,4 +1,4 @@
-<mxfile host="app.diagrams.net" modified="2022-10-27T14:04:54.991Z" agent="5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36" etag="OvuNgXD6lwK583yVkAao" version="20.3.3" type="github">
+<mxfile host="app.diagrams.net" modified="2022-10-27T14:07:44.352Z" agent="5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36" etag="ucDbdHNw-CKLqSSEef7p" version="20.3.3" type="github">
   <diagram id="A1IVkFVI3k7iJlv4y0Dh" name="第 1 页">
     <mxGraphModel dx="1422" dy="826" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
@@ -138,6 +138,9 @@
             <mxPoint x="370" y="1110" as="sourcePoint" />
             <mxPoint x="500" y="1090" as="targetPoint" />
           </mxGeometry>
+        </mxCell>
+        <mxCell id="j-rv734OtA0OHMe2fSV6-9" value="这里重新check 的时候，是为了程序运行阶段，自己不是master了，同时检查运行更新三次，可以避面选主错误，保证数据都是正确的" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="300" y="1230" width="240" height="30" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
