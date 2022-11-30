@@ -36,3 +36,11 @@ com.baracklee.mq.biz.polling.AbstractTimerService.doHeartbeat 和work 代码没�
 com.baracklee.mq.biz.service.impl.MqLockServiceImpl.doCheckMaster
 
 /home/barack/develop/java/myMessageQueue/mq-biz/src/main/java/com/baracklee/mq/biz/service/impl/ConsumerGroupServiceImpl.java
+
+/home/barack/develop/java/myMessageQueue/mq-biz/src/main/java/com/baracklee/mq/biz/service/impl/ConsumerGroupServiceImpl.java#copyAndNewConsumerGroup
+
+com/baracklee/mq/biz/service/impl/ConsumerGroupTopicServiceImpl.java:77
+
+com.baracklee.mq.biz.service.impl.ConsumerGroupTopicServiceImpl.createConsumerGroupTopicByOrigin
+
+总是写这种
