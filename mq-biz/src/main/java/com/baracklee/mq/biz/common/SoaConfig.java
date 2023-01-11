@@ -2,6 +2,7 @@ package com.baracklee.mq.biz.common;
 
 import com.baracklee.mq.biz.common.thread.SoaThreadFactory;
 import com.baracklee.mq.biz.common.util.PropUtil;
+import com.baracklee.mq.biz.common.util.Util;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
@@ -112,4 +113,19 @@ public class SoaConfig {
         }
     }
 
+    public boolean isPro() {
+        return "pro".equalsIgnoreCase(getEnvName());
+    }
+
+    public static final String env_getEnvName_key = "mq.env";
+    private String envName="";
+    private final String env_getEnvName_defaultValue = envName;
+    private final String env_getEnvName_des = "当前系统环境";
+    public String getEnvName() {
+        if (!Util.isEmpty(envName)) {
+            return envName;
+        } else {
+            return env.getProperty("mq.env", envName);
+        }
+    }
 }

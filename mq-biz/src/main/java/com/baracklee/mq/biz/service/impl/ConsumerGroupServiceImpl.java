@@ -3,11 +3,9 @@ package com.baracklee.mq.biz.service.impl;
 import com.baracklee.mq.biz.common.SoaConfig;
 import com.baracklee.mq.biz.dal.meta.ConsumerGroupRepository;
 
+import com.baracklee.mq.biz.dto.request.ConsumerGroupTopicCreateRequest;
 import com.baracklee.mq.biz.entity.*;
-import com.baracklee.mq.biz.service.CacheUpdateService;
-import com.baracklee.mq.biz.service.ConsumerGroupService;
-import com.baracklee.mq.biz.service.NotifyMessageService;
-import com.baracklee.mq.biz.service.QueueOffsetService;
+import com.baracklee.mq.biz.service.*;
 import com.baracklee.mq.biz.service.common.AbstractBaseService;
 import com.baracklee.mq.biz.service.common.MessageType;
 import org.springframework.stereotype.Service;
@@ -39,6 +37,8 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
     private AtomicBoolean updateFlag = new AtomicBoolean(false);
     @Resource
     QueueOffsetService queueOffsetService;
+    @Resource
+    private ConsumerGroupTopicService consumerGroupTopicService;
 
     @Resource
     private ConsumerGroupRepository consumerGroupRepository;
@@ -82,7 +82,7 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
                                         ConsumerGroupEntity consumerGroupEntityNew) {
         consumerGroupEntityNew.setId(0);
         insert(consumerGroupEntityNew);
-        Map<String, ConsumerGroupEntity> consumerGroupByName = getConsumerGroupByName(consumerGroupEntityOld.getName());
+        Map<String, ConsumerGroupEntity> consumerGroupMap = getConsumerGroupByName(consumerGroupEntityOld.getName());
         Map<Long, Map<String, ConsumerGroupTopicEntity>> ctMap = consumerGroupTopicService.getCache();
         Map<String, ConsumerGroupTopicEntity> consumerTopics = ctMap.get(consumerGroupEntityOld.getId());
         if(consumerTopics!=null){
@@ -218,6 +218,11 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
     }
 
     @Override
+    public void notifyRb(Long ids) {
+
+    }
+
+    @Override
     public List<ConsumerGroupEntity> getLastRbConsumerGroup(long minMessageId, long maxMessageId) {
         return consumerGroupRepository.getLastConsumerGroup(minMessageId, maxMessageId, MessageType.Rb);
     }
@@ -234,6 +239,16 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
         //保证重平衡版本号
         updateRbVersion(new ArrayList<>(idsMap.keySet()));
         notifyMessageService.insertBatch(notifyMessageEntities);
+    }
+
+    @Override
+    public void addTopicNameToConsumerGroup(ConsumerGroupTopicEntity consumerGroupTopicEntity) {
+
+    }
+
+    @Override
+    public void notifyMeta(Long consumerGroupId) {
+
     }
 
     private void updateRbVersion(List<Long> ids) {

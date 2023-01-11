@@ -1,6 +1,7 @@
 package com.baracklee.mq.biz.common.util;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -65,6 +66,18 @@ public class JsonUtil {
             // TODO Auto-generated catch block
             log.error("toJsonNull 异常", e);
             return "";
+        }
+    }
+
+    public  static <T> String toJson(T obj){
+        if (obj==null) return "";
+        try {
+            try {
+                return objectMapper.writeValueAsString(obj);
+            } catch (JsonProcessingException e) {
+                log.error("toJson 异常",e);
+                throw new RuntimeException(e);
+            }
         }
     }
 }

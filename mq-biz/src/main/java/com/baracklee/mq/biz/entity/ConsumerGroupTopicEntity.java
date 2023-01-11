@@ -6,14 +6,14 @@ public class ConsumerGroupTopicEntity {
     private long id;
     private long consumerGroupId;
     private String consumerGroupName;
-    private String topicId;
+    private Long topicId;
     private String topicName;
     private String originTopicName;
     //1表示正常，2表示失败
     private int topicType;
-    private String retryCount;
-    private String threadSize;
-    private String maxLag;
+    private int retryCount;
+    private int threadSize;
+    private int maxLag;
     private String tag;
     private int delayProcessTime;
     private int pullBatchSize;
@@ -79,11 +79,11 @@ public class ConsumerGroupTopicEntity {
         this.consumerGroupName = consumerGroupName;
     }
 
-    public String getTopicId() {
+    public Long getTopicId() {
         return topicId;
     }
 
-    public void setTopicId(String topicId) {
+    public void setTopicId(Long topicId) {
         this.topicId = topicId;
     }
 
@@ -111,27 +111,27 @@ public class ConsumerGroupTopicEntity {
         this.topicType = topicType;
     }
 
-    public String getRetryCount() {
+    public Integer getRetryCount() {
         return retryCount;
     }
 
-    public void setRetryCount(String retryCount) {
+    public void setRetryCount(Integer retryCount) {
         this.retryCount = retryCount;
     }
 
-    public String getThreadSize() {
+    public Integer getThreadSize() {
         return threadSize;
     }
 
-    public void setThreadSize(String threadSize) {
+    public void setThreadSize(Integer threadSize) {
         this.threadSize = threadSize;
     }
 
-    public String getMaxLag() {
+    public Integer getMaxLag() {
         return maxLag;
     }
 
-    public void setMaxLag(String maxLag) {
+    public void setMaxLag(int maxLag) {
         this.maxLag = maxLag;
     }
 

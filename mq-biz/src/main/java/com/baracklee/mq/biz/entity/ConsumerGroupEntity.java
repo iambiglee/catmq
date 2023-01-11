@@ -377,4 +377,65 @@ public class ConsumerGroupEntity {
         this.subEnv = subEnv;
 
     }
+    public final static String TABLE_NAME = "consumer_group";
+
+    public static String FdId = "id";
+
+    public static String FdName = "name";
+
+    public static String FdDptName = "dptName";
+
+    public static String FdTopicNames = "topicNames";
+
+    public static String FdOwnerIds = "ownerIds";
+
+    public static String FdOwnerNames = "ownerNames";
+
+    public static String FdAlarmEmails = "alarmEmails";
+
+    public static String FdTels = "tels";
+
+    public static String FdIpWhiteList = "ipWhiteList";
+
+    public static String FdIpBlackList = "ipBlackList";
+
+    public static String FdAlarmFlag = "alarmFlag";
+
+    public static String FdTraceFlag = "traceFlag";
+
+    public static String FdRemark = "remark";
+
+    public static String FdRbVersion = "rbVersion";
+
+    public static String FdMetaVersion = "metaVersion";
+
+    public static String FdVersion = "version";
+
+    public static String FdInsertBy = "insertBy";
+
+    public static String FdInsertTime = "insertTime";
+
+    public static String FdUpdateBy = "updateBy";
+
+    public static String FdUpdateTime = "updateTime";
+
+    public static String FdIsActive = "isActive";
+
+    public static String FdConsumerCount = "consumerCount";
+
+    public static String FdAppId = "appId";
+
+    public static String FdConsumerQuality = "consumerQuality";
+
+    public static String FdMetaUpdateTime = "metaUpdateTime";
+
+    public static String FdMode = "mode";
+
+    public static String FdOriginName = "originName";
+
+    public static String FdSubEnv = "subEnv";
+
+    public static String FdPushFlag = "pushFlag";
+
+
 }

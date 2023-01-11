@@ -26,8 +26,21 @@
         <result column="meta_update_time" property="metaUpdateTime"/>
         <result column="origin_consumer_group_name" property="originConsumerGroupName"/>
         <result column="consumer_group_mode" property="consumerGroupMode"/>
-
     </resultMap>
+
+    <resultMap id="LastUpdateMap"
+               type="com.baracklee.mq.biz.entity.LastUpdateEntity">
+        <result column="lastDate" property="lastDate" />
+        <result column="maxId" property="maxId" />
+        <result column="count" property="count" />
+    </resultMap>
+    <resultMap type="com.baracklee.mq.biz.entity.QueueOffsetEntity"
+               id="OffsetVersionMap">
+        <result column="id" property="id" />
+        <result column="offset" property="offset" />
+        <result column="offset_version" property="offsetVersion" />
+    </resultMap>
+
     <update id="updateConsumerId"
     parameterType="com.baracklee.mq.biz.entity.QueueOffsetEntity">
         update queue_offset set
@@ -45,4 +58,18 @@
         <foreach collection="consumerGroupIds" item="item" index="index"
                  separator=",">#{item}</foreach>
         )
-    </select></mapper>
+    </select>
+    <select id="getOffsetVersion" resultMap="OffsetVersionMap">
+    select id,offset,offset_version from queue_offset where offset>0
+    </select>
+    <select id="getLastUpdate" resultMap="LastUpdateMap" useCache="false">
+        select max(meta_update_time) as lastDate,max(id) as maxId ,count(1) as
+                                        `count` from queue_offset
+    </select>
+    <select id="getAllBasic" resultMap="BaseResultMap">
+        select id, consumer_group_id, consumer_group_name, consumer_name,
+               consumer_id, topic_id, topic_name, origin_topic_name, topic_type,
+               queue_id, offset, start_offset, offset_version, stop_flag, db_info,origin_consumer_group_name,sub_env
+        from queue_offset
+    </select>
+</mapper>

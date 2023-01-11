@@ -1,11 +1,8 @@
 package com.baracklee.mq.biz.service;
 
-import com.baracklee.mq.biz.dto.client.ConsumerGroupRegisterRequest;
-import com.baracklee.mq.biz.dto.client.ConsumerGroupRegisterResponse;
-import com.baracklee.mq.biz.dto.client.ConsumerRegisterRequest;
-import com.baracklee.mq.biz.dto.client.ConsumerRegisterResponse;
-import com.baracklee.mq.biz.entity.ConsumerEntity;
+
 import com.baracklee.mq.biz.entity.ConsumerGroupEntity;
+import com.baracklee.mq.biz.entity.ConsumerGroupTopicEntity;
 import com.baracklee.mq.biz.entity.QueueOffsetEntity;
 import com.baracklee.mq.biz.service.common.BaseService;
 
@@ -22,7 +19,13 @@ public interface ConsumerGroupService extends BaseService<ConsumerGroupEntity> {
 
     void notifyRb(List<Long> ids);
 
+    void notifyRb(Long ids);
+
     List<ConsumerGroupEntity> getLastRbConsumerGroup(long lastNotifyMessageId, long currentMaxId);
 
     void rb(List<QueueOffsetEntity> queueOffsets);
+
+    void addTopicNameToConsumerGroup(ConsumerGroupTopicEntity consumerGroupTopicEntity);
+
+    void notifyMeta(Long consumerGroupId);
 }
