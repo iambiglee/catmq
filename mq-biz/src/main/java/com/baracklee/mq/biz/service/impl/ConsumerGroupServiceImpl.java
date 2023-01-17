@@ -11,14 +11,13 @@ import com.baracklee.mq.biz.service.common.MessageType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
@@ -243,11 +242,26 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
 
     @Override
     public void addTopicNameToConsumerGroup(ConsumerGroupTopicEntity consumerGroupTopicEntity) {
-        //TODO
+        ConsumerGroupEntity consumerGroupEntity = get(consumerGroupTopicEntity.getConsumerGroupId());
+        String oldTopicNames=consumerGroupEntity.getTopicNames();
+        if(!StringUtils.isEmpty(oldTopicNames)){
+            List<String> oldTopicNameList = Arrays.asList(oldTopicNames.split(","));
+            if (!oldTopicNameList.contains(consumerGroupTopicEntity.getTopicName())) {
+                consumerGroupEntity.setTopicNames(oldTopicNames + "," + consumerGroupTopicEntity.getTopicName());
+            }
+        }else {
+            consumerGroupEntity.setTopicNames(consumerGroupTopicEntity.getTopicName());
+        }
+        update(consumerGroupEntity);
     }
 
     @Override
-    public void notifyMeta(Long consumerGroupId) {
+    public void notifyMeta(Long id) {
+        updateMetaVersion(Arrays.asList(id));
+        NotifyMessageEntity notifyMessageEntity = new NotifyMessageEntity();
+        notifyMessageEntity.setConsumerGroupId(id);
+        notifyMessageEntity.setMessageType(MessageType.Meta);
+        notifyMessageService.insert(notifyMessageEntity);
 
     }
 
