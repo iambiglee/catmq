@@ -128,4 +128,30 @@ public class SoaConfig {
             return env.getProperty("mq.env", envName);
         }
     }
+    private volatile String _getQueueExpansionCheckInterval = "";
+    private volatile int getQueueExpansionCheckInterval = 21600;
+    private final String env_getQueueExpansionCheckInterval_key = "mq.queue.expansion.check.interval";
+    private final String env_getQueueExpansionCheckInterval_defaultValue = "21600";
+    private final String env_getQueueExpansionCheckInterval_des = "检查可用队列周期";
+
+    // //检查可用队列周期
+    public int getQueueExpansionCheckInterval() {
+        try {
+            if (!_getQueueExpansionCheckInterval.equals(env.getProperty(env_getQueueExpansionCheckInterval_key,
+                    env_getQueueExpansionCheckInterval_defaultValue))) {
+                _getQueueExpansionCheckInterval = env.getProperty(env_getQueueExpansionCheckInterval_key,
+                        env_getQueueExpansionCheckInterval_defaultValue);
+                getQueueExpansionCheckInterval = Integer.parseInt(env.getProperty(
+                        env_getQueueExpansionCheckInterval_key, env_getQueueExpansionCheckInterval_defaultValue));
+
+                onChange();
+            }
+        } catch (Exception e) {
+            onChange();
+        }
+        return getQueueExpansionCheckInterval;
+    }
+    public void registerChanged(Runnable runnable) {
+        changed.put(runnable,true);
+    }
 }

@@ -218,7 +218,7 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
 
     @Override
     public void notifyRb(Long ids) {
-
+        notifyRb(Arrays.asList(ids));
     }
 
     @Override
@@ -262,7 +262,12 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
         notifyMessageEntity.setConsumerGroupId(id);
         notifyMessageEntity.setMessageType(MessageType.Meta);
         notifyMessageService.insert(notifyMessageEntity);
+    }
 
+    protected void updateMetaVersion(List<Long> ids) {
+        if (CollectionUtils.isEmpty(ids))
+            return;
+        consumerGroupRepository.updateMetaVersion(ids);
     }
 
     private void updateRbVersion(List<Long> ids) {

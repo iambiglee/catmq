@@ -17,4 +17,6 @@ public interface ConsumerGroupRepository extends BaseRepository <ConsumerGroupEn
     void updateRbVersion(List<Long> ids);
 
     List<ConsumerGroupEntity> getLastConsumerGroup(long minMessageId, long maxMessageId, int rb);
+
+    void updateMetaVersion(List<Long> ids);
 }

@@ -44,3 +44,11 @@ com/baracklee/mq/biz/service/impl/ConsumerGroupTopicServiceImpl.java:77
 com.baracklee.mq.biz.service.impl.ConsumerGroupTopicServiceImpl.createConsumerGroupTopicByOrigin
 
 总是写这种代码层的信息，我可能也没有太多的时间，我的下一步应该更多的放在一个业务功能的主题逻辑上，各个抽象变量的更新只上，代码了解这种设计，背后写法的原因，而不是拘泥于CURD怎么写。不过，这个确实也很需要时间
+
+执行命令find . -name "*.java" |xargs wc -l
+ 当前进度 7269/60000 20230128
+
+/home/barack/develop/java/pmq/mq-client/mq-client-spring/src/main/java/com/ppdai/infrastructure/mq/client/bootstrap/MqClientStartup.java
+setMetaMode 的具体业务逻辑是什么
+
+ 当前进度 7589/60000 20230131

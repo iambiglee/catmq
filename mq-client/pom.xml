@@ -10,6 +10,7 @@
     <modules>
         <module>mq-client-core</module>
         <module>mq-core</module>
+        <module>mq-client-spring</module>
     </modules>
 
     <properties>
@@ -32,6 +33,17 @@
             <artifactId>okhttp</artifactId>
             <version>3.9.1</version>
         </dependency>
+        <dependency>
+            <groupId>com.ppdai.infrastructure</groupId>
+            <artifactId>mq-client-spring</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.baracklee</groupId>
+            <artifactId>mq-client-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
+
     </dependencyManagement>
 </project>

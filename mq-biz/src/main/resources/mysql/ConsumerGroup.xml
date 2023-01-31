@@ -46,6 +46,14 @@
         <foreach collection="ids" item="id" index="index" separator=",">#{id}</foreach>
         )
     </update>
+    <update id="updateMetaVersion">
+        update consumer_group set version=version+1,meta_update_time=now(),
+        meta_version=meta_version+1 where id in
+        (
+        <foreach collection="ids" item="item" index="index" separator=",">#{item}</foreach>
+        )
+
+    </update>
     <select id="getLastUpdate" resultMap="LastUpdateMap" useCache="false">
 select max(meta_update_time) as lastDate,max(id) as maxId,count(1) as 'count' from consumer_group
 </select>
