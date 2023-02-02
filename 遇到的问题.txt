@@ -50,5 +50,6 @@ com.baracklee.mq.biz.service.impl.ConsumerGroupTopicServiceImpl.createConsumerGr
 
 /home/barack/develop/java/pmq/mq-client/mq-client-spring/src/main/java/com/ppdai/infrastructure/mq/client/bootstrap/MqClientStartup.java
 setMetaMode 的具体业务逻辑是什么
+获取网卡名称，
 
  当前进度 7589/60000 20230131

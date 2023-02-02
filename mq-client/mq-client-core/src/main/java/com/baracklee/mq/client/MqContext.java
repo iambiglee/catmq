@@ -239,6 +239,23 @@ public class MqContext {
         });
         return configConsumerGroup1;
     }
-
+    // brokerUrls1 重要地址分组，brokerUrls2为非重要地址分组
+    public void setBrokerUrls(List<String> brokerUrls1, List<String> brokerUrls2) {
+        // 如果非重要节点列表为空，则将重要节点数据赋值给非重要节点
+        if (brokerUrls2 == null || brokerUrls2.size() == 0) {
+            brokerUrls2 = brokerUrls1;
+        }
+        if (mqHtResource != null) {
+            mqHtResource.setUrls(brokerUrls1, brokerUrls2);
+        }
+        if (mqResource != null) {
+            mqResource.setUrls(brokerUrls1, brokerUrls2);
+        }
+        if (mqPollingResource != null) {
+            mqPollingResource.setUrls(brokerUrls1, brokerUrls2);
+        }
+        lstGroup1 = brokerUrls1;
+        lstGroup2 = brokerUrls2;
+    }
 
 }
