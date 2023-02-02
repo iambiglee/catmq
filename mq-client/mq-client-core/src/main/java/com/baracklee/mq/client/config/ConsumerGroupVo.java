@@ -6,6 +6,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ConsumerGroupVo {
+
+    //meta 就是单纯的记录coustmer group 的name 和广播模式的name
     private ConsumerGroupMetaVo meta;
     private Map<String, ConsumerGroupTopicVo> topics;
 

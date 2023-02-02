@@ -5,6 +5,7 @@ import com.baracklee.mq.biz.event.PreHandleListener;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class MqEvent {
 
@@ -45,4 +46,5 @@ public class MqEvent {
     public void setRegisterCompleted(List<Runnable> registerCompleted) {
         this.registerCompleted = registerCompleted;
     }
+
 }

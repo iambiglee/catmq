@@ -5,6 +5,7 @@ import com.baracklee.mq.biz.common.util.JsonUtil;
 import com.baracklee.mq.biz.common.util.Util;
 import com.baracklee.mq.biz.dto.client.ConsumerGroupRegisterRequest;
 import com.baracklee.mq.biz.dto.client.ConsumerGroupRegisterResponse;
+import com.baracklee.mq.biz.dto.client.ConsumerRegisterRequest;
 import com.baracklee.mq.biz.event.PreHandleListener;
 import com.baracklee.mq.client.config.ClientConfigHelper;
 import com.baracklee.mq.client.config.ConsumerGroupVo;
@@ -31,6 +32,7 @@ public class MqClient {
     private static MqContext mqContext = new MqContext();
     private static MqEnvironment mqEnvironment=null;
     private static Object lockObj = new Object();
+    private static AtomicBoolean registerFlag = new AtomicBoolean(false);
 
     private static AtomicBoolean startFlag=new AtomicBoolean(false);
 
@@ -124,8 +126,8 @@ public class MqClient {
             } else {
                 consumerGroupNames.put(consumerGroup.getMeta().getOriginName(), new ArrayList<>());
             }
-        }
             groupNames+=consumerGroup.getMeta().getName()+",";
+        }
             register();
             ConsumerGroupRegisterRequest request = new ConsumerGroupRegisterRequest();
             request.setConsumerGroupNames(consumerGroupNames);
@@ -147,8 +149,8 @@ public class MqClient {
                         }
                         mqContext.getConfigConsumerGroup().put(consumerGroup.getMeta().getName(),consumerGroup);
                         mqContext.getConsumerGroupVersion().put(consumerGroup.getMeta().getName(),0L);
-                        //注册成功的拦截器运行
-                        fireConsumerGroupRegisterEvent(consumerGroup);
+                        //注册成功的拦截器运行,可以加,为了代码精简,就没加了
+//                        fireConsumerGroupRegisterEvent(consumerGroup);
                     }
                     consumerPollingService=mqFactory.createConsumerPollingService();
                     consumerPollingService.start();
@@ -169,6 +171,28 @@ public class MqClient {
                 throw new RuntimeException(e);
             }
             return true;
+    }
+
+
+
+    private static void register() {
+        if(registerFlag.compareAndSet(false,true)){
+            ConsumerRegisterRequest request = new ConsumerRegisterRequest();
+            try {
+                request.setName(mqContext.getConsumerName());
+                request.setClientIp(mqContext.getConfig().getIp());
+                mqContext.setConsumerId(mqContext.getMqResource().register(request));
+                mqHeartbeatService = mqFactory.createMqHeartbeatService();
+                mqHeartbeatService.start();
+                log.info("ConsumerName:" + mqContext.getConsumerName() + " has registed,注册成功！consumerId 为"
+                        + mqContext.getConsumerId());
+                fireRegisterEvent();
+            }catch (Exception e){
+                registerFlag.set(false);
+                log.error("register_error, 注册失败:",JsonUtil.toJson(request));
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     /**
