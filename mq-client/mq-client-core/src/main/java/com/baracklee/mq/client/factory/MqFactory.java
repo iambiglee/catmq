@@ -2,6 +2,8 @@ package com.baracklee.mq.client.factory;
 
 import com.baracklee.mq.biz.dto.base.ConsumerQueueDto;
 import com.baracklee.mq.client.core.*;
+import com.baracklee.mq.client.core.impl.MqBrokerUrlRefreshService;
+import com.baracklee.mq.client.core.impl.MqMeticsReporterService;
 import com.baracklee.mq.client.resource.IMqResource;
 
 public class MqFactory implements IMqFactory{
@@ -32,7 +34,7 @@ public class MqFactory implements IMqFactory{
 
     @Override
     public IMqMeticsReporterService createMqMeticReporterService() {
-        return null;
+        return MqMeticsReporterService.getInstance();
     }
 
     @Override

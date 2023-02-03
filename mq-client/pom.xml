@@ -43,6 +43,11 @@
             <artifactId>mq-client-core</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.baracklee</groupId>
+            <artifactId>mq-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 
     </dependencyManagement>

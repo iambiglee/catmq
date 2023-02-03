@@ -232,4 +232,8 @@ public class MqClient {
             log.info("mq_client has inited");
         }
     }
+
+    public static IMqFactory getMqFactory() {
+        return mqFactory;
+    }
 }

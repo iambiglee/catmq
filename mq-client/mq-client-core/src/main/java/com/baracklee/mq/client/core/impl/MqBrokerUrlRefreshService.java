@@ -11,6 +11,7 @@ import com.baracklee.mq.client.resource.IMqResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -44,13 +45,14 @@ public class MqBrokerUrlRefreshService implements IMqBrokerUrlRefreshService {
             doUpdateBrokerUrls();
             executor = Executors.newScheduledThreadPool(1,
                     SoaThreadFactory.create("mq-brokerFreshService-pool-%d", Thread.MAX_PRIORITY - 1, true));        }
-        executor.execute(()->{
+        executor.scheduleAtFixedRate((()->{
             if(!isStop){
                 runStatus=true;
                 doUpdateBrokerUrls();
                 runStatus=false;
             }
-        },1,20, TimeUnit.SECONDS);
+        }),1,20, TimeUnit.SECONDS);
+
     }
 
     private void doUpdateBrokerUrls() {
@@ -65,8 +67,13 @@ public class MqBrokerUrlRefreshService implements IMqBrokerUrlRefreshService {
                 MqClient.getMqFactory().createMqMeticReporterService().start();
             }
         }
-
-
+        if(mqContext.getBrokerMetaMode()==1||mqContext.getBrokerMetaMode()==0&&mqContext.getConfig().isMetaMode()){
+            if(response.getBrokerIpG1()!=null){
+                mqContext.setBrokerUrls(response.getBrokerIpG1(),response.getBrokerIpG2());
+            }
+        }else if(mqContext.getBrokerMetaMode()==-1||mqContext.getConfig().isMetaMode()){
+            mqContext.setBrokerUrls(new ArrayList<>(),new ArrayList<>());
+        }
     }
 
     @Override
