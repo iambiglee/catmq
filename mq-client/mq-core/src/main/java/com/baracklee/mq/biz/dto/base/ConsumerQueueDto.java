@@ -4,7 +4,7 @@ public class ConsumerQueueDto extends ConsumerQueueVersionDto{
     private long queueId;
 
     private String originTopicName;
-     private int topicTyle;
+     private int topicType;
 
      private long topicId;
 
@@ -46,12 +46,12 @@ public class ConsumerQueueDto extends ConsumerQueueVersionDto{
         this.originTopicName = originTopicName;
     }
 
-    public int getTopicTyle() {
-        return topicTyle;
+    public int getTopicType() {
+        return topicType;
     }
 
-    public void setTopicTyle(int topicTyle) {
-        this.topicTyle = topicTyle;
+    public void setTopicType(int topicType) {
+        this.topicType = topicType;
     }
 
     public long getTopicId() {

@@ -6,5 +6,5 @@ import java.util.Map;
 
 public interface IMqGroupExecutorService extends IMqClientService{
     void rbOrUpdate(ConsumerGroupOneDto consumerGroupOne, String serverIp);
-    Map<Long, IMqQueueExcutorService> getQueueEx();
+    Map<Long, IMqQueueExecutorService> getQueueEx();
 }

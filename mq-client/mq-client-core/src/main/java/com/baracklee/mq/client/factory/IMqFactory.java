@@ -9,7 +9,7 @@ public interface IMqFactory {
 
     IMqCheckService createMqCheckService();
 
-    IMqGroupExecutorService createMqGroupExcutorService();
+    IMqGroupExecutorService createMqGroupExecutorService();
 
     IMqHeartbeatService createMqHeartbeatService();
 

@@ -56,3 +56,9 @@ setMetaMode 的具体业务逻辑是什么
 
  2023年2月3日
  com.baracklee.mq.client.core.impl.MqMetricsReporter.report , 对Metrics 的逻辑不是很懂
+
+ 2023年2月6日
+当前进度 8600/60000
+先写mqFactory 再写mqResource
+IMqQueueExcutorService 实现类没有去写
+MqHeartbeatService

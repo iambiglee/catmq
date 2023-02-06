@@ -3,7 +3,7 @@ package com.baracklee.mq.biz.dto.base;
 public class ConsumerGroupMetaDto {
     private String name;
 
-    private long reVersion;
+    private long rbVersion;
 
     private long metaVersion;
 
@@ -17,12 +17,12 @@ public class ConsumerGroupMetaDto {
         this.name = name;
     }
 
-    public long getReVersion() {
-        return reVersion;
+    public long getRbVersion() {
+        return rbVersion;
     }
 
-    public void setReVersion(long reVersion) {
-        this.reVersion = reVersion;
+    public void setRbVersion(long rbVersion) {
+        this.rbVersion = rbVersion;
     }
 
     public long getMetaVersion() {
