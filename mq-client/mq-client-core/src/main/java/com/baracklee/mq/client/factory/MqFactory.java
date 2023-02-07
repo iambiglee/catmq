@@ -2,10 +2,7 @@ package com.baracklee.mq.client.factory;
 
 import com.baracklee.mq.biz.dto.base.ConsumerQueueDto;
 import com.baracklee.mq.client.core.*;
-import com.baracklee.mq.client.core.impl.MqBrokerUrlRefreshService;
-import com.baracklee.mq.client.core.impl.MqCheckService;
-import com.baracklee.mq.client.core.impl.MqGroupExecutorService;
-import com.baracklee.mq.client.core.impl.MqMeticsReporterService;
+import com.baracklee.mq.client.core.impl.*;
 import com.baracklee.mq.client.resource.IMqResource;
 
 public class MqFactory implements IMqFactory{
@@ -41,7 +38,7 @@ public class MqFactory implements IMqFactory{
     }
 
     @Override
-    public IMqGroupExecutorService createMqGroupExecutorService() {
+    public MqGroupExecutorService createMqGroupExecutorService() {
         return new MqGroupExecutorService();
     }
 
@@ -49,7 +46,14 @@ public class MqFactory implements IMqFactory{
 
     @Override
     public IMqHeartbeatService createMqHeartbeatService() {
-        return null;
+        if (mqHeartbeatService==null){
+            synchronized (lockObj){
+                if(mqHeartbeatService==null){
+                    mqHeartbeatService=new MqHeartbeatService();
+                }
+            }
+        }
+        return mqHeartbeatService;
     }
 
     @Override
@@ -59,7 +63,7 @@ public class MqFactory implements IMqFactory{
 
     @Override
     public IMqQueueExecutorService createMqQueueExcutorService(String consumerGroupName, ConsumerQueueDto consumerQueue) {
-        return null;
+        return new MqQueueExcutorService(consumerGroupName, consumerQueue);
     }
 
     @Override
