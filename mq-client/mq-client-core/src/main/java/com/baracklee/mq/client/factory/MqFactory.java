@@ -63,7 +63,7 @@ public class MqFactory implements IMqFactory{
 
     @Override
     public IMqQueueExecutorService createMqQueueExcutorService(String consumerGroupName, ConsumerQueueDto consumerQueue) {
-        return new MqQueueExcutorService(consumerGroupName, consumerQueue);
+        return new MqQueueExecutorService(consumerGroupName, consumerQueue);
     }
 
     @Override
