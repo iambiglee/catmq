@@ -7,6 +7,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class BatchRecorder {
+    public Map<Long, BatchRecordItem> getRecordMap() {
+        return recordMap;
+    }
+
+    public void setRecordMap(Map<Long, BatchRecordItem> recordMap) {
+        this.recordMap = recordMap;
+    }
+
     Map<Long, BatchRecordItem> recordMap=new ConcurrentHashMap<>();
     //记录最小的线程编号
     private volatile long start=0L;

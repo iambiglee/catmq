@@ -1,9 +1,6 @@
 package com.baracklee.mq.client.event;
 
-import com.baracklee.mq.biz.event.IAsynSubscriberSelector;
-import com.baracklee.mq.biz.event.ISubscriberSelector;
-import com.baracklee.mq.biz.event.PostHandleListener;
-import com.baracklee.mq.biz.event.PreHandleListener;
+import com.baracklee.mq.biz.event.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,6 +18,15 @@ public class MqEvent {
     private IAsynSubscriberSelector iAsynSubscriberSelector = null;
     public List<Runnable> getInitCompleted() {
         return initCompleted;
+    }
+    private List<IMsgFilter> msgFilters = new ArrayList<>();
+
+    public List<IMsgFilter> getMsgFilters() {
+        return msgFilters;
+    }
+
+    public void setMsgFilters(List<IMsgFilter> msgFilters) {
+        this.msgFilters = msgFilters;
     }
 
     public ISubscriberSelector getiSubscriberSelector() {

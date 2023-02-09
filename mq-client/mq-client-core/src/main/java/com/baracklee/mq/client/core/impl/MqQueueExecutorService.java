@@ -6,25 +6,28 @@ import com.baracklee.mq.biz.common.util.Util;
 import com.baracklee.mq.biz.dto.base.ConsumerQueueDto;
 import com.baracklee.mq.biz.dto.base.ConsumerQueueVersionDto;
 import com.baracklee.mq.biz.dto.base.MessageDto;
+import com.baracklee.mq.biz.dto.client.PublishMessageRequest;
 import com.baracklee.mq.biz.dto.client.PullDataRequest;
 import com.baracklee.mq.biz.dto.client.PullDataResponse;
 import com.baracklee.mq.biz.event.IAsynSubscriber;
+import com.baracklee.mq.biz.event.IMsgFilter;
 import com.baracklee.mq.biz.event.ISubscriber;
 import com.baracklee.mq.client.MqClient;
 import com.baracklee.mq.client.MqContext;
 import com.baracklee.mq.client.core.IMqQueueExecutorService;
 import com.baracklee.mq.client.core.impl.queueutils.BatchRecorder;
+import com.baracklee.mq.client.dto.BatchRecordItem;
 import com.baracklee.mq.client.dto.TraceMessageDto;
 import com.baracklee.mq.client.resource.IMqResource;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -62,6 +65,8 @@ public class MqQueueExecutorService implements IMqQueueExecutorService {
     // public volatile boolean timeOutFlag = true;
     private AtomicInteger timeOutCount = new AtomicInteger(0);
     private AtomicInteger taskCounter = new AtomicInteger(0);
+
+    private Object lockObject = new Object();
 
 
     @Override
@@ -121,7 +126,26 @@ public class MqQueueExecutorService implements IMqQueueExecutorService {
         if(startThread>temp.getThreadSize()){
             startThread=temp.getThreadSize();
         }
-        if(batchRecorder.)
+        if(batchRecorder.getRecordMap().size()>200){
+            log.error("消息堆积:{}",slowMsgMap.size());
+        }
+        long batchRecordId=batchRecorder.begin(startThread);
+        CountDownLatch countDownLatch = new CountDownLatch(startThread);
+        batchExecute(temp,msgSize,startThread,batchRecordId,countDownLatch);
+        try {
+            countDownLatch.await();
+        } catch (InterruptedException ignore) {
+
+        }finally {
+            countDownLatch.countDown();
+        }
+    }
+
+    private void batchExecute(ConsumerQueueDto temp, int msgSize, int startThread, long batchRecordId, CountDownLatch countDownLatch) {
+        for (int i = 0; i < startThread; i++) {
+            if(executor!=null)
+                executor.execute(new MsgThread(temp,batchRecordId,countDownLatch,timeOutCount,isRunning,));
+        }
     }
 
     private long lastRefresh=System.currentTimeMillis();
@@ -293,4 +317,128 @@ public class MqQueueExecutorService implements IMqQueueExecutorService {
     public void stop() {
 
     }
+
+    public class Pair<T1, T2> {
+        public T1 item1;
+        public T2 item2;
+    }
+
+    protected long threadExcute(ConsumerQueueDto pre,CountDownLatch countDownLatch){
+        if(isRunning&&(iSubscriber!=null||iAsynSubscriber!=null)){
+            Map<Long, MessageDto> messageMap = new LinkedHashMap<>();
+            Pair<Long, Boolean> pair = prepareValue(pre, messageMap);
+            countDownLatch.countDown();
+            long maxId=pair.item1;
+            boolean flag= pair.item2;
+            if(messageMap.size()>0){
+                List<Long> failIds = invokeMessage(pre, messageMap);
+                List<Long> sucIds = new ArrayList<>();
+                Map<Long,MessageDto> failMsg=getFailMsg(pre,failIds,sucIds,messageMap);
+                failAlarm(failMsg,pre);
+                PublishMessageRequest failRequest = getFailMsgRequest(pre, new ArrayList<>(failMsg.values()));
+                publishAndUpdateResultFailMsg(failRequest, pre, sucIds);
+                return maxId;
+            }else {
+                if (flag){
+                    return maxId;
+                }
+            }
+        }else {
+            countDownLatch.countDown();
+        }
+        return 0;
+    }
+
+    private Pair<Long, Boolean> prepareValue(ConsumerQueueDto pre, Map<Long, MessageDto> messageMap) {
+        Pair<Long, Boolean> pair = new Pair<>();
+        long maxId = 0;
+        // boolean flag = false;
+        pair.item1 = 0L;
+        pair.item2 = false;
+        int count=0;
+        while (count<pre.getConsumerBatchSize()){
+            TraceMessageDto traceMessageDto = messages.poll();
+            if (isRunning&&traceMessageDto!=null&&checkOffsetVersion(pre)) {
+                slowMsgMap.put(traceMessageDto.getId(), traceMessageDto);
+                MessageDto dto = traceMessageDto.message;
+                if(onMsgFilter(dto)&&checkDealy(dto,pre)&&checkRetryCount(dto,pre)){
+                    dto.setTopicName(pre.getOriginTopicName());
+                    dto.setConsumerGroupName(pre.getConsumerGroupName());
+                    messageMap.put(dto.getId(),dto);
+                }
+                maxId=maxId<dto.getId()?dto.getId():maxId;
+                pair.item1=maxId;
+                pair.item2=true;
+            }
+            count++;
+        }
+    return pair;
+    }
+    // 检查是否需要延迟执行，注意需要保证服务器时间与消费机器本地时间不一致的问题,为了减轻服务器数据库的压力，需要假定数据库时间是同步的
+    protected boolean checkDelay(MessageDto messageDto, ConsumerQueueDto temp) {
+        if (temp.getDelayProcessTime() > 0) {
+            long delta = messageDto.getSendTime().getTime() + temp.getDelayProcessTime() * 1000
+                    - System.currentTimeMillis();
+            if (delta > 0) {
+                Util.sleep((int) delta);
+                log.info("topic:" + temp.getTopicName() + "延迟" + delta + "毫秒");
+            }
+        }
+        return true;
+    }
+    private boolean onMsgFilter(MessageDto messageDto) {
+        List<IMsgFilter> msgFilters = mqContext.getMqEvent().getMsgFilters();
+        boolean flag = true;
+        for (IMsgFilter msgFilter : msgFilters) {
+            try {
+                flag = msgFilter.onMsgFilter(messageDto);
+                if (!flag) {
+                    return false;
+                }
+            } catch (Exception e) {
+
+            }
+        }
+        return true;
+    }
+    public class MsgThread implements Runnable{
+        private long batchRecorderId;
+        private ConsumerQueueDto pre;
+        private CountDownLatch countDownLatch;
+        private AtomicInteger timeOutCount;
+
+        public MsgThread(ConsumerQueueDto pre, long batchRecorderId, CountDownLatch countDownLatch,
+                         AtomicInteger timeOutCount) {
+            this.batchRecorderId = batchRecorderId;
+            this.pre = pre;
+            this.countDownLatch = countDownLatch;
+            this.timeOutCount = timeOutCount;
+        }
+        @Override
+        public void run() {
+            this.timeOutCount.incrementAndGet();
+            taskCounter.incrementAndGet();
+            BatchRecordItem batchRecorderItem = null;
+            long maxId = 0;
+            try {
+                if (isRunning && checkOffsetVersion(pre)) {
+                    maxId = threadExcute(pre, countDownLatch);
+                    updateOffset(pre, maxId);
+                } else {
+                    countDownLatch.countDown();
+                }
+            } catch (Throwable e) {
+                log.error("", e);
+            }
+            synchronized (lockObject) {
+                batchRecorderItem = batchRecorder.end(batchRecorderId, maxId);
+                if (batchRecorderItem != null) {
+                    doCommit(pre, batchRecorderItem);
+                }
+            }
+            this.timeOutCount.decrementAndGet();
+            taskCounter.decrementAndGet();
+        }
+    }
+
 }
