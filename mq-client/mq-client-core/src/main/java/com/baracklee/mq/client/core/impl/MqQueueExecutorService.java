@@ -1,14 +1,14 @@
 package com.baracklee.mq.client.core.impl;
 
 import com.baracklee.mq.biz.common.trace.TraceMessage;
+import com.baracklee.mq.biz.common.trace.TraceMessageItem;
 import com.baracklee.mq.biz.common.util.JsonUtil;
 import com.baracklee.mq.biz.common.util.Util;
 import com.baracklee.mq.biz.dto.base.ConsumerQueueDto;
 import com.baracklee.mq.biz.dto.base.ConsumerQueueVersionDto;
 import com.baracklee.mq.biz.dto.base.MessageDto;
-import com.baracklee.mq.biz.dto.client.PublishMessageRequest;
-import com.baracklee.mq.biz.dto.client.PullDataRequest;
-import com.baracklee.mq.biz.dto.client.PullDataResponse;
+import com.baracklee.mq.biz.dto.base.ProducerDataDto;
+import com.baracklee.mq.biz.dto.client.*;
 import com.baracklee.mq.biz.event.IAsynSubscriber;
 import com.baracklee.mq.biz.event.IMsgFilter;
 import com.baracklee.mq.biz.event.ISubscriber;
@@ -16,20 +16,21 @@ import com.baracklee.mq.client.MqClient;
 import com.baracklee.mq.client.MqContext;
 import com.baracklee.mq.client.core.IMqQueueExecutorService;
 import com.baracklee.mq.client.core.impl.queueutils.BatchRecorder;
+import com.baracklee.mq.client.core.impl.queueutils.MessageInvokeCommandForThreadIsolation;
 import com.baracklee.mq.client.dto.BatchRecordItem;
 import com.baracklee.mq.client.dto.TraceMessageDto;
 import com.baracklee.mq.client.resource.IMqResource;
+import org.apache.catalina.mbeans.MBeanUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class MqQueueExecutorService implements IMqQueueExecutorService {
@@ -335,6 +336,7 @@ public class MqQueueExecutorService implements IMqQueueExecutorService {
                 List<Long> sucIds = new ArrayList<>();
                 Map<Long,MessageDto> failMsg=getFailMsg(pre,failIds,sucIds,messageMap);
                 failAlarm(failMsg,pre);
+                //发送失败队列消息到服务端
                 PublishMessageRequest failRequest = getFailMsgRequest(pre, new ArrayList<>(failMsg.values()));
                 publishAndUpdateResultFailMsg(failRequest, pre, sucIds);
                 return maxId;
@@ -347,6 +349,95 @@ public class MqQueueExecutorService implements IMqQueueExecutorService {
             countDownLatch.countDown();
         }
         return 0;
+    }
+    protected void publishAndUpdateResultFailMsg(PublishMessageRequest failRequest, ConsumerQueueDto pre,
+                                                 List<Long> sucIds) {
+        FailMsgPublishAndUpdateResultRequest request = new FailMsgPublishAndUpdateResultRequest();
+        if (sucIds != null && sucIds.size() > 0) {
+            request.setIds(sucIds);
+        }
+        request.setQueueId(pre.getQueueId());
+        if (failRequest != null) {
+            request.setFailMsg(failRequest);
+        }
+        if ((sucIds != null && sucIds.size() > 0) || failRequest != null) {
+            mqResource.publishAndUpdateResultFailMsg(request);
+        }
+    }
+    private PublishMessageRequest getFailMsgRequest(ConsumerQueueDto pre, ArrayList<MessageDto> messageDtos) {
+        String failTopicName= String.format("%s_%s_fail", consumerGroupName, pre.getOriginTopicName());
+        List<MessageDto> messageDtos1 = new ArrayList<>(messageDtos.size());
+        messageDtos.forEach(messageDto->{
+            messageDto.setRetryCount(messageDto.getRetryCount()+1);
+            if(pre.getRetryCount()>=messageDto.getRetryCount()){
+                messageDtos1.add(messageDto);
+            }else {
+                log.error("当前消息达到了最大重试次数{},此条消息会丢失{}",pre.getRetryCount(),messageDto);
+            }
+        });
+        if(messageDtos1.size()>0) {
+            PublishMessageRequest request = new PublishMessageRequest();
+            request.setTopicName(failTopicName);
+            List<ProducerDataDto> msgsList=new ArrayList<>();
+            messageDtos1.forEach(t->{
+                ProducerDataDto dto=new ProducerDataDto();
+                BeanUtils.copyProperties(dto,t);
+                msgsList.add(dto);
+            });
+            request.setMsgs(msgsList);
+            if (!Util.isEmpty(mqContext.getConfig().getIp())) {
+                request.setClientIp(mqContext.getConfig().getIp());
+            }
+            return request;
+        }
+        return new PublishMessageRequest();
+    }
+
+    private void failAlarm(Map<Long, MessageDto> failMsg, ConsumerQueueDto pre) {
+        if(failMsg.size()>0){
+            failMsg.values().forEach(t1->{
+                failCount.incrementAndGet();
+            });
+        }else {
+            failCount.set(0);
+            failBeginTime=0L;
+        }
+    }
+
+    private Map<Long, MessageDto> getFailMsg(ConsumerQueueDto pre, List<Long> failIds, List<Long> sucIds, Map<Long, MessageDto> messageMap) {
+        Map<Long,MessageDto> messageMap1=new HashMap<>();
+        failIds.forEach(t1->{
+            messageMap1.put(t1,messageMap1.get(t1));
+        });
+        if(pre.getTopicType()==2){
+            messageMap.forEach((key, value) -> {
+                if (!messageMap1.containsKey(key)) {
+                    sucIds.add(key);
+                }
+            });
+        }
+        return messageMap1;
+    }
+
+    private List<Long> invokeMessage(ConsumerQueueDto pre, Map<Long, MessageDto> messageMap) {
+        List<Long> failIds = null;
+
+        try {
+            List<MessageDto> dtos = new ArrayList<>(messageMap.values());
+            failIds = doMessageReceived(dtos);
+        } finally {
+            if(failIds==null) failIds=new ArrayList<>();
+            messageMap.forEach((key, value) -> slowMsgMap.remove(key));
+        }
+        if (MqClient.getContext().getMqEvent().getPostHandleListener()!=null) {
+            MqClient.getContext().getMqEvent().getPostHandleListener().postHandle(pre,failIds.isEmpty());
+        }
+        return failIds;
+    }
+
+    private List<Long> doMessageReceived(List<MessageDto> dtos) {
+        return MessageInvokeCommandForThreadIsolation.invoke(dtos, iSubscriber, iAsynSubscriber,
+                consumerQueueRef.get());
     }
 
     private Pair<Long, Boolean> prepareValue(ConsumerQueueDto pre, Map<Long, MessageDto> messageMap) {
@@ -374,8 +465,13 @@ public class MqQueueExecutorService implements IMqQueueExecutorService {
         }
     return pair;
     }
+
+    private boolean checkRetryCount(MessageDto dto, ConsumerQueueDto pre) {
+        return pre.getTopicType()==1||(pre.getTopicType()==2||pre.getRetryCount()>dto.getRetryCount());
+    }
+
     // 检查是否需要延迟执行，注意需要保证服务器时间与消费机器本地时间不一致的问题,为了减轻服务器数据库的压力，需要假定数据库时间是同步的
-    protected boolean checkDelay(MessageDto messageDto, ConsumerQueueDto temp) {
+    protected boolean checkDealy(MessageDto messageDto, ConsumerQueueDto temp) {
         if (temp.getDelayProcessTime() > 0) {
             long delta = messageDto.getSendTime().getTime() + temp.getDelayProcessTime() * 1000
                     - System.currentTimeMillis();
@@ -438,6 +534,42 @@ public class MqQueueExecutorService implements IMqQueueExecutorService {
             }
             this.timeOutCount.decrementAndGet();
             taskCounter.decrementAndGet();
+        }
+    }
+
+    private void doCommit(ConsumerQueueDto temp, BatchRecordItem batchRecorderItem) {
+        doCommit(temp, batchRecorderItem, false);
+    }
+
+    private ConsumerQueueVersionDto consumerQueueVersionDto = new ConsumerQueueVersionDto();
+    private AtomicLong commitVersion = new AtomicLong(0);
+    private volatile long hasCommitVersion = 0;
+    private long lastCommitTime = System.currentTimeMillis();
+
+    private void doCommit(ConsumerQueueDto temp, BatchRecordItem batchRecorderItem,boolean flag) {
+        if (batchRecorderItem == null) return;
+        if ((iAsynSubscriber == null) && checkOffsetVersion(temp)) {
+            consumerQueueVersionDto.setOffset(batchRecorderItem.getMaxId());
+            consumerQueueVersionDto.setOffsetVersion(temp.getOffsetVersion());
+            consumerQueueVersionDto.setQueueOffsetId(temp.getQueueOffsetId());
+            consumerQueueVersionDto.setConsumerGroupName(temp.getConsumerGroupName());
+            consumerQueueVersionDto.setTopicName(temp.getTopicName());
+            commitVersion.incrementAndGet();
+            if (mqContext.getConfig().isSynCommit() || flag) {
+                CommitOffsetRequest request1 = new CommitOffsetRequest();
+                List<ConsumerQueueVersionDto> queueVersionDtos = new ArrayList<>();
+                request1.setQueueOffsets(queueVersionDtos);
+                queueVersionDtos.add(consumerQueueVersionDto);
+                TraceMessageItem item = new TraceMessageItem();
+                mqResource.commitOffset(request1);
+            }
+        }else {
+            log.error("提交偏移失败{}",temp.getOffsetVersion());
+        }
+    }
+    private void updateOffset(ConsumerQueueDto pre, long maxId) {
+        if(pre.getOffset()<maxId&&checkOffsetVersion(pre)){
+            pre.setOffset(maxId);
         }
     }
 

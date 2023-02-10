@@ -3,6 +3,7 @@ package com.baracklee.mq.client;
 import com.baracklee.mq.biz.common.thread.SoaThreadFactory;
 import com.baracklee.mq.biz.common.util.JsonUtil;
 import com.baracklee.mq.biz.common.util.Util;
+import com.baracklee.mq.biz.dto.base.MessageDto;
 import com.baracklee.mq.biz.dto.client.ConsumerGroupRegisterRequest;
 import com.baracklee.mq.biz.dto.client.ConsumerGroupRegisterResponse;
 import com.baracklee.mq.biz.dto.client.ConsumerRegisterRequest;
@@ -236,4 +237,5 @@ public class MqClient {
     public static IMqFactory getMqFactory() {
         return mqFactory;
     }
+
 }

@@ -4,6 +4,8 @@ public class ConsumerQueueDto extends ConsumerQueueVersionDto{
     private long queueId;
 
     private String originTopicName;
+
+    //1表示正常队列,2表示失败队列
      private int topicType;
 
      private long topicId;
