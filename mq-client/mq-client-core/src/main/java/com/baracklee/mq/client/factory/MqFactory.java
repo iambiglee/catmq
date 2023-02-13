@@ -68,7 +68,7 @@ public class MqFactory implements IMqFactory{
 
     @Override
     public IMqTopicQueueRefreshService createMqTopicQueueRefreshService() {
-        return null;
+        return MqTopicQueueRefreshService.getInstance();
     }
 
     @Override

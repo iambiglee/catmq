@@ -2,6 +2,7 @@ package com.baracklee.mq.client.core.impl;
 
 import com.baracklee.mq.client.MqClient;
 import com.baracklee.mq.client.core.IMqMeticsReporterService;
+import com.baracklee.mq.client.metic.MetricSingleton;
 import com.codahale.metrics.MetricFilter;
 
 import java.util.concurrent.TimeUnit;
@@ -24,7 +25,7 @@ public class MqMeticsReporterService implements IMqMeticsReporterService {
     }
 
     private MqMeticsReporterService(){
-        reporter=new MqMeticsReporter(MetricSingleton.getMetricRegistry(), "mq-client", MetricFilter.ALL,
+        reporter=new MqMetricsReporter(MetricSingleton.getMetricRegistry(), "mq-client", MetricFilter.ALL,
                 TimeUnit.MILLISECONDS, TimeUnit.MILLISECONDS, null, MqClient.getContext());
     }
 
