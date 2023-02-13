@@ -4,6 +4,7 @@ import com.baracklee.mq.biz.dto.base.ConsumerQueueDto;
 import com.baracklee.mq.client.core.*;
 import com.baracklee.mq.client.core.impl.*;
 import com.baracklee.mq.client.resource.IMqResource;
+import com.baracklee.mq.client.resource.MqResource;
 
 public class MqFactory implements IMqFactory{
 
@@ -71,14 +72,23 @@ public class MqFactory implements IMqFactory{
         return MqTopicQueueRefreshService.getInstance();
     }
 
+
+    private ConsumerPollingService consumerPollingService;
     @Override
     public IConsumerPollingService createConsumerPollingService() {
-        return null;
+        if(consumerPollingService==null){
+            synchronized (lockObj){
+                if(consumerPollingService==null){
+                    consumerPollingService=new ConsumerPollingService();
+                }
+            }
+        }
+        return consumerPollingService;
     }
 
     @Override
     public IMqResource createMqResource(String url, long connectionTimeOut, long readTimeOut) {
-        return null;
+        return new MqResource(url,connectionTimeOut,readTimeOut);
     }
 
     @Override
