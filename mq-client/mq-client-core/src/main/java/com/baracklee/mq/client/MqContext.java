@@ -1,6 +1,8 @@
 package com.baracklee.mq.client;
 
 import com.baracklee.mq.biz.dto.base.ConsumerGroupOneDto;
+import com.baracklee.mq.biz.event.IAsynSubscriber;
+import com.baracklee.mq.biz.event.ISubscriber;
 import com.baracklee.mq.client.config.ConsumerGroupVo;
 import com.baracklee.mq.client.event.MqEvent;
 import com.baracklee.mq.client.resource.IMqResource;
@@ -258,4 +260,21 @@ public class MqContext {
         lstGroup2 = brokerUrls2;
     }
 
+    public ISubscriber getSubscriber(String consumerGroupName, String originTopicName) {
+        ISubscriber rs=null;
+        if(mqEvent!=null&&mqEvent.getiSubscriberSelector()!=null){
+            rs=mqEvent.getiSubscriberSelector().getSubscriber(consumerGroupName,originTopicName);
+            if (rs!=null) return rs;
+        }
+        return rs;
+    }
+
+    public IAsynSubscriber getAsynSubscriber(String consumerGroupName, String originTopicName) {
+        IAsynSubscriber rs=null;
+        if(mqEvent!=null&&mqEvent.getiAsynSubscriberSelector()!=null){
+            rs=mqEvent.getiAsynSubscriberSelector().getSubscriber(consumerGroupName,originTopicName);
+            if(rs!=null) return rs;
+        }
+        return null;
+    }
 }

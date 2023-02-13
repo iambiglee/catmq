@@ -1,5 +1,7 @@
 package com.baracklee.mq.client.config;
 
+import com.baracklee.mq.biz.event.IAsynSubscriber;
+import com.baracklee.mq.biz.event.ISubscriber;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 

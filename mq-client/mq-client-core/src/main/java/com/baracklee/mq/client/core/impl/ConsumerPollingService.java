@@ -3,12 +3,14 @@ package com.baracklee.mq.client.core.impl;
 import com.baracklee.mq.biz.common.thread.SoaThreadFactory;
 import com.baracklee.mq.biz.common.trace.TraceFactory;
 import com.baracklee.mq.biz.common.trace.TraceMessage;
+import com.baracklee.mq.biz.common.util.JsonUtil;
 import com.baracklee.mq.biz.common.util.Util;
 import com.baracklee.mq.biz.dto.client.GetConsumerGroupRequest;
 import com.baracklee.mq.biz.dto.client.GetConsumerGroupResponse;
 import com.baracklee.mq.client.MqClient;
 import com.baracklee.mq.client.MqContext;
 import com.baracklee.mq.client.core.IConsumerPollingService;
+import com.baracklee.mq.client.core.IMqClientService;
 import com.baracklee.mq.client.core.IMqGroupExecutorService;
 import com.baracklee.mq.client.factory.IMqFactory;
 import com.baracklee.mq.client.resource.IMqResource;
@@ -26,7 +28,7 @@ public class ConsumerPollingService implements IConsumerPollingService {
     private Logger log = LoggerFactory.getLogger(ConsumerPollingService.class);
     private ThreadPoolExecutor executor = null;
     private AtomicBoolean startFlag = new AtomicBoolean(false);
-    private Map<String, IMqGroupExcutorService> mqExcutors = new ConcurrentHashMap<>();
+    private Map<String, IMqGroupExecutorService> mqExcutors = new ConcurrentHashMap<>();
     private MqContext mqContext = null;
     private IMqResource mqResource;
     private IMqFactory mqFactory;
@@ -84,8 +86,35 @@ public class ConsumerPollingService implements IConsumerPollingService {
         }
     }
 
+    private void handleGroup(GetConsumerGroupResponse response) {
+        if(isStop) return;
+        if(response!=null){
+            mqContext.setBrokerMetaMode(response.getBrokerMetaMode());
+        }
+        if(response!=null&&response.getConsumerGroups()!=null&&response.getConsumerGroups().size()>0){
+            log.info("consumer_polling 获取到的最新消费者组为"+ JsonUtil.toJsonNull(response));
+            response.getConsumerGroups().forEach((key, value) -> {
+                if(!isStop){
+                    if(!mqExcutors.containsKey(key)){
+                        mqExcutors.put(key,mqFactory.createMqGroupExecutorService());
+                    }
+                    log.info("consumer_group_data_change,消费者组" + key + "发生重平衡或者meta更新");
+                    //重平衡基础的元数据
+                    mqExcutors.get(key).rbOrUpdate(value,response.getServerIp());
+                    mqContext.getConsumerGroupVersion().put(key,value.getMeta().getVersion());
+                }
+            });
+        }
+        mqExcutors.values().forEach(IMqClientService::start);
+    }
+
     @Override
     public void close() {
-
+        isStop=true;
+        mqExcutors.values().forEach(IMqClientService::close);
+        mqExcutors.clear();
+        executor.shutdown();
+        startFlag.set(false);
+        isStop=true;
     }
 }
