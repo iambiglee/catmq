@@ -3,16 +3,19 @@ package com.baracklee.mq.client;
 import com.baracklee.mq.biz.common.thread.SoaThreadFactory;
 import com.baracklee.mq.biz.common.util.JsonUtil;
 import com.baracklee.mq.biz.common.util.Util;
-import com.baracklee.mq.biz.dto.base.MessageDto;
 import com.baracklee.mq.biz.dto.client.ConsumerGroupRegisterRequest;
 import com.baracklee.mq.biz.dto.client.ConsumerGroupRegisterResponse;
 import com.baracklee.mq.biz.dto.client.ConsumerRegisterRequest;
+import com.baracklee.mq.biz.dto.client.PublishMessageRequest;
 import com.baracklee.mq.biz.event.PreHandleListener;
 import com.baracklee.mq.client.config.ClientConfigHelper;
 import com.baracklee.mq.client.config.ConsumerGroupVo;
-import com.baracklee.mq.client.core.IConsumerPollingService;
+import com.baracklee.mq.client.core.*;
+import com.baracklee.mq.client.core.impl.MqMeticsReporterService;
 import com.baracklee.mq.client.factory.IMqFactory;
 import com.baracklee.mq.client.factory.MqFactory;
+import com.baracklee.mq.client.resolver.ISubscriberResolver;
+import com.baracklee.mq.client.resource.IMqResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -37,12 +41,16 @@ public class MqClient {
 
     private static AtomicBoolean startFlag=new AtomicBoolean(false);
 
+    private static ISubscriberResolver subscriberResolver;
+
     private static ThreadPoolExecutor executor = new ThreadPoolExecutor(1, 5, 5L, TimeUnit.SECONDS,
             new ArrayBlockingQueue<>(50), SoaThreadFactory.create("MqClient", true),
             new ThreadPoolExecutor.CallerRunsPolicy());
     public static MqContext getContext() {
         return mqContext;
     }
+    private static BlockingQueue<PublishMessageRequest> msgsAsyn = null;
+
 
     public static MqEnvironment getMqEnvironment() {
         return mqEnvironment;
@@ -51,6 +59,15 @@ public class MqClient {
     private static IMqFactory mqFactory = new MqFactory();
 
     private static IConsumerPollingService consumerPollingService = null;
+
+    private static IMqBrokerUrlRefreshService mqBrokerUrlRefreshService;
+    private static IMqHeartbeatService mqHeartbeatService;
+    private static IMqCheckService mqCheckService;
+
+    private static IMqCommitService mqCommitService;
+
+
+
 
 
     public static void setMqEnvironment(MqEnvironment mqEnvironment) {
@@ -236,6 +253,62 @@ public class MqClient {
 
     public static IMqFactory getMqFactory() {
         return mqFactory;
+    }
+
+    public static void close(){
+        try {
+            doPublishAsyn();
+            if (consumerPollingService != null) {
+                consumerPollingService.close();
+                consumerPollingService = null;
+            }
+            if(mqCommitService!=null){
+                mqCommitService.close();
+                mqCommitService = null;
+            }
+            // ConsumerPollingService.getInstance().close();
+            deRegister();
+            if (mqBrokerUrlRefreshService != null) {
+                mqBrokerUrlRefreshService.close();
+                mqBrokerUrlRefreshService = null;
+            }
+            // MqBrokerUrlRefreshService.getInstance().close();
+            if (mqCheckService != null) {
+                mqCheckService.close();
+                mqCheckService = null;
+            }
+            // MqCheckService.getInstance().close();
+            if (mqHeartbeatService != null) {
+                mqHeartbeatService.close();
+                mqHeartbeatService = null;
+            }
+            // MqHeartbeatService.getInstance().close();
+            MqMeticsReporterService.getInstance().close();
+            mqContext.clear();
+            // initFlag.set(false);
+            registerFlag.set(false);
+            startFlag.set(false);
+            // asynFlag.set(false);
+            mqFactory = new MqFactory();
+        } catch (Throwable e) {
+            log.error("Mq_Client:",e);
+        }
+    }
+
+    private static void doPublishAsyn() {
+        long startTime=System.currentTimeMillis();
+        while (msgsAsyn!=null&&!msgsAsyn.isEmpty()){
+            PublishMessageRequest request=null;
+            request=msgsAsyn.poll();
+            if (request!=null){
+                publish(request,mqContext.getConfig().getPbRetryTimes());
+            }
+        }
+    }
+
+    private static boolean publish(PublishMessageRequest request, int pbRetryTimes) {
+        IMqResource resource = mqContext.getMqBakResource();
+        return mqContext.getMqResource().publish(request,pbRetryTimes);
     }
 
 }
