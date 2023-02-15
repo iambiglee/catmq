@@ -19,8 +19,6 @@ public interface IMqResource {
 
     GetGroupTopicResponse getGroupTopic(GetGroupTopicRequest request);
 
-    void addCat(CatRequest request);
-
     boolean publish(PublishMessageRequest request, int retryTimes);
 
     boolean publish(PublishMessageRequest request);

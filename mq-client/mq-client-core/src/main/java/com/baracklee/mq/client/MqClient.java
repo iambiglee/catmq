@@ -102,7 +102,7 @@ public class MqClient {
         return false;
     }
 
-    private static void registerConsumerGroup() {
+    private static boolean registerConsumerGroup() {
         Map<String, ConsumerGroupVo> localConfig = new ClientConfigHelper(mqContext).getConfig();
         return registerConsumerGroup(localConfig);
     }
@@ -116,7 +116,7 @@ public class MqClient {
             log.warn("异步初始化系统");
             executor.execute(()->{
                 try {
-                    return doRegisterConsumerGroup(groups);
+                     doRegisterConsumerGroup(groups);
                 } catch (Throwable e) {
                     log.error("registerConsumerGroup",e);
                 }
@@ -209,6 +209,16 @@ public class MqClient {
                 registerFlag.set(false);
                 log.error("register_error, 注册失败:",JsonUtil.toJson(request));
                 throw new RuntimeException(e);
+            }
+        }
+    }
+
+    private static void fireRegisterEvent() {
+        for (Runnable runnable : mqContext.getMqEvent().getRegisterCompleted()) {
+            try {
+                runnable.run();
+            } catch (Exception e) {
+                log.error("fire_Register",e);
             }
         }
     }
