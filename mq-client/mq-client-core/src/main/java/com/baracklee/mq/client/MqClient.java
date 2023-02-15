@@ -1,12 +1,8 @@
 package com.baracklee.mq.client;
 
 import com.baracklee.mq.biz.common.thread.SoaThreadFactory;
-import com.baracklee.mq.biz.common.util.JsonUtil;
-import com.baracklee.mq.biz.common.util.Util;
-import com.baracklee.mq.biz.dto.client.ConsumerGroupRegisterRequest;
-import com.baracklee.mq.biz.dto.client.ConsumerGroupRegisterResponse;
-import com.baracklee.mq.biz.dto.client.ConsumerRegisterRequest;
-import com.baracklee.mq.biz.dto.client.PublishMessageRequest;
+import com.baracklee.mq.biz.common.util.*;
+import com.baracklee.mq.biz.dto.client.*;
 import com.baracklee.mq.biz.event.PreHandleListener;
 import com.baracklee.mq.client.config.ClientConfigHelper;
 import com.baracklee.mq.client.config.ConsumerGroupVo;
@@ -101,6 +97,33 @@ public class MqClient {
         }
         return false;
     }
+
+    public static boolean start(MqConfig config){
+        if(startFlag.compareAndSet(false,true)){
+            init(config);
+            registerConsumerGroup();
+            return true;
+        }
+        return false;
+    }
+
+    public static boolean start(String brokerUrl){
+        if(mqContext.getConfig()!=null){
+            MqConfig config=new MqConfig();
+            config.setIp(IPUtil.getLocalIP());
+            config.setMetaMode(true);
+            config.setServerPort("");
+            config.setUrl(brokerUrl);
+            mqContext.setConfig(config);
+        }else {
+            if(Util.isEmpty(mqContext.getConfig().getUrl())){
+                mqContext.getConfig().setUrl(brokerUrl);
+            }
+        }
+        return start(mqContext.getConfig());
+    }
+
+
 
     private static boolean registerConsumerGroup() {
         Map<String, ConsumerGroupVo> localConfig = new ClientConfigHelper(mqContext).getConfig();
@@ -261,6 +284,32 @@ public class MqClient {
         }
     }
 
+    private static void fireInitEvent() {
+        for (Runnable runnable : mqContext.getMqEvent().getInitCompleted()) {
+            try {
+                runnable.run();
+            } catch (Exception e) {
+                log.error("fireInitEvent_error",e);
+            }
+        }
+    }
+
+    private static void doInit(MqConfig config) {
+        mqContext.setConsumerName(
+                ConsumerUtil.getConsumerId(config.getIp(), PropUtil.getProcessId()+"",config.getServerPort()));
+
+        if(mqContext.getMqResource()==null){
+            mqContext.setMqResource(
+                    getMqFactory().createMqResource(config.getUrl(), config.getReadTimeOut(), config.getReadTimeOut()));
+        }
+        mqContext.setConfig(config);
+        if(msgsAsyn==null){
+            msgsAsyn=new ArrayBlockingQueue<>(config.getAsynCapacity());
+        }
+        mqBrokerUrlRefreshService=mqFactory.createMqBrokerUrlRefreshService();
+        mqBrokerUrlRefreshService.start();
+    }
+
     public static IMqFactory getMqFactory() {
         return mqFactory;
     }
@@ -276,32 +325,36 @@ public class MqClient {
                 mqCommitService.close();
                 mqCommitService = null;
             }
-            // ConsumerPollingService.getInstance().close();
             deRegister();
             if (mqBrokerUrlRefreshService != null) {
                 mqBrokerUrlRefreshService.close();
                 mqBrokerUrlRefreshService = null;
             }
-            // MqBrokerUrlRefreshService.getInstance().close();
             if (mqCheckService != null) {
                 mqCheckService.close();
                 mqCheckService = null;
             }
-            // MqCheckService.getInstance().close();
             if (mqHeartbeatService != null) {
                 mqHeartbeatService.close();
                 mqHeartbeatService = null;
             }
-            // MqHeartbeatService.getInstance().close();
             MqMeticsReporterService.getInstance().close();
             mqContext.clear();
-            // initFlag.set(false);
             registerFlag.set(false);
             startFlag.set(false);
-            // asynFlag.set(false);
             mqFactory = new MqFactory();
         } catch (Throwable e) {
             log.error("Mq_Client:",e);
+        }
+    }
+
+    private static void deRegister() {
+        if(mqContext.getConsumerId()>0){
+            ConsumerDeRegisterRequest request = new ConsumerDeRegisterRequest();
+            request.setId(mqContext.getConsumerId());
+            mqContext.getMqResource().deRegister(request);
+            mqContext.setConsumerId(0);
+            log.info("ConsumerName:{} logout success, 注销成功",mqContext.getConsumerName());
         }
     }
 
@@ -320,5 +373,6 @@ public class MqClient {
         IMqResource resource = mqContext.getMqBakResource();
         return mqContext.getMqResource().publish(request,pbRetryTimes);
     }
+
 
 }
