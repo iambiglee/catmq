@@ -32,7 +32,7 @@ public class MqClient {
 
     private static MqContext mqContext = new MqContext();
     private static MqEnvironment mqEnvironment=null;
-    private static Object lockObj = new Object();
+    private static final Object lockObj = new Object();
     private static AtomicBoolean registerFlag = new AtomicBoolean(false);
 
     private static AtomicBoolean startFlag=new AtomicBoolean(false);
