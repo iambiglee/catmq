@@ -4,7 +4,6 @@ import com.baracklee.mq.biz.event.*;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 public class MqEvent {
 
@@ -20,6 +19,15 @@ public class MqEvent {
         return initCompleted;
     }
     private List<IMsgFilter> msgFilters = new ArrayList<>();
+    private List<PreSendListener> preSendListeners = new ArrayList<>();
+
+    public List<PreSendListener> getPreSendListeners() {
+        return preSendListeners;
+    }
+
+    public void setPreSendListeners(List<PreSendListener> preSendListeners) {
+        this.preSendListeners = preSendListeners;
+    }
 
     public List<IMsgFilter> getMsgFilters() {
         return msgFilters;

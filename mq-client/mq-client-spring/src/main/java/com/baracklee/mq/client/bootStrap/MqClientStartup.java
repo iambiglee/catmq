@@ -128,6 +128,131 @@ public class MqClientStartup {
         setPublishAsynTimeout();
     }
 
+    private static void setPublishAsynTimeout() {
+        String publishAsynTimeout = System.getProperty("mq.publish.asyn.timeout", env.getProperty("mq.publish.asyn.timeout", "1000"));
+        if (!publishAsynTimeout.equals(publishAsynTimeout1)) {
+            try {
+                publishAsynTimeout1 = publishAsynTimeout;
+                int publishAsynTimeout2 = Integer.parseInt(publishAsynTimeout);
+                MqClient.getContext().getConfig().setPublishAsynTimeout(publishAsynTimeout2);
+            } catch (Exception e) {
+                logger.error("setPublishAsynTimeout_error", e);
+            }
+
+        }
+    }
+
+    private static void setWarnTimeout() {
+        String warnTimeout = System.getProperty("mq.msg.warn.timeout",
+                env.getProperty("mq.msg.warn.timeout", "300"));
+        if (!warnTimeout.equals(warnTimeout1)) {
+            try {
+                warnTimeout1 = warnTimeout;
+                int warnTimeout2 = Integer.parseInt(warnTimeout);
+                MqClient.getContext().getConfig().setWarnTimeout(warnTimeout2);
+            } catch (Exception e) {
+                logger.error("setPublishAsynTimeout_error", e);
+            }
+
+        }
+    }
+    {
+        String commitFlag = System.getProperty("mq.client.commit.syn.flag",
+                env.getProperty("mq.client.commit.syn.flag", "false"));
+        if (!commitFlag1.equals(commitFlag)) {
+            try {
+                commitFlag1 = commitFlag;
+                MqClient.getContext().getConfig().setSynCommit("true".equalsIgnoreCase(commitFlag));
+            } catch (Exception e) {
+                logger.error("setCommit_error", e);
+            }
+        }
+
+        String commitInterval = System.getProperty("mq.client.commit.asyn.interval",
+                env.getProperty("mq.client.commit.asyn.interval", "500"));
+        if (!commitInterval1.equals(commitInterval)) {
+            try {
+                commitInterval1 = commitInterval;
+                long commitInterval2 = Long.parseLong(commitInterval);
+                if (commitInterval2 < 300) {
+                    commitInterval2 = 300;
+                }
+                MqClient.getContext().getConfig().setAynCommitInterval(commitInterval2);
+            } catch (Exception e) {
+                logger.error("setCommit_error", e);
+            }
+        }
+    }
+
+    /**
+     * 设置同步还是异步提交
+     */
+    private static void setCommit() {
+        String commitFlag = System.getProperty("mq.client.commit.syn.flag",
+                env.getProperty("mq.client.commit.syn.flag", "false"));
+        if (!commitFlag1.equals(commitFlag)) {
+            try {
+                commitFlag1 = commitFlag;
+                MqClient.getContext().getConfig().setSynCommit("true".equalsIgnoreCase(commitFlag));
+            } catch (Exception e) {
+                logger.error("setCommit_error", e);
+            }
+        }
+
+        String commitInterval = System.getProperty("mq.client.commit.asyn.interval",
+                env.getProperty("mq.client.commit.asyn.interval", "500"));
+        if (!commitInterval1.equals(commitInterval)) {
+            try {
+                commitInterval1 = commitInterval;
+                long commitInterval2 = Long.parseLong(commitInterval);
+                if (commitInterval2 < 300) {
+                    commitInterval2 = 300;
+                }
+                MqClient.getContext().getConfig().setAynCommitInterval(commitInterval2);
+            } catch (Exception e) {
+                logger.error("setCommit_error", e);
+            }
+        }
+    }
+
+    private static void setPullDeltaTime() {
+        try {
+            String pullDeltaTime = System.getProperty("mq.pull.time.delta",
+                    env.getProperty("mq.pull.time.delta", "150"));
+            properties.put("mq.pull.time.delta", pullDeltaTime);
+            if (!pullDeltaTime1.equals(pullDeltaTime)) {
+                pullDeltaTime1 = pullDeltaTime;
+                int pullDeltaTime2 = Integer.parseInt(pullDeltaTime);
+                if (MqClient.getContext() != null
+                        && MqClient.getContext().getConfig().getPullDeltaTime() != pullDeltaTime2) {
+                    MqClient.getContext().getConfig().setPullDeltaTime(pullDeltaTime2);
+                }
+            }
+        } catch (Exception e) {
+            logger.error("setPullDeltaTime_error", e);
+        }
+
+    }
+
+    private static void setMetaMode() {
+        String metaMode1 = System.getProperty("mq.broker.metaMode", env.getProperty("mq.broker.metaMode", "true"));
+        try {
+            if("true".equals(metaMode1)||"false".equals(metaMode1)){
+                properties.put("mq.broker.metaMode",metaMode1);
+                if (!metaMode1.equals(metaMode)){
+                    metaMode=metaMode1;
+                    boolean mm =Boolean.parseBoolean(metaMode1);
+                    if (MqClient.getContext() != null && MqClient.getContext().getConfig().isMetaMode() != mm) {
+                        MqClient.getContext().getConfig().setMetaMode(mm);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            logger.error("setMetaMode_error",e);
+        }
+
+    }
+
     private static void setRbTimes() {
         String timesTemp = System.getProperty("mq.rb.times", env.getProperty("mq.rb.times", "4"));
         properties.put("mq.rb.times", timesTemp);

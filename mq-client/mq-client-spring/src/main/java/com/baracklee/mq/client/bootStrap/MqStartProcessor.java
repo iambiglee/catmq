@@ -27,7 +27,7 @@ public class MqStartProcessor implements BeanFactoryPostProcessor, EnvironmentAw
             if(initflag.compareAndSet(false,true)){
                 logger.info("消息客户端开始初始化！");
                 MqClient.setSubscriberResolver(new SubscriberResolver());
-                MqClientStartup.init(environment);
+                MqClientStartup.init(env);
                 logger.info("消息客户端初始化完成！");
             }
         }

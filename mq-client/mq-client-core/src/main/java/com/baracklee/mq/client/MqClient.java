@@ -2,12 +2,16 @@ package com.baracklee.mq.client;
 
 import com.baracklee.mq.biz.common.thread.SoaThreadFactory;
 import com.baracklee.mq.biz.common.util.*;
+import com.baracklee.mq.biz.dto.base.PartitionInfo;
+import com.baracklee.mq.biz.dto.base.ProducerDataDto;
 import com.baracklee.mq.biz.dto.client.*;
+import com.baracklee.mq.biz.event.IPartitionSelector;
 import com.baracklee.mq.biz.event.PreHandleListener;
 import com.baracklee.mq.client.config.ClientConfigHelper;
 import com.baracklee.mq.client.config.ConsumerGroupVo;
 import com.baracklee.mq.client.core.*;
 import com.baracklee.mq.client.core.impl.MqMeticsReporterService;
+import com.baracklee.mq.client.core.impl.MqTopicQueueRefreshService;
 import com.baracklee.mq.client.factory.IMqFactory;
 import com.baracklee.mq.client.factory.MqFactory;
 import com.baracklee.mq.client.resolver.ISubscriberResolver;
@@ -15,10 +19,7 @@ import com.baracklee.mq.client.resource.IMqResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -90,6 +91,26 @@ public class MqClient {
             getContext().getMqEvent().setPreHandleListener(preHandleListener1);
         }
     }
+
+    private static AtomicBoolean restartFlag = new AtomicBoolean(false);
+
+    public static void reStart(){
+        if(restartFlag.compareAndSet(false,true)){
+            executor.submit(new Runnable() {
+                @Override
+                public void run() {
+                    Map<String, ConsumerGroupVo> config = mqContext.getOrignConfig();
+                    close();
+                        register();
+                    if(config!=null&&config.size()>0){
+                        registerConsumerGroup(config);
+                    }
+                    restartFlag.set(false);
+                }
+            });
+        }
+    }
+
 
     public static boolean start() {
         if (startFlag.compareAndSet(false, true)) {
@@ -276,7 +297,7 @@ public class MqClient {
         return flag;
     }
 
-    private static void init(MqConfig config) {
+    public static void init(MqConfig config) {
         if(initFlag.compareAndSet(false,true)){
             doInit(config);
             fireInitEvent();
@@ -348,6 +369,9 @@ public class MqClient {
         }
     }
 
+
+
+
     private static void deRegister() {
         if(mqContext.getConsumerId()>0){
             ConsumerDeRegisterRequest request = new ConsumerDeRegisterRequest();
@@ -374,5 +398,70 @@ public class MqClient {
         return mqContext.getMqResource().publish(request,pbRetryTimes);
     }
 
+    public static boolean publish(final String topic, final String token, ProducerDataDto message){
+        return publish(topic,token, Arrays.asList(message));
+    }
+
+    public static boolean publish(final String topic, final String token, List<ProducerDataDto> messages){
+        return publish(topic,token,messages,null);
+    }
+
+    /**
+     * 生产者发布消息到消息队列中
+     * @param topic 消费队列的队列名字
+     * @param token 使用API访问的token
+     * @param message 发布到消息队列的类
+     * @param iPartitionSelector 可以指定你想要消费队列的名字
+     * @return true false
+     */
+    public static boolean publish(String topic, String token, List<ProducerDataDto> message,
+                                  IPartitionSelector iPartitionSelector){
+        if(!hasInit()){return false;}
+        PublishMessageRequest request=new PublishMessageRequest();
+        if(message!=null&&message.size()>0){
+            for (ProducerDataDto dataDto : message) {
+                if(checkMessageExcessed65535(dataDto.getBody())) return false;
+                dataDto.setPartitionInfo(getPartitionId(topic,dataDto,iPartitionSelector));
+            }
+            request.setClientIp(mqContext.getConfig().getIp());
+            request.setToken(token);
+            request.setTopicName(topic);
+            request.setMsgs(message);
+            //检查是否有发送前的拦截器
+            checkBody(message);
+            return publish(request,mqContext.getConfig().getPbRetryTimes());
+        }
+return true;
+    }
+    private static void checkBody(List<ProducerDataDto> msgs) {
+        for (ProducerDataDto t1 : msgs) {
+            checkBody(t1);
+        }
+    }
+
+    public static void checkBody(ProducerDataDto producerDataDto) {
+        mqContext.getMqEvent().getPreSendListeners().forEach(t1 -> {
+            try {
+                t1.onPreSend(producerDataDto);
+            } catch (Exception e) {
+                log.error("onPreSend_error", e);
+            }
+        });
+    }
+
+    private static PartitionInfo getPartitionId(String topic, ProducerDataDto dataDto, IPartitionSelector iPartitionSelector) {
+        if(iPartitionSelector!=null&&Util.isEmpty(topic)){
+            PartitionInfo partitionId = iPartitionSelector.getPartitionId(topic, dataDto, MqTopicQueueRefreshService.getInstance().getTopicQueueIds(topic));
+            return partitionId;
+        }
+        return null;
+    }
+
+    private static boolean checkMessageExcessed65535(String value) {
+        if (Util.isEmpty(value)) {
+            return false;
+        }
+        return value.getBytes().length > 65535;
+    }
 
 }

@@ -1,5 +1,6 @@
 package com.baracklee.mq.client.bootStrap;
 
+import com.baracklee.mq.client.MqClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationListener;
