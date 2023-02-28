@@ -46,6 +46,7 @@ com.baracklee.mq.biz.service.impl.ConsumerGroupTopicServiceImpl.createConsumerGr
 总是写这种代码层的信息，我可能也没有太多的时间，我的下一步应该更多的放在一个业务功能的主题逻辑上，各个抽象变量的更新只上，代码了解这种设计，背后写法的原因，而不是拘泥于CURD怎么写。不过，这个确实也很需要时间
 
 执行命令find . -name "*.java" |xargs wc -l
+find . -name "*.java" |grep -v Test.java| xargs grep -v "^$" | wc -l
  当前进度 7269/60000 20230128
 
 /home/barack/develop/java/pmq/mq-client/mq-client-spring/src/main/java/com/ppdai/infrastructure/mq/client/bootstrap/MqClientStartup.java
@@ -71,5 +72,13 @@ MqHeartbeatService
 2023年2月13日
 当前进度 13000/60000
 
+日期
+2023年2月13日
+当前进度 13800/60000
+
+
 2023年2月21日
 搞懂metadata 几个字符是什么意思
+
+2023年2月28日
+14500/50000
