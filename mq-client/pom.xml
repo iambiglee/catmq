@@ -11,6 +11,7 @@
         <module>mq-client-core</module>
         <module>mq-core</module>
         <module>mq-client-spring</module>
+        <module>mq-client-springboot</module>
     </modules>
 
     <properties>
@@ -34,7 +35,7 @@
             <version>3.9.1</version>
         </dependency>
         <dependency>
-            <groupId>com.ppdai.infrastructure</groupId>
+            <groupId>com.baracklee</groupId>
             <artifactId>mq-client-spring</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -46,6 +47,12 @@
         <dependency>
             <groupId>com.baracklee</groupId>
             <artifactId>mq-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.baracklee</groupId>
+            <artifactId>mq-client-springboot</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>

@@ -11,6 +11,7 @@
     <modules><module>mq-client</module>
         <module>mq-rest</module>
         <module>mq-biz</module>
+
     </modules>
 
     <properties>
