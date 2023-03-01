@@ -82,3 +82,6 @@ MqHeartbeatService
 
 2023年2月28日
 14500/50000
+
+2023年3月1日
+com.baracklee.mq.biz.service.impl.ConsumerGroupServiceImpl.doDelete

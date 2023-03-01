@@ -1,6 +1,7 @@
 package com.baracklee.mq.biz.service;
 
 
+import com.baracklee.mq.biz.dto.response.ConsumerGroupDeleteResponse;
 import com.baracklee.mq.biz.entity.ConsumerGroupEntity;
 import com.baracklee.mq.biz.entity.ConsumerGroupTopicEntity;
 import com.baracklee.mq.biz.entity.QueueOffsetEntity;
@@ -28,4 +29,8 @@ public interface ConsumerGroupService extends BaseService<ConsumerGroupEntity> {
     void addTopicNameToConsumerGroup(ConsumerGroupTopicEntity consumerGroupTopicEntity);
 
     void notifyMeta(Long consumerGroupId);
+
+    Map<Long, ConsumerGroupEntity> getIdCache();
+
+    ConsumerGroupDeleteResponse deleteConsumerGroup(Long consumerGroupId, boolean b);
 }

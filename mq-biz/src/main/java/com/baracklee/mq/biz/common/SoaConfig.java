@@ -154,4 +154,14 @@ public class SoaConfig {
     public void registerChanged(Runnable runnable) {
         changed.put(runnable,true);
     }
+
+    private final String env_getConsumerInactivityTime_key = "mq.consumer.inactivity.check.interval";
+    private final String env_getConsumerInactivityTime_defaultValue = "60";
+    private final String env_getConsumerInactivityTime_des = "一分钟无心跳，默认消费者下线";
+
+    public int getConsumerInactivityTime() {
+        // 默认一分钟
+        return Integer.parseInt(
+                env.getProperty(env_getConsumerInactivityTime_key, env_getConsumerInactivityTime_defaultValue));
+    }
 }

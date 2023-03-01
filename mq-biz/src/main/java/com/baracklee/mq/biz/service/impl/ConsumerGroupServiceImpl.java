@@ -2,8 +2,9 @@ package com.baracklee.mq.biz.service.impl;
 
 import com.baracklee.mq.biz.common.SoaConfig;
 import com.baracklee.mq.biz.dal.meta.ConsumerGroupRepository;
-
+import com.baracklee.mq.biz.dto.UserRoleEnum;
 import com.baracklee.mq.biz.dto.request.ConsumerGroupTopicCreateRequest;
+import com.baracklee.mq.biz.dto.response.ConsumerGroupDeleteResponse;
 import com.baracklee.mq.biz.entity.*;
 import com.baracklee.mq.biz.service.*;
 import com.baracklee.mq.biz.service.common.AbstractBaseService;
@@ -15,9 +16,7 @@ import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
-import java.awt.*;
 import java.util.*;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
@@ -262,6 +261,83 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
         notifyMessageEntity.setConsumerGroupId(id);
         notifyMessageEntity.setMessageType(MessageType.Meta);
         notifyMessageService.insert(notifyMessageEntity);
+    }
+
+    @Override
+    public Map<Long, ConsumerGroupEntity> getIdCache() {
+        Map<Long, ConsumerGroupEntity> rs = consumerGroupByIdRefMap.get();
+        if(rs.size()==0){
+            cacheLocal.lock();
+            try {
+                rs=consumerGroupByIdRefMap.get();
+                if (rs.size()==0){
+                    if (first.compareAndSet(true,false)){
+                        updateCache();
+                    }
+                    rs=consumerGroupByIdRefMap.get();
+                }
+            }finally {
+                cacheLocal.unlock();
+            }
+        }
+        return rs;
+    }
+
+    @Override
+    public ConsumerGroupDeleteResponse deleteConsumerGroup(Long consumerGroupId, boolean checkOnline) {
+        forceUpdateCache();
+        Map<String, ConsumerGroupEntity> cache = getCache();
+        ConsumerGroupEntity consumerGroupEntity = get(consumerGroupId);
+        if (consumerGroupEntity.getMode() == 2
+                && consumerGroupEntity.getOriginName().equals(consumerGroupEntity.getName())
+        ) {
+            for ( Map.Entry<String, ConsumerGroupEntity> key : cache.entrySet()) {
+                if(key.getValue()!=null){
+                    boolean mirroFlag = key.getValue().getOriginName().equals(consumerGroupEntity.getName())
+                            && key.getValue().getId() != consumerGroupEntity.getId();
+                    if(mirroFlag){
+                        return new ConsumerGroupDeleteResponse("1","存在镜像组,不能删除原始组");
+                    }
+                }
+
+            }
+        }
+
+
+        return doDelete(consumerGroupEntity,checkOnline);
+    }
+
+    /**
+     * 删除消费者组,广播模式专用
+     * 1. 检查是否权限
+     * 2. 检查是否正在消费
+     * 3. 删除偏移,队列,consumergroup
+     * 4. 通知重平衡
+     * @param consumerGroupEntity entity need delete
+     * @param checkOnline 是否online 过来
+     * @return result
+     */
+    private ConsumerGroupDeleteResponse doDelete(ConsumerGroupEntity consumerGroupEntity, boolean checkOnline) {
+        if (checkOnline) {
+            if (roleService.getRole(userInfoHolder.getUserId(), consumerGroupEntity.getOwnerIds()) >= UserRoleEnum.USER
+                    .getRoleCode()) {
+                throw new RuntimeException();
+            }
+        }
+        //正在消费的不能cancel
+        List<Long> consumerGroupIds = new ArrayList<>();
+        consumerGroupIds.add(consumerGroupEntity.getId());
+        if (checkOnline && consumerService.getConsumerGroupByConsumerGroupIds(consumerGroupIds).size() > 0) {
+            return new ConsumerGroupDeleteResponse("1", "有消费者正在消费，不能删除消费者组。");
+        }
+
+        List<String> failTopicNames = consumerGroupTopicService.getFailTopicNames(consumerGroupEntity.getId());
+        topicService.deleteFailTopic(failTopicNames,consumerGroupEntity.getId());
+        queueOffsetService.deleteByConsumerGroupId(consumerGroupEntity.getId());
+        consumerGroupTopicService.deleteByConsumerGroupId(consumerGroupEntity.getId());
+        delete(consumerGroupEntity.getId());
+        notifyMeta(consumerGroupEntity.getId());
+        return new ConsumerGroupDeleteResponse();
     }
 
     protected void updateMetaVersion(List<Long> ids) {

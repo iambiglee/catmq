@@ -23,4 +23,10 @@ public class ConsumerGroupConsumerServiceImpl extends AbstractBaseService<Consum
         if(CollectionUtils.isEmpty(consumerGroupIds)) return new ArrayList<>();
         return consumerGroupConsumerRepository.getByConsumerGroupIds(consumerGroupIds);
     }
+
+    @Override
+    public List<ConsumerGroupConsumerEntity> getByConsumerIds(List<Long> consumerIds) {
+        if(CollectionUtils.isEmpty(consumerIds)) return new ArrayList<>();
+        return consumerGroupConsumerRepository.getByConsumerGroupIds(consumerIds);
+    }
 }

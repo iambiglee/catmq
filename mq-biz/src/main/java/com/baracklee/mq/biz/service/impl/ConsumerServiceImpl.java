@@ -8,10 +8,7 @@ import com.baracklee.mq.biz.common.SoaConfig;
 import com.baracklee.mq.biz.common.util.Util;
 import com.baracklee.mq.biz.dal.meta.ConsumerRepository;
 import com.baracklee.mq.biz.dto.LogDto;
-import com.baracklee.mq.biz.dto.client.ConsumerGroupRegisterRequest;
-import com.baracklee.mq.biz.dto.client.ConsumerGroupRegisterResponse;
-import com.baracklee.mq.biz.dto.client.ConsumerRegisterRequest;
-import com.baracklee.mq.biz.dto.client.ConsumerRegisterResponse;
+import com.baracklee.mq.biz.dto.client.*;
 import com.baracklee.mq.biz.entity.ConsumerEntity;
 import com.baracklee.mq.biz.entity.ConsumerGroupConsumerEntity;
 import com.baracklee.mq.biz.entity.ConsumerGroupEntity;
@@ -19,6 +16,7 @@ import com.baracklee.mq.biz.entity.ConsumerGroupTopicEntity;
 import com.baracklee.mq.biz.service.*;
 import com.baracklee.mq.biz.service.common.AbstractBaseService;
 import com.baracklee.mq.client.MqClient;
+import com.sun.xml.internal.ws.policy.EffectiveAlternativeSelector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +27,7 @@ import org.springframework.util.StringUtils;
 
 import javax.annotation.Resource;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> implements ConsumerService {
@@ -89,6 +88,76 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
             return new ArrayList<>();
         }
         return consumerGroupConsumerService.getByConsumerGroupIds(consumerGroupIds);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ConsumerDeRegisterResponse deRegister(ConsumerDeRegisterRequest request) {
+        ConsumerDeRegisterResponse response = new ConsumerDeRegisterResponse();
+        response.setSuc(true);
+        if(request==null||request.getId()==0){
+            response.setSuc(false);
+            response.setMsg("ConsumerDeRegisterRequest 不能为空");
+            return response;
+        }
+        ConsumerEntity consumerEntity=get(request.getId());
+        if(consumerEntity!=null){
+            doDeleteConsumer(Arrays.asList(consumerEntity),1);
+        }
+        return response;
+    }
+
+    /**
+     * 下线消费者
+     * 触发重平衡
+     * @param consumers 消费者
+     * @param type 0 表示超时下线, 1表示系统下线
+     */
+    private boolean doDeleteConsumer(List<ConsumerEntity> consumers, int type) {
+        boolean result =false;
+        List<Long> consumerIds = consumers.stream().map(ConsumerEntity::getId).collect(Collectors.toList());
+        List<Long> consumerGroupIds = new ArrayList<>(10);
+        List<Long> broadConsumerGroupIds = new ArrayList<>(10);
+        List<ConsumerGroupConsumerEntity> consumerGroupConsumers = consumerGroupConsumerService
+                .getByConsumerIds(consumerIds);
+        //评估下来, 不需要做cache,直接搜索
+        Map<Long, ConsumerGroupEntity> consumerGroupMap = consumerGroupService.getIdCache();
+        Map<String, ConsumerGroupEntity> consumerGroupNameMap = consumerGroupService.getCache();
+
+        //判断是否是广播模式
+        for (ConsumerGroupConsumerEntity consumerGroupConsumer : consumerGroupConsumers) {
+            long consumerGroupId = consumerGroupConsumer.getConsumerGroupId();
+            ConsumerGroupEntity groupEntity = consumerGroupMap.get(consumerGroupId);
+
+            if (groupEntity!=null){
+                if (groupEntity.getMode()==2&&!groupEntity.getOriginName().equals(groupEntity.getName())){
+                    broadConsumerGroupIds.add(groupEntity.getId());
+                    consumerGroupId=consumerGroupNameMap.get(groupEntity.getOriginName()).getId();
+                }
+            }
+
+            consumerGroupIds.add(consumerGroupConsumer.getConsumerGroupId());
+            if(type==0){
+                log.warn("over{}s heart beats is unavailable, the consumer{} will be offline",
+                        soaConfig.getConsumerInactivityTime(),
+                        consumerGroupConsumer.getConsumerGroupId()+consumerGroupConsumer.getConsumerName());
+            }else if (type==1){
+                log.warn("the consumer{} will be offline",
+                        consumerGroupConsumer.getConsumerGroupId()+consumerGroupConsumer.getConsumerName());
+            }
+
+        }
+        deleteBroadConsumerGroup(broadConsumerGroupIds);
+        doDeleteConsumerIds(consumerGroupConsumers,consumerIds,consumerGroupIds);
+        result=true;
+        return result;
+    }
+
+    private void deleteBroadConsumerGroup(List<Long> broadConsumerGroupIds) {
+        if(CollectionUtils.isEmpty(broadConsumerGroupIds)) return;
+        for (Long consumerGroupId : broadConsumerGroupIds) {
+            consumerGroupService.deleteConsumerGroup(consumerGroupId, false);
+        }
     }
 
     private void doRegisterConsumerGroup(ConsumerGroupRegisterRequest request, ConsumerGroupRegisterResponse response, ConsumerEntity consumerEntity) {
