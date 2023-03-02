@@ -1,7 +1,6 @@
 package com.baracklee.mq.biz.service.impl;
 
 import com.baracklee.mq.biz.common.SoaConfig;
-import com.baracklee.mq.biz.common.trace.TraceMessageItem;
 import com.baracklee.mq.biz.common.util.JsonUtil;
 import com.baracklee.mq.biz.common.util.Util;
 import com.baracklee.mq.biz.dal.meta.QueueOffsetRepository;
@@ -9,10 +8,8 @@ import com.baracklee.mq.biz.entity.*;
 import com.baracklee.mq.biz.service.*;
 import com.baracklee.mq.biz.service.common.AbstractBaseService;
 import com.baracklee.mq.biz.service.common.MqReadMap;
-import org.apache.ibatis.transaction.Transaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -301,6 +298,16 @@ public class QueueOffsetServiceImpl extends AbstractBaseService<QueueOffsetEntit
         } catch (Exception ignored) {
 
         }
+    }
+
+    @Override
+    public void deleteByConsumerGroupId(long id) {
+        queueOffsetRepository.deleteByConsumerGroupId(id);
+    }
+
+    @Override
+    public void setConsumerIdsToNull(List<Long> consumerIds) {
+        queueOffsetRepository.setConsumerIdsToNull(consumerIds);
     }
 
 

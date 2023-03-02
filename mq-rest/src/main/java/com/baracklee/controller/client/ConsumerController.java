@@ -40,6 +40,7 @@ public class ConsumerController {
     }
     public PublishMessageResponse publish(@RequestBody PublishMessageRequest request){
 //        return consumerService.deRegister(request);
+        return consumerService.publish(request);
     }
 
 }

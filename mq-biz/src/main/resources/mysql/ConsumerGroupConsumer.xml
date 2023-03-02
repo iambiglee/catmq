@@ -19,6 +19,15 @@
     <delete id="deleteUnActiveConsumer">
         delete from consumer_group_consumer where consumer_id=#{consumerId}
     </delete>
+    <delete id="deleteByConsumerIds" parameterType="java.util.List">
+        delete from consumer_group_consumer
+        where consumer_id in (
+        <foreach collection="consumerIds" item="id" index="index"
+                 separator=",">
+            #{id}
+        </foreach>
+        )
+    </delete>
     <select id="getByConsumerGroupIds" resultMap="BaseResultMap"
             useCache="false">
         select *

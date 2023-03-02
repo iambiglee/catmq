@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+
 public interface QueueOffsetService extends BaseService<QueueOffsetEntity> {
     void updateConsumerId(QueueOffsetEntity t1);
 
@@ -20,4 +21,8 @@ public interface QueueOffsetService extends BaseService<QueueOffsetEntity> {
     void updateCache();
 
     void forceUpdateCache();
+
+    void deleteByConsumerGroupId(long id);
+
+    void setConsumerIdsToNull(List<Long> consumerIds);
 }

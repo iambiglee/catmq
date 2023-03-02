@@ -17,7 +17,6 @@ import com.baracklee.mq.biz.service.common.MqReadMap;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
 
 import javax.annotation.Resource;
@@ -115,6 +114,11 @@ public class ConsumerGroupTopicServiceImpl
             }
         }
         return rs;    }
+
+    @Override
+    public List<String> getFailTopicNames(long id) {
+        return consumerGroupTopicRepository.getFailTopicNames(id);
+    }
 
     private void createConsumerGroupTopicByOrigin(ConsumerGroupTopicCreateRequest consumerGroupTopicCreateRequest, Map<String, ConsumerGroupEntity> consumerGroupMap) {
         for (String key : consumerGroupMap.keySet()) {

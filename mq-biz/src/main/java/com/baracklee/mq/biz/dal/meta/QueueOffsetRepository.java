@@ -5,6 +5,7 @@ import com.baracklee.mq.biz.entity.LastUpdateEntity;
 import com.baracklee.mq.biz.entity.OffsetVersionEntity;
 import com.baracklee.mq.biz.entity.QueueOffsetEntity;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,4 +23,9 @@ public interface QueueOffsetRepository extends BaseRepository<QueueOffsetEntity>
     LastUpdateEntity getLastUpdate();
 
     List<QueueOffsetEntity> getAllBasic();
+
+    void deleteByConsumerGroupId(@Param("consumerGroupId") long id);
+
+    void setConsumerIdsToNull(List<Long> consumerIds);
+
 }

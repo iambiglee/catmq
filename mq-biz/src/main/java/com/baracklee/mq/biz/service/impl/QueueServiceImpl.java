@@ -35,4 +35,24 @@ public class QueueServiceImpl extends AbstractBaseService<QueueEntity>  implemen
         long maxid=message01Service.getMaxId(tbName);
         return maxid;
     }
+
+    @Override
+    public Map<Long, QueueEntity> getAllQueueMap() {
+        return null;
+    }
+
+    @Override
+    public void deleteMessage(List<QueueEntity> queueEntities, long consumerGroupId) {
+
+    }
+
+    @Override
+    public Map<String, List<QueueEntity>> getAllLocatedTopicWriteQueue() {
+        return null;
+    }
+
+    @Override
+    public Map<String, List<QueueEntity>> getAllLocatedTopicQueue() {
+        return null;
+    }
 }

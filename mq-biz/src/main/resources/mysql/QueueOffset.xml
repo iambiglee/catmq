@@ -49,6 +49,22 @@
         where id = #{id}
     </update>
 
+    <update id="setConsumerIdsToNull" parameterType="java.util.List">
+        update queue_offset set consumer_id = 0 ,consumer_name='' where
+        consumer_id in
+        (
+        <foreach collection="consumerIds" item="id" index="index"
+                 separator=",">
+            #{id}
+        </foreach>
+        )
+    </update>
+
+    <delete id="deleteByConsumerGroupId" parameterType="java.lang.Long">
+     delete from queue_offset
+where consumer_group_id= #{consumerGroupId}
+    </delete>
+
     <select id="getByConsumerGroupIds" resultMap="BaseResultMap"
             useCache="false">
         select *

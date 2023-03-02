@@ -23,6 +23,8 @@ public class ConsumerEntity {
 
     private String updateTime;
 
+    private String updateBy;
+
     private int isActive;
 
 
@@ -51,6 +53,13 @@ public class ConsumerEntity {
     public static String FdIsActive = "isActive";
 
 
+    public String getUpdateBy() {
+        return updateBy;
+    }
+
+    public void setUpdateBy(String updateBy) {
+        this.updateBy = updateBy;
+    }
 
     public long getId() {
         return id;

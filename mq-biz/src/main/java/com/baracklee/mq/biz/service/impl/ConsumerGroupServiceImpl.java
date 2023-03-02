@@ -43,6 +43,17 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
     @Resource
     private NotifyMessageService notifyMessageService;
 
+    @Resource
+    private RoleService roleService;
+
+    @Resource
+    private UserInfoHolder userInfoHolder;
+
+    @Resource
+    private ConsumerService consumerService;
+    @Resource
+    private TopicService topicService;
+
     protected AtomicReference<Map<String, ConsumerGroupEntity>> consumerGroupRefMap = new AtomicReference<>(
             new HashMap<>());
     protected AtomicReference<Map<Long, ConsumerGroupEntity>> consumerGroupByIdRefMap = new AtomicReference<>(
@@ -330,7 +341,7 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
         if (checkOnline && consumerService.getConsumerGroupByConsumerGroupIds(consumerGroupIds).size() > 0) {
             return new ConsumerGroupDeleteResponse("1", "有消费者正在消费，不能删除消费者组。");
         }
-
+        //广播模式下,删除广播的失败队列
         List<String> failTopicNames = consumerGroupTopicService.getFailTopicNames(consumerGroupEntity.getId());
         topicService.deleteFailTopic(failTopicNames,consumerGroupEntity.getId());
         queueOffsetService.deleteByConsumerGroupId(consumerGroupEntity.getId());

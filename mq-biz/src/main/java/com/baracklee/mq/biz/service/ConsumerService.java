@@ -5,7 +5,6 @@ import com.baracklee.mq.biz.entity.ConsumerEntity;
 import com.baracklee.mq.biz.entity.ConsumerGroupConsumerEntity;
 import com.baracklee.mq.biz.service.common.BaseService;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public interface ConsumerService extends BaseService<ConsumerEntity> {
@@ -13,7 +12,9 @@ public interface ConsumerService extends BaseService<ConsumerEntity> {
 
     ConsumerGroupRegisterResponse registerConsumerGroup(ConsumerGroupRegisterRequest request);
 
-    List<ConsumerGroupConsumerEntity> getConsumerGroupByConsumerGroupIds(ArrayList<Long> consumerGroupIds);
+    List<ConsumerGroupConsumerEntity> getConsumerGroupByConsumerGroupIds(List<Long> consumerGroupIds);
 
     ConsumerDeRegisterResponse deRegister(ConsumerDeRegisterRequest request);
+
+    PublishMessageResponse publish(PublishMessageRequest request);
 }

@@ -2,21 +2,17 @@ package com.baracklee.mq.biz.service.impl;
 
 import com.baracklee.mq.biz.MqConst;
 import com.baracklee.mq.biz.MqEnv;
+import com.baracklee.mq.biz.common.SoaConfig;
 import com.baracklee.mq.biz.common.util.ConsumerGroupUtil;
 import com.baracklee.mq.biz.common.util.JsonUtil;
-import com.baracklee.mq.biz.common.SoaConfig;
 import com.baracklee.mq.biz.common.util.Util;
 import com.baracklee.mq.biz.dal.meta.ConsumerRepository;
 import com.baracklee.mq.biz.dto.LogDto;
 import com.baracklee.mq.biz.dto.client.*;
-import com.baracklee.mq.biz.entity.ConsumerEntity;
-import com.baracklee.mq.biz.entity.ConsumerGroupConsumerEntity;
-import com.baracklee.mq.biz.entity.ConsumerGroupEntity;
-import com.baracklee.mq.biz.entity.ConsumerGroupTopicEntity;
+import com.baracklee.mq.biz.entity.*;
 import com.baracklee.mq.biz.service.*;
 import com.baracklee.mq.biz.service.common.AbstractBaseService;
 import com.baracklee.mq.client.MqClient;
-import com.sun.xml.internal.ws.policy.EffectiveAlternativeSelector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,6 +41,15 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
     SoaConfig soaConfig;
     @Resource
     private ConsumerGroupConsumerService consumerGroupConsumerService;
+
+    @Resource
+    private TopicService topicService;
+
+    @Resource
+    QueueOffsetService queueOffsetService;
+
+    @Resource
+    QueueService queueService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -83,7 +88,7 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
     }
 
     @Override
-    public List<ConsumerGroupConsumerEntity> getConsumerGroupByConsumerGroupIds(ArrayList<Long> consumerGroupIds) {
+    public List<ConsumerGroupConsumerEntity> getConsumerGroupByConsumerGroupIds(List<Long> consumerGroupIds) {
         if(CollectionUtils.isEmpty(consumerGroupIds)){
             return new ArrayList<>();
         }
@@ -105,6 +110,36 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
             doDeleteConsumer(Arrays.asList(consumerEntity),1);
         }
         return response;
+    }
+
+    /**
+     * 1. 检查队列是否负载过大
+     * 2. 检查能否插入进去
+     * 3. 插入
+     * @param request
+     * @return
+     */
+    @Override
+    public PublishMessageResponse publish(PublishMessageRequest request) {
+        PublishMessageResponse response = new PublishMessageResponse();
+        checkVaild(request,response);
+        if (!response.isSuc()) {
+            return response;
+        }
+        String topicName=request.getTopicName();
+        Map<String, List<QueueEntity>> queueMap = queueService.getAllLocatedTopicWriteQueue();
+        Map<String, List<QueueEntity>> topicQueueMap = queueService.getAllLocatedTopicQueue();
+        if (queueMap.containsKey(topicName)||topicQueueMap.containsKey(topicName)){
+            List<QueueEntity> queueEntities = queueMap.get(topicName);
+            if(CollectionUtils.isEmpty(queueEntities)){
+                response.setSuc(false);
+                response.setMsg("topic_"+request.getTopicName()+"_has no queue");
+            }else {
+                saveMsg(request,response,queueEntities);
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -151,6 +186,50 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
         doDeleteConsumerIds(consumerGroupConsumers,consumerIds,consumerGroupIds);
         result=true;
         return result;
+    }
+
+    /**
+     * 删除consumer,queueoffset,consumerGroup by Id
+     * 然后通知重平衡
+     * @param consumerGroupConsumers consumer groups
+     * @param consumerIds consumer id
+     * @param consumerGroupIds consumer group Id
+     */
+    private void doDeleteConsumerIds(List<ConsumerGroupConsumerEntity> consumerGroupConsumers, List<Long> consumerIds, List<Long> consumerGroupIds) {
+        consumerGroupConsumerService.deleteByConsumerIds(consumerIds);
+        queueOffsetService.setConsumerIdsToNull(consumerIds);
+        consumerRepository.batchDelete(consumerIds);
+
+        //过滤Ip黑白名单
+        Map<Long, ConsumerGroupEntity> cache = consumerGroupService.getIdCache();
+
+        for (ConsumerGroupConsumerEntity consumerGroupConsumer : consumerGroupConsumers) {
+            ConsumerGroupEntity consumerGroupEntity = cache.get(consumerGroupConsumer.getConsumerGroupId());
+            if (consumerGroupEntity==null) continue;
+
+            boolean blackIpFlag = StringUtils.isEmpty(consumerGroupEntity.getIpBlackList()) && consumerGroupEntity.getIpBlackList().contains(consumerGroupConsumer.getIp());
+            boolean whiteFlag = StringUtils.isEmpty(consumerGroupEntity.getIpWhiteList()) && !consumerGroupEntity.getIpWhiteList().contains(consumerGroupConsumer.getIp());
+            boolean notBlackIpFlag = StringUtils.isEmpty(consumerGroupEntity.getIpBlackList()) &&! consumerGroupEntity.getIpBlackList().contains(consumerGroupConsumer.getIp());
+            boolean notWhiteFlag = StringUtils.isEmpty(consumerGroupEntity.getIpWhiteList()) && consumerGroupEntity.getIpWhiteList().contains(consumerGroupConsumer.getIp());
+
+            if (blackIpFlag) {
+                consumerGroupIds.remove(consumerGroupEntity.getId());
+                log.warn("因为实例在黑名单中,所以不用重平衡{}", consumerGroupConsumer.getIp());
+            }
+            else if (whiteFlag){
+                consumerGroupIds.remove(consumerGroupEntity.getId());
+                log.warn("因为实例不在白名单中,所以不用重平衡{}", consumerGroupConsumer.getIp());
+            }
+            if(notBlackIpFlag){
+                consumerGroupIds.add(consumerGroupEntity.getId());
+                log.warn("需要重平衡{}",consumerGroupEntity.getId());
+            }
+            else if(notWhiteFlag){
+                consumerGroupIds.add(consumerGroupEntity.getId());
+                log.warn("需要重平衡{}",consumerGroupEntity.getId());
+            }
+        }
+        consumerGroupService.notifyRb(consumerGroupIds);
     }
 
     private void deleteBroadConsumerGroup(List<Long> broadConsumerGroupIds) {
@@ -395,6 +474,32 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
         if (StringUtils.isEmpty(request.getSdkVersion())) {
             response.setSuc(false);
             response.setMsg("SdkVersion不能为空！");
+        }
+    }
+    protected void checkVaild(PublishMessageRequest request, PublishMessageResponse response) {
+        response.setSuc(true);
+        if (request == null) {
+            response.setSuc(false);
+            response.setMsg("request is null!");
+            return;
+        }
+        if (CollectionUtils.isEmpty(request.getMsgs())) {
+            response.setSuc(false);
+            response.setMsg("topic_" + request.getTopicName() + "_msg_is_null!");
+            return;
+        }
+        Map<String, TopicEntity> cacheData = topicService.getCache();
+        if (!cacheData.containsKey(request.getTopicName())) {
+            response.setSuc(false);
+            response.setMsg("topic_" + request.getTopicName() + "_is_not_exist!");
+            return;
+        }
+        if (!StringUtils.isEmpty(cacheData.get(request.getTopicName()).getToken())
+                && !("" + cacheData.get(request.getTopicName()).getToken()).equals(request.getToken())) {
+            response.setSuc(false);
+            response.setMsg(
+                    "topic_" + request.getTopicName() + "_and_token_" + request.getToken() + "_is_not_correct!");
+            return;
         }
     }
 }
