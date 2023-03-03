@@ -137,9 +137,17 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
             }else {
                 saveMsg(request,response,queueEntities);
             }
+        }else {
+            response.setSuc(false);
+            response.setMsg("topic1_"+request.getTopicName()+"has no queue");
         }
 
         return null;
+    }
+
+    private void saveMsg(PublishMessageRequest request, PublishMessageResponse response, List<QueueEntity> queueEntities) {
+        Map<Long, QueueEntity> entityMap = queueEntities.stream().collect(Collectors.toMap(QueueEntity::getId, a -> a));
+
     }
 
     /**

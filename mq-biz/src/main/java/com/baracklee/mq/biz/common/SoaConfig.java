@@ -159,6 +159,31 @@ public class SoaConfig {
     private final String env_getConsumerInactivityTime_defaultValue = "60";
     private final String env_getConsumerInactivityTime_des = "一分钟无心跳，默认消费者下线";
 
+    private volatile String _getInitDbCount = "";
+    private volatile int getInitDbCount = 10;
+    private final String env_getInitDbCount_key = "mq.db.initCount";
+    private final String env_getInitDbCount_defaultValue = "10";
+    private final String env_getInitDbCount_des = "消息数据库初始链接个数";
+
+    // 数据库初始链接个数
+    public int getInitDbCount() {
+        try {
+            if (!_getInitDbCount.equals(env.getProperty(env_getInitDbCount_key, env_getInitDbCount_defaultValue))) {
+                _getInitDbCount = env.getProperty(env_getInitDbCount_key, env_getInitDbCount_defaultValue);
+                getInitDbCount = Integer
+                        .parseInt(env.getProperty(env_getInitDbCount_key, env_getInitDbCount_defaultValue));
+                if (getInitDbCount < 2) {
+                    getInitDbCount = 2;
+                }
+                onChange();
+            }
+        } catch (Exception e) {
+            getInitDbCount = 2;
+            onChange();
+            log.error("getgetInitDbCount_SoaConfig_error", e);
+        }
+        return getInitDbCount;
+    }
     public int getConsumerInactivityTime() {
         // 默认一分钟
         return Integer.parseInt(
