@@ -2,6 +2,7 @@ package com.baracklee.mq.biz.common.util;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -71,13 +72,27 @@ public class JsonUtil {
 
     public  static <T> String toJson(T obj){
         if (obj==null) return "";
-        try {
             try {
                 return objectMapper.writeValueAsString(obj);
             } catch (JsonProcessingException e) {
                 log.error("toJson 异常",e);
                 throw new RuntimeException(e);
             }
+
+    }
+
+    public static <Result> Result parseJson(String json, TypeReference<Result> t) {
+        if (isEmpty(json)) {
+            return null;
+        }
+        try {
+            // return JSON.parseObject(json, t);
+            return objectMapper.readValue(json, t);
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            log.error("tojson 异常", e);
+            //throw new RuntimeException(e);
+            return null;
         }
     }
 }

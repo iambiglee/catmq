@@ -23,6 +23,10 @@ public class SoaThreadFactory implements ThreadFactory {
         return new SoaThreadFactory(namePrefix,daemon);
     }
 
+    public static ThreadFactory create(String namePrefix){
+        return create(namePrefix,true);
+    }
+
     public static ThreadFactory create(String namePrefix,int priority,boolean daemon){
         return new SoaThreadFactory(namePrefix,priority,daemon);
     }
