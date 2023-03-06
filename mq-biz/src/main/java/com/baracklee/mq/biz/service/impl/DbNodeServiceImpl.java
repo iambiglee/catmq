@@ -1,25 +1,32 @@
 package com.baracklee.mq.biz.service.impl;
 
+import com.alibaba.druid.filter.Filter;
 import com.alibaba.druid.pool.DruidDataSource;
 import com.baracklee.mq.biz.common.SoaConfig;
 import com.baracklee.mq.biz.common.inf.PortalTimerService;
+import com.baracklee.mq.biz.common.plugin.DruidConnectionFilter;
 import com.baracklee.mq.biz.common.thread.SoaThreadFactory;
+import com.baracklee.mq.biz.common.util.DbUtil;
+import com.baracklee.mq.biz.common.util.JsonUtil;
 import com.baracklee.mq.biz.common.util.Util;
 import com.baracklee.mq.biz.dal.meta.DbNodeRepository;
 import com.baracklee.mq.biz.entity.DbNodeEntity;
 import com.baracklee.mq.biz.entity.LastUpdateEntity;
 import com.baracklee.mq.biz.service.CacheUpdateService;
 import com.baracklee.mq.biz.service.DbNodeService;
+import com.baracklee.mq.biz.service.QueueService;
 import com.baracklee.mq.biz.service.common.AbstractBaseService;
-import org.apache.ibatis.transaction.Transaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import javax.sql.DataSource;
+import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -48,6 +55,8 @@ public class DbNodeServiceImpl
 
     private AtomicBoolean startFlag = new AtomicBoolean(false);
     private AtomicBoolean updateFlag = new AtomicBoolean(false);
+    protected Map<String, Boolean> dbCreated = new ConcurrentHashMap<>();
+    protected volatile boolean isPortal = false;
 
 
     private volatile int minIdle = 0;
@@ -141,18 +150,21 @@ public class DbNodeServiceImpl
         }
     }
 
-    private DataSource createDataSouce(){
+    private DruidDataSource createDataSouce(){
         return new DruidDataSource();
     }
 
     @Override
     public Map<Long, DbNodeEntity> getCache() {
         List<DbNodeEntity> data = dbNodeRepository.getAll();
+        //新出来的Db
         Map<String, DataSource> dbCache = new ConcurrentHashMap<>(data.size());
+        //当前数据库中的id 号的map
         Map<Long, DbNodeEntity> dbNodeCache = new ConcurrentHashMap<>(data.size());
+        //ip 和DB 配置的关系
         Map<String, List<DbNodeEntity>> dbNodeIpCache = new ConcurrentHashMap<>(data.size());
         for (DbNodeEntity item : data) {
-            createDataSource(item);
+            createDataSource(item,dbCache);
             dbNodeCache.put(item.getId(),item);
             if(dbNodeIpCache.containsKey(item.getIp())){
                 dbNodeIpCache.get(item.getIp()).add(item);
@@ -163,7 +175,6 @@ public class DbNodeServiceImpl
             }
         }
         return dbNodeCache;
-
     }
 
     @Override
@@ -217,29 +228,118 @@ public class DbNodeServiceImpl
 
     @Override
     public void forceUpdateCache() {
+        //不使用缓存了, do nothing
         doForceUpdateCache();
         updateQueueCache();
     }
 
+    @Autowired
+    private QueueService queueService;
+    private void updateQueueCache() {
+
+        ScheduledExecutorService executor = Executors.newScheduledThreadPool(1, SoaThreadFactory.create(
+                "DbNodeServer_", true));
+        executor.submit(new Runnable() {
+            @Override
+            public void run() {
+                // TODO Auto-generated method stub
+                queueService.forceUpdateCache();
+            }
+        });
+        executor.shutdown();
+
+    }
+
     /**
      * 从数据库create DB， 没有就create
-     *
+     * 不使用缓存了, do nothing
      */
     private void doForceUpdateCache() {
-        List<DbNodeEntity> data = dbNodeRepository.getAll();
-        Map<String, DataSource> dbCache = new ConcurrentHashMap<>(data.size());
-        //当前数据库中的值
-        Map<Long, DbNodeEntity> dbNodeCache = new ConcurrentHashMap<>(data.size());
-        //数据库中的IP和其的对应关系
-        Map<String, List<DbNodeEntity>> dbNodeIpCache = new ConcurrentHashMap<>(data.size());
-        for (DbNodeEntity dbNode : data) {
-            createDataSource(dbNode,dbCache);
 
-        }
     }
 
     private void createDataSource(DbNodeEntity dbNode, Map<String, DataSource> dbCache) {
+        String dbInfo = getConKey(dbNode, true);
+        if(!dbCreated.containsKey(dbInfo)){
+            synchronized (DbNodeServiceImpl.class){
+                if (!dbCreated.containsKey(dbInfo)){
+                    initDatasource(dbNode,dbInfo,dbCache,true);
+                }
+            }
+        }
+        if(!dbCache.containsKey(dbInfo)&&cacheDataMap.get().containsKey(dbInfo)){
+            dbCache.put(dbInfo,cacheDataMap.get().get(dbInfo));
+        }
+        if (hasSlave(dbNode)){
+            dbInfo = getConKey(dbNode, false);
+            if (!dbCreated.containsKey(dbInfo)) {
+                synchronized (DbNodeServiceImpl.class) {
+                    if (!dbCreated.containsKey(dbInfo)) {
+                        initDatasource(dbNode, dbInfo, dbCache, false);
+                    }
+                }
+            }
+        }
 
+    }
+
+    private void initDatasource(DbNodeEntity dbNode, String dbInfo, Map<String, DataSource> dbCache, boolean isMaster) {
+        try {
+            // if (soaConfig.isUseDruid())
+            {
+                DruidDataSource dataSource = createDataSouce();
+                dataSource.setDriverClassName("com.mysql.jdbc.Driver");
+                if (isMaster) {
+                    dataSource.setUsername(dbNode.getDbUserName());
+                    dataSource.setPassword(dbNode.getDbPass());
+                } else {
+                    dataSource.setUsername(dbNode.getDbUserNameBak());
+                    dataSource.setPassword(dbNode.getDbPassBak());
+                }
+                // dataSource.setUrl(t1.getConStr());
+                dataSource.setUrl(getCon(dbNode, isMaster));
+                dataSource.setInitialSize(minIdle);
+                dataSource.setMinIdle(minIdle);
+                dataSource.setMaxActive(maxActive);
+                dataSource.setMinEvictableIdleTimeMillis(minEvictableIdleTimeMillis);
+                dataSource.setConnectionInitSqls(Arrays.asList("set names utf8mb4;"));
+                List<Filter> filters = new ArrayList<Filter>();
+                filters.add(new DruidConnectionFilter(DbUtil.getDbIp(dataSource.getUrl())));
+                dataSource.setProxyFilters(filters);
+                dataSource.init();
+                dbCreated.put(dbInfo, true);
+                log.info(dataSource.getUrl() + "数据源创建成功！dataSource_created");
+                dbCache.put(dbInfo, dataSource);
+            }
+        } catch (Exception e) {
+            log.error("initDataSource_error", e);
+        }
+    }
+
+    private String getCon(DbNodeEntity dbNode, boolean isMaster) {
+        String timeOutF = "&connectTimeout=%s&socketTimeout=%s";
+
+        return doGetCon(dbNode, isMaster)
+                + String.format(timeOutF, soaConfig.getConnectTimeout(), soaConfig.getSocketTimeout());
+
+    }
+
+    private String doGetCon(DbNodeEntity dbNode, boolean isMaster) {
+        String conF = "jdbc:mysql://%s:%s/information_schema?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=CONVERT_TO_NULL&useSSL=false&rewriteBatchedStatements=true";
+        if (isMaster) {
+            return String.format(conF, dbNode.getIp(), dbNode.getPort());
+        } else {
+            return String.format(conF, dbNode.getIpBak(), dbNode.getPortBak());
+        }
+    }
+
+    private String getConKey(DbNodeEntity t1, boolean isMaster) {
+        if (isMaster) {
+            return String.format("%s|%s|%s|%s", t1.getIp(), t1.getPort(), t1.getDbUserName(), t1.getDbPass());
+        } else {
+            return String.format("%s|%s|%s|%s", t1.getIpBak(), t1.getPortBak(), t1.getDbUserNameBak(),
+                    t1.getDbPassBak());
+        }
     }
 
     @Override
@@ -249,37 +349,109 @@ public class DbNodeServiceImpl
 
     @Override
     public void createDataSource(DbNodeEntity t1) {
-
+        createDataSource(t1,cacheDataMap.get());
     }
 
     @Override
     public void checkDataSource(DbNodeEntity dbNodeEntity) {
+        try {
+            // 检查master
+            checkMaster(dbNodeEntity);
+            checkSlave(dbNodeEntity);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
+    private void checkSlave(DbNodeEntity dbNodeEntity) throws SQLException {
+        // 检查slave
+        if (hasSlave(dbNodeEntity)) {
+            DruidDataSource dataSource = createDataSouce();
+            dataSource.setDriverClassName("com.mysql.jdbc.Driver");
+            dataSource.setUsername(dbNodeEntity.getDbUserNameBak());
+            dataSource.setPassword(dbNodeEntity.getDbPassBak());
+            dataSource.setUrl(getCon(dbNodeEntity, false));
+            dataSource.setInitialSize(1);
+            dataSource.setMinIdle(0);
+            dataSource.setMaxActive(1);
+            List<Filter> filters = new ArrayList<Filter>();
+            filters.add(new DruidConnectionFilter(DbUtil.getDbIp(dataSource.getUrl())));
+            dataSource.setProxyFilters(filters);
+            dataSource.init();
+            dataSource = null;
+        }
+    }
+
+    private void checkMaster(DbNodeEntity dbNodeEntity) throws SQLException {
+        DruidDataSource dataSource = createDataSouce();
+
+        dataSource.setDriverClassName("com.mysql.jdbc.Driver");
+        dataSource.setUsername(dbNodeEntity.getDbUserName());
+        dataSource.setPassword(dbNodeEntity.getDbPass());
+        dataSource.setUrl(getCon(dbNodeEntity, true));
+        dataSource.setInitialSize(1);
+        dataSource.setMinIdle(0);
+        dataSource.setMaxActive(1);
+        List<Filter> filters = new ArrayList<Filter>();
+        filters.add(new DruidConnectionFilter(DbUtil.getDbIp(dataSource.getUrl())));
+        dataSource.setProxyFilters(filters);
+        dataSource.init();
+        dataSource = null;
     }
 
     @Override
     public DataSource getDataSource(long id, boolean isMaster) {
+        Map<String, DataSource> cache = cacheDataMap.get();
+        Map<Long, DbNodeEntity> data = cacheNodeMap.get();
+        if (!isPortal) {
+            isMaster = true;
+        }
+        // 如果没有备份配置，则转换为主库
+        if (!isMaster && data.containsKey(id) && !hasSlave(data.get(id))) {
+            isMaster = true;
+        }
+        if (!isMaster && "0".equals(soaConfig.getDbMasterSlave())) {
+            isMaster = true;
+        }
+        if (data.containsKey(id)) {
+            String key = getConKey(data.get(id), isMaster);
+            if (cache.containsKey(key)) {
+                // log.info("dbUrl is "+cache.get(key).getUrl());
+                return cache.get(key);
+            } else {
+                key = getConKey(data.get(id), true);
+                if (cache.containsKey(key)) {
+                    // log.info("dbUrl is "+cache.get(key).getUrl());
+                    return cache.get(key);
+                }
+            }
+        }
+        log.error("dbNode_is_" + id + "_and_datasource_is_null_and_datasources_is_" + JsonUtil.toJson(cache.keySet()));
         return null;
-    }
+        }
 
     @Override
     public Map<String, DataSource> getDataSource() {
-        return null;
+        return  cacheDataMap.get();
     }
 
     @Override
     public boolean hasSlave(DbNodeEntity dbNodeEntity) {
-        return false;
+        if (Util.isEmpty(dbNodeEntity.getIpBak()) || Util.isEmpty(dbNodeEntity.getDbPassBak())
+                || Util.isEmpty(dbNodeEntity.getDbUserNameBak()) || dbNodeEntity.getPortBak() == 0) {
+            return false;
+        }
+        return true;
     }
 
     @Override
     public void startPortal() {
-
+        isPortal=true;
     }
 
     @Override
     public void stopPortal() {
-
+        isRunning=false;
     }
 
     @Override
