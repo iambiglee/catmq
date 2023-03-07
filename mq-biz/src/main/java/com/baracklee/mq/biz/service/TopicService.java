@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Map;
 
 public interface TopicService extends BaseService<TopicEntity> {
+    public static String NEED_DELETED_TOPIC_NANE="MQ_NEED_DELETE_1111111";
+
     TopicEntity getTopicByName(String topicName);
 
     TopicEntity createFailTopic(TopicEntity topicEntity, ConsumerGroupEntity consumerGroupEntity);
