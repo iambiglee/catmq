@@ -186,6 +186,15 @@ public class QueueServiceImpl extends
 
     }
 
+    /**
+     * 队列可能分布在不同的数据库上,先拿到所有Node 信息
+     * 遍历所有的node, 然后拿到所有的队列, 队列最前面的10个拿到
+     * 最后检查一遍, 队列的是否合规
+     * @param topNum 头几个
+     * @param nodeType 读写标识
+     * @param topicId topic的标识
+     * @return 拿到顶端还没有分配的节点
+     */
     @Override
     public List<QueueEntity> getTopUndistributed(int topNum, int nodeType, Long topicId) {
         //获取可分配节点
