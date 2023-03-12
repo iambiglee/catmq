@@ -210,7 +210,103 @@ public class QueueServiceImpl extends
             return new ArrayList<QueueEntity>();
         }
 
-        return null;
+        Set<Long> nodeIdSet = new HashSet<>();
+        Set<String> nodeIpSet = new HashSet<>();
+        Map<Long, QueueEntity> queueMap = new HashMap<Long, QueueEntity>();
+        //获取未分配节点下面的可分配队列，最多返回10条
+        List<QueueEntity> preQueueList = getSortAndUndistributedList(sortDbNodeIdIp, nodeType);
+
+        Map<Long, DbNodeEntity> dbNodeCache = dbNodeService.getCache();
+
+        int count=0;
+        while (count < 5 && queueMap.size() < topNum) {
+            nodeIpSet.clear();
+            for (QueueEntity queueEntity : preQueueList) {
+                // 选出可分配的队列
+                // if (!nodeIdSet.contains(queueEntity.getDbNodeId())) {
+                if (!nodeIdSet.contains(queueEntity.getDbNodeId()) && !nodeIpSet.contains(queueEntity.getIp())
+                        && !queueMap.containsKey(queueEntity.getId()) && queueMap.size() < topNum
+                        && checkWrite(queueEntity, dbNodeCache)) {
+                    uiAuditLogService.recordAudit(TopicEntity.TABLE_NAME, topicId,
+                            String.format("节点[%d]上的队列[%d]获得资格", queueEntity.getDbNodeId(), queueEntity.getId()));
+                    nodeIdSet.add(queueEntity.getDbNodeId());
+                    nodeIpSet.add(queueEntity.getIp());
+                    queueMap.put(queueEntity.getId(), queueEntity);
+                }
+            }
+            count++;
+        }
+
+            return new ArrayList<>(queueMap.values());
+    }
+
+    /**
+     * 所有可分配节点的未分配队列
+     * @return 返回前10个
+     */
+    private List<QueueEntity> getSortAndUndistributedList(List<QueueEntity> sortDbNodeIdIp, int nodeType) {
+        List<QueueEntity> allUnLocatedQueue = queueRepository.getUndistributedListByNodeIds(
+                sortDbNodeIdIp.stream().map(QueueEntity::getDbNodeId).collect(Collectors.toList()), nodeType);
+        List<QueueEntity> rs = new ArrayList<QueueEntity>(allUnLocatedQueue.size());
+        Map<Long, List<QueueEntity>> qMap = new HashMap<Long, List<QueueEntity>>();
+        allUnLocatedQueue.forEach(t1 -> {
+            if (!qMap.containsKey(t1.getDbNodeId())) {
+                qMap.put(t1.getDbNodeId(), new ArrayList<QueueEntity>(10));
+            }
+            if (qMap.get(t1.getDbNodeId()).size() < 10) {
+                qMap.get(t1.getDbNodeId()).add(t1);
+            }
+        });
+        sortDbNodeIdIp.forEach(t1 -> {
+            if (qMap.containsKey(t1.getDbNodeId())) {
+                rs.addAll(qMap.get(t1.getDbNodeId()));
+            }
+        });
+        return rs;
+    }
+
+    private List<QueueEntity> getTopUndistributedNodes(int topNum, int nodeType, List<Long> nodeIds) {
+        Map<String, Object> queryMap = new HashMap<>();
+        // queryMap.put("topNum", topNum);
+        queryMap.put("nodeType", nodeType);
+        queryMap.put("nodeIds", nodeIds);
+        return queueRepository.getTopUndistributedNodes(queryMap);
+        
+    }
+
+    private List<Long> getPreNodeIds(Long topicId, int nodeType) {
+        Set<Long> normalNodeIdSet = new HashSet<>();
+
+        Map<Long, DbNodeEntity> dbNodeEntityMap = dbNodeService.getCache();
+        Map<Long, QueueEntity> queueCache = getAllQueueMap();
+        Collection<QueueEntity> queueEntities = queueCache.values();
+
+        for (DbNodeEntity dbNodeEntity : dbNodeEntityMap.values()) {
+            // 过滤普通节点上为读写数据库，和Topic类型相匹配的节点
+            if (dbNodeEntity.getNormalFlag()==1
+            &&dbNodeEntity.getReadOnly()==1
+            &&dbNodeEntity.getNodeType()==nodeType){
+                if(queueEntities.stream().anyMatch(queueEntity ->
+                        queueEntity.getDbNodeId() == dbNodeEntity.getId()
+                                && queueEntity.getTopicId() == 0)){
+                normalNodeIdSet.add(dbNodeEntity.getId());
+                }else {
+                    log.info(queueEntities.size() + "");
+                }
+            }
+        }
+
+        //过滤掉已经分配节点
+        List<QueueEntity> queueEntityList = getQueuesByTopicId(topicId);
+        List<Long> nodeIds = queueEntityList.stream().map(QueueEntity::getDbNodeId).collect(Collectors.toList());
+        Set<Long> resultIds = new HashSet<>(normalNodeIdSet);
+        nodeIds.forEach(resultIds::remove);
+        if (!CollectionUtils.isEmpty(resultIds)) {
+            return new ArrayList<Long>(resultIds);
+        } else {
+            // 所有基本条件符合的节点都分配过了，直接返回所有符合基本条件的节点
+            return new ArrayList<Long>(normalNodeIdSet);
+        }
     }
 
     @Override
