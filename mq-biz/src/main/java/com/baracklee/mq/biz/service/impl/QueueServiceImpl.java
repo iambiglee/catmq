@@ -17,6 +17,7 @@ import com.baracklee.mq.biz.entity.TopicEntity;
 import com.baracklee.mq.biz.service.*;
 import com.baracklee.mq.biz.service.common.AbstractBaseService;
 import com.baracklee.mq.biz.service.common.MqReadMap;
+import org.apache.commons.lang3.concurrent.ConcurrentException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -102,8 +103,7 @@ public class QueueServiceImpl extends
 
     @Override
     public long getMaxId(long id, String tbName) {
-        long maxid=message01Service.getMaxId(tbName);
-        return maxid;
+        return message01Service.getMaxId(tbName);
     }
 
     @Override
@@ -123,67 +123,111 @@ public class QueueServiceImpl extends
 
     @Override
     public List<AnalyseDto> getDistributedNodes(Long dbNodeId) {
-        return null;
+        return queueRepository.getDistributedNodes(dbNodeId);
     }
 
     @Override
     public Map<Long, AnalyseDto> getQueueQuantity() {
-        return null;
+        return queueRepository.getQueueQuantity().stream().collect(Collectors.toMap(AnalyseDto::getTopicId,e->e));
     }
 
     @Override
     public int updateMinId(Long id, Long minId) {
-        return 0;
+        return queueRepository.updateMinId(id, minId);
+
     }
 
     @Override
     public long getLastVersion() {
-        return 0;
+        return lastVersion.get();
     }
 
     @Override
     public void resetCache() {
-
+        lastUpdateEntity=null;
     }
 
     @Override
     public Map<Long, QueueEntity> getAllQueueMap() {
-        return null;
+        // return queueIdMapRef.get();
+
+        Map<Long, QueueEntity> rs = queueIdMapRef.get();
+        if (rs.size() == 0) {
+            cacheLock.lock();
+            try {
+                rs = queueIdMapRef.get();
+                if (rs.size() == 0) {
+                        updateCache();
+                    rs = queueIdMapRef.get();
+                }
+            } finally {
+                cacheLock.unlock();
+            }
+        }
+        return rs;
     }
 
     @Override
     public List<QueueEntity> getAllLocatedQueue() {
-        return null;
+        // return queueList.get();
+        List<QueueEntity> rs = queueList.get();
+        if (rs.size() == 0) {
+            cacheLock.lock();
+            try {
+                rs = queueList.get();
+                if (rs.size() == 0) {
+                        updateCache();
+                    rs = queueList.get();
+                }
+            } finally {
+                cacheLock.unlock();
+            }
+        }
+        return rs;
     }
 
     @Override
     public List<QueueEntity> getDistributedList(List<Long> nodeIds, Long topicId) {
-        return null;
+        return queueRepository.getDistributedList(nodeIds,topicId);
     }
 
     @Override
     public List<Long> getTopDistributedNodes(Long topicId) {
-        return null;
+        Map<String, Object> queryMap = new HashMap<>();
+        queryMap.put("topicId", topicId);
+        return queueRepository.getTopDistributedNodes(queryMap);
     }
 
     @Override
     public void updateWithLock(QueueEntity queueEntity) {
-
+        int result = queueRepository.updateWithLock(queueEntity);
+        if (result == 0) {
+            log.error("并发错误，请检查队列数据");
+        }
     }
 
     @Override
     public Map<Long, Long> getMax() {
-        return null;
+        synchronized (QueueService.class) {
+            initMax();
+        }
+        return queueIdMaxIdMapRef.get();
     }
 
     @Override
     public void deleteMessage(List<QueueEntity> queueEntities, long consumerGroupId) {
-
+        for (QueueEntity queueEntity : queueEntities) {
+            doDeleteMessage(queueEntity);
+        }
     }
 
+    /**
+     * 解绑并删除失败消息
+     */
     @Override
     public void doDeleteMessage(QueueEntity queueEntity) {
 
+        truncateQueueProperty(queueEntity);
     }
 
     /**

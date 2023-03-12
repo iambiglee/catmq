@@ -91,3 +91,6 @@ com.baracklee.mq.biz.service.impl.ConsumerGroupServiceImpl.doDelete
 
 2023年3月3日
 15600/50000
+
+2023年3月12日
+20000/50000
