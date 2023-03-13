@@ -17,7 +17,6 @@ import com.baracklee.mq.biz.entity.TopicEntity;
 import com.baracklee.mq.biz.service.*;
 import com.baracklee.mq.biz.service.common.AbstractBaseService;
 import com.baracklee.mq.biz.service.common.MqReadMap;
-import org.apache.commons.lang3.concurrent.ConcurrentException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -108,17 +107,24 @@ public class QueueServiceImpl extends
 
     @Override
     public void updateForDbNodeChange(String ip, String dbName, String oldIp, String oldDbName) {
-
+        if(StringUtils.isEmpty(oldIp)||StringUtils.isEmpty(oldDbName)) return;
+        queueRepository.updateForDbNodeChange(ip,dbName,oldIp,oldDbName);
     }
 
     @Override
     public List<String> getTableNamesByDbNode(Long dbNodeId) {
-        return null;
+        Map<String, Object> conditionMap = new HashMap<>();
+        conditionMap.put("dbNodeId", dbNodeId);
+        conditionMap.put("isActive", 0);
+        List<QueueEntity> list = queueRepository.getList(conditionMap);
+        List<String> tableNames = new ArrayList<>();
+        return list.stream().map(QueueEntity::getTbName).collect(Collectors.toList());
     }
 
     @Override
     public List<AnalyseDto> countTopicByNodeId(Long id, Long page, Long limit) {
-        return null;
+        Long start=(page -1)*limit;
+        return queueRepository.countTopicByNodeId(id,start,limit);
     }
 
     @Override
