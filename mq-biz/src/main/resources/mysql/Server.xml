@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.baracklee.mq.biz.dal.meta.ServerRepository">
+    <!-- 业务逻辑sql请写在这个文件内 -->
+    <delete id="deleteOld">
+	<![CDATA[
+		delete from server where heart_time<TIMESTAMPADD(SECOND,  -#{heartTime}, CURRENT_TIMESTAMP)
+	]]>
+	</delete>
+	
+	<select id="getNoramlServer" resultMap="BaseResultMap">
+		<![CDATA[
+			select * from server where heart_time > TIMESTAMPADD(second, -#{heartTime}, current_timestamp )
+		  ]]>
+	</select>
+	<update id="updateHeartTimeById">
+		update server set heart_time=CURRENT_TIMESTAMP where id=#{id} 
+	</update>
+	
+	<insert id="insert1"
+        parameterType="com.baracklee.mq.biz.entity.ServerEntity"
+        useGeneratedKeys="true" keyProperty="id">
+        insert into server (
+            `ip`,
+            `port`,
+            `heart_time`,
+            `status_flag`,
+            `server_type`,
+             `server_version`
+        )values(
+            #{ip},
+            #{port},
+            CURRENT_TIMESTAMP,
+            #{statusFlag},
+            #{serverType},
+            #{serverVersion}
+        )
+    </insert>
+
+    <update id="batchUpdate">
+        update server  set status_flag=#{statusFlag} where id in
+        (
+        <foreach collection="ids" item="item" index="index"
+                 separator=",">#{item}</foreach>
+        )
+    </update>
+
+</mapper>

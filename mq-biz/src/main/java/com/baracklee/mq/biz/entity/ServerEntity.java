@@ -127,4 +127,30 @@ public class ServerEntity {
     public void setIsActive(int isActive) {
         this.isActive = isActive;
     }
+
+    public final static String TABLE_NAME = "server";
+
+    public static String FdId = "id";
+
+    public static String FdIp = "ip";
+
+    public static String FdPort = "port";
+
+    public static String FdHeartTime = "heartTime";
+
+    public static String FdServerType = "serverType";
+
+    public static String FdStatusFlag = "statusFlag";
+
+    public static String FdServerVersion = "serverVersion";
+
+    public static String FdInsertBy = "insertBy";
+
+    public static String FdInsertTime = "insertTime";
+
+    public static String FdUpdateBy = "updateBy";
+
+    public static String FdUpdateTime = "updateTime";
+
+    public static String FdIsActive = "isActive";
 }
