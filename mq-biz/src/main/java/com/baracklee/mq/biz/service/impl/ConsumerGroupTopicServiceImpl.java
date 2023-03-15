@@ -253,7 +253,7 @@ public class ConsumerGroupTopicServiceImpl
     protected boolean checkChanged() {
         boolean flag= doCheckChanged();
         if(!flag){
-            if(System.currentTimeMillis()-lastTime>soaConfig.getMetaMqRebuildMaxInterval()){
+            if(System.currentTimeMillis()-lastTime>soaConfig.getMqMetaRebuildMaxInterval()){
                 lastTime=System.currentTimeMillis();
                 return true;
             }
