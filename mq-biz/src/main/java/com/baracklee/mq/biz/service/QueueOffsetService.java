@@ -1,28 +1,58 @@
 package com.baracklee.mq.biz.service;
 
+import com.baracklee.mq.biz.dto.response.BaseUiResponse;
 import com.baracklee.mq.biz.entity.ConsumerGroupTopicEntity;
+import com.baracklee.mq.biz.entity.OffsetVersionEntity;
 import com.baracklee.mq.biz.entity.QueueOffsetEntity;
 import com.baracklee.mq.biz.service.common.BaseService;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 
 public interface QueueOffsetService extends BaseService<QueueOffsetEntity> {
-    void updateConsumerId(QueueOffsetEntity t1);
+    List<QueueOffsetEntity> getByConsumerGroupIds(List<Long> consumerGroupIds);
 
-    List<QueueOffsetEntity> getByConsumerGroupIds(ArrayList<Long> consumerGroupIds);
+    void updateConsumerId(QueueOffsetEntity entity);
 
-    void createQueueOffset(ConsumerGroupTopicEntity consumerGroupTopicEntity);
+    int commitOffset(QueueOffsetEntity entity);
+    int commitOffsetAndUpdateVersion(QueueOffsetEntity entity);
+    int commitOffsetById(QueueOffsetEntity entity);
 
-    Map<String, QueueOffsetEntity> getUqCache();
+    void deRegister(long consumerId);
 
-    void updateCache();
+    /*
+     * 第一层的key是congsumergroupname,第二层的key为topicname
+     * */
+    Map<String,Map<String, List<QueueOffsetEntity>>> getCache();
 
-    void forceUpdateCache();
-
-    void deleteByConsumerGroupId(long id);
-
+    /**
+     * 清除consumerId
+     * @param consumerIds
+     */
     void setConsumerIdsToNull(List<Long> consumerIds);
+    List<QueueOffsetEntity> getCacheData();
+    Map<String, List<QueueOffsetEntity>> getConsumerGroupQueueOffsetMap();
+    Map<String, Set<String>> getSubEnvs();
+    void deleteByConsumerGroupId(long consumerGroupId);
+    void deleteByConsumerGroupIdAndOriginTopicName(ConsumerGroupTopicEntity consumerGroupTopicEntity);
+    List<QueueOffsetEntity> getByConsumerGroupTopic(long consumerGroupId,long topicId);
+    void updateStopFlag(long id, int stopFlag,String updateBy);
+    int updateQueueOffset(Map<String, Object> parameterMap);
+    Map<String, QueueOffsetEntity> getUqCache();
+    Map<Long, List<QueueOffsetEntity>> getQueueIdQueueOffsetMap();
+    Map<Long, OffsetVersionEntity> getOffsetVersion();
+    List<QueueOffsetEntity> getUnSubscribeData();
+    List<QueueOffsetEntity> getAllBasic();
+    long getLastVersion();
+    void updateCache();
+    BaseUiResponse createQueueOffset(ConsumerGroupTopicEntity consumerGroupTopicEntity);
+
+    long countBy(Map<String, Object> conditionMap);
+
+    List<QueueOffsetEntity> getListBy(Map<String, Object> conditionMap, long page, long pageSize);
+
+    long getOffsetSumByIds(List<Long> ids);
+
 }
