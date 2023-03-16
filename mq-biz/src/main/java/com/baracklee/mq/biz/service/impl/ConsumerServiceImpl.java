@@ -459,7 +459,7 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
         LogDto logDto= new LogDto();
         logDto.setAction("is_register");
         logDto.setConsumerName(request.getName());
-        logDto.setType("3");
+        logDto.setType(3);
         logService.addBrokerLog(logDto);
     }
 

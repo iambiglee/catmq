@@ -1,9 +1,13 @@
 package com.baracklee.mq.biz.service.impl;
 
 import com.baracklee.mq.biz.common.SoaConfig;
+import com.baracklee.mq.biz.common.inf.BrokerTimerService;
+import com.baracklee.mq.biz.common.inf.TimerService;
+import com.baracklee.mq.biz.common.thread.SoaThreadFactory;
 import com.baracklee.mq.biz.common.util.JsonUtil;
 import com.baracklee.mq.biz.common.util.Util;
 import com.baracklee.mq.biz.dal.meta.QueueOffsetRepository;
+import com.baracklee.mq.biz.dto.response.BaseUiResponse;
 import com.baracklee.mq.biz.entity.*;
 import com.baracklee.mq.biz.service.*;
 import com.baracklee.mq.biz.service.common.AbstractBaseService;
@@ -14,9 +18,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -24,7 +31,13 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 @Service
-public class QueueOffsetServiceImpl extends AbstractBaseService<QueueOffsetEntity> implements QueueOffsetService {
+public class QueueOffsetServiceImpl extends AbstractBaseService<QueueOffsetEntity>
+        implements
+        QueueOffsetService,
+        CacheUpdateService,
+        TimerService,
+        BrokerTimerService
+{
     private Logger log = LoggerFactory.getLogger(QueueOffsetServiceImpl.class);
 
     @Resource
@@ -39,7 +52,8 @@ public class QueueOffsetServiceImpl extends AbstractBaseService<QueueOffsetEntit
 
     @Resource
     private UserInfoHolder userInfoHolder;
-
+    @Resource
+    private AuditLogService auditLogService;
     @Resource
     private Message01Service message01Service;
 
@@ -58,11 +72,20 @@ public class QueueOffsetServiceImpl extends AbstractBaseService<QueueOffsetEntit
     private AtomicReference<Map<String, List<QueueOffsetEntity>>> consumerGroupQueueOffsetMap = new AtomicReference<>(
             new ConcurrentHashMap<>(10000));
     private AtomicLong lastVersion = new AtomicLong(0);
+    private AtomicBoolean startFlag = new AtomicBoolean(false);
 
     private Lock cacheLock = new ReentrantLock();
     private AtomicBoolean first = new AtomicBoolean(true);
+    private volatile boolean isRunning = true;
 
     private volatile boolean isPortal = true;
+
+
+    @PostConstruct
+    private void init(){
+        super.setBaseRepository(queueOffsetRepository);
+    }
+
 
 
     @Override
@@ -71,18 +94,60 @@ public class QueueOffsetServiceImpl extends AbstractBaseService<QueueOffsetEntit
     }
 
     @Override
-    public List<QueueOffsetEntity> getByConsumerGroupIds(ArrayList<Long> consumerGroupIds) {
+    public int commitOffset(QueueOffsetEntity entity) {
+        return 0;
+    }
+
+    @Override
+    public int commitOffsetAndUpdateVersion(QueueOffsetEntity entity) {
+        return 0;
+    }
+
+    @Override
+    public int commitOffsetById(QueueOffsetEntity entity) {
+        return 0;
+    }
+
+    @Override
+    public void deRegister(long consumerId) {
+
+    }
+
+    @Override
+    public Map<String, Map<String, List<QueueOffsetEntity>>> getCache() {
+        return null;
+    }
+
+
+    @Override
+    public List<QueueOffsetEntity> getCacheData() {
+        return null;
+    }
+
+    @Override
+    public Map<String, List<QueueOffsetEntity>> getConsumerGroupQueueOffsetMap() {
+        return null;
+    }
+
+    @Override
+    public Map<String, Set<String>> getSubEnvs() {
+        return null;
+    }
+
+    @Override
+    public List<QueueOffsetEntity> getByConsumerGroupIds(List<Long> consumerGroupIds) {
         if (CollectionUtils.isEmpty(consumerGroupIds)) {
             return new ArrayList<>();
         }
         return queueOffsetRepository.getByConsumerGroupIds(consumerGroupIds);
     }
 
+
     @Override
     /**
      * @TODO 11月17日 写到这里
      */
-    public void createQueueOffset(ConsumerGroupTopicEntity consumerGroupTopicEntity) {
+    public BaseUiResponse createQueueOffset(ConsumerGroupTopicEntity consumerGroupTopicEntity) {
         List<QueueEntity> queueEntityList = queueService.getQueuesByTopicId(consumerGroupTopicEntity.getTopicId());
         ConsumerGroupEntity consumerGroup = consumerGroupService.get(consumerGroupTopicEntity.getConsumerGroupId());
         for (QueueEntity queueEntity : queueEntityList) {
@@ -134,7 +199,22 @@ public class QueueOffsetServiceImpl extends AbstractBaseService<QueueOffsetEntit
                                 + "已经订阅了" + consumerGroupTopicEntity.getTopicName());
             }
         }
+        return new BaseUiResponse();
+    }
 
+    @Override
+    public long countBy(Map<String, Object> conditionMap) {
+        return 0;
+    }
+
+    @Override
+    public List<QueueOffsetEntity> getListBy(Map<String, Object> conditionMap, long page, long pageSize) {
+        return null;
+    }
+
+    @Override
+    public long getOffsetSumByIds(List<Long> ids) {
+        return 0;
     }
 
     @Override
@@ -160,6 +240,31 @@ public class QueueOffsetServiceImpl extends AbstractBaseService<QueueOffsetEntit
         return rs;
     }
 
+    @Override
+    public Map<Long, List<QueueOffsetEntity>> getQueueIdQueueOffsetMap() {
+        return null;
+    }
+
+    @Override
+    public Map<Long, OffsetVersionEntity> getOffsetVersion() {
+        return null;
+    }
+
+    @Override
+    public List<QueueOffsetEntity> getUnSubscribeData() {
+        return null;
+    }
+
+    @Override
+    public List<QueueOffsetEntity> getAllBasic() {
+        return null;
+    }
+
+    @Override
+    public long getLastVersion() {
+        return 0;
+    }
+
     private AtomicBoolean updateFlag = new AtomicBoolean(false);
 
     @Override
@@ -179,7 +284,7 @@ public class QueueOffsetServiceImpl extends AbstractBaseService<QueueOffsetEntit
     private boolean checkChanged() {
         boolean flag = doCheckChanged();
         if (!flag) {
-            if (System.currentTimeMillis() - lastTime > soaConfig.getMetaMqRebuildMaxInterval()) {
+            if (System.currentTimeMillis() - lastTime > soaConfig.getMqMetaRebuildMaxInterval()) {
                 lastTime = System.currentTimeMillis();
                 return true;
             }
@@ -301,14 +406,76 @@ public class QueueOffsetServiceImpl extends AbstractBaseService<QueueOffsetEntit
     }
 
     @Override
+    public String getCacheJson() {
+        return JsonUtil.toJsonNull(getCacheData());
+    }
+
+    @Override
     public void deleteByConsumerGroupId(long id) {
         queueOffsetRepository.deleteByConsumerGroupId(id);
     }
 
     @Override
+    public void deleteByConsumerGroupIdAndOriginTopicName(ConsumerGroupTopicEntity consumerGroupTopicEntity) {
+        queueOffsetRepository.deleteByConsumerGroupIdAndOriginTopicName(consumerGroupTopicEntity.getConsumerGroupId(),
+                consumerGroupTopicEntity.getOriginTopicName());
+        auditLogService.recordAudit(ConsumerGroupEntity.TABLE_NAME, consumerGroupTopicEntity.getConsumerGroupId(),
+                "取消" + consumerGroupTopicEntity.getConsumerGroupName() + "对" + consumerGroupTopicEntity.getTopicName()
+                        + "订阅时，删除queueOffset，对应的consumerGroupTopic为：" + JsonUtil.toJson(consumerGroupTopicEntity));
+    }
+
+    @Override
+    public List<QueueOffsetEntity> getByConsumerGroupTopic(long consumerGroupId, long topicId) {
+        return queueOffsetRepository.getByConsumerGroupTopic(consumerGroupId, topicId);
+    }
+
+    @Override
+    public void updateStopFlag(long id, int stopFlag, String updateBy) {
+        queueOffsetRepository.updateStopFlag(id,stopFlag,updateBy);
+    }
+
+    @Override
+    public int updateQueueOffset(Map<String, Object> parameterMap) {
+        return queueOffsetRepository.updateQueueOffset(parameterMap);
+    }
+
+    @Override
     public void setConsumerIdsToNull(List<Long> consumerIds) {
-        queueOffsetRepository.setConsumerIdsToNull(consumerIds);
+        queueOffsetRepository.setConsumserIdsToNull(consumerIds);
     }
 
 
+    @Override
+    public void startBroker() {
+        isPortal=true;
+    }
+
+    @Override
+    public void stopBroker() {
+
+    }
+
+    @Override
+    public void start() {
+        if (startFlag.compareAndSet(false, true)) {
+            ExecutorService executorService = Executors.newSingleThreadExecutor(SoaThreadFactory.create("queue_offset_service", true));
+            // updateCache();
+            executorService.execute(() -> {
+                while (isRunning) {
+                    updateCache();
+                    Util.sleep(soaConfig.getMqQueueOffsetCacheInterval());
+                }
+            });
+        }
+    }
+
+    @Override
+    public void stop() {
+        isRunning=false;
+    }
+
+    @Override
+    public String info() {
+        return null;
+    }
 }

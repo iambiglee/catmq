@@ -14,6 +14,33 @@ public class NotifyMessageServiceImpl extends AbstractBaseService<NotifyMessageE
 
     @Resource
     private NotifyMessageRepository notifyMessageRepository;
+
+    @Override
+    public long getDataMaxId(long maxId1) {
+        Long maxId = notifyMessageRepository.getMaxId(maxId1, MessageType.Meta);
+        if (maxId==null)
+            return 0;
+        return maxId;
+    }
+
+    @Override
+    public long getDataMaxId() {
+        Long maxId1 = notifyMessageRepository.getMaxId1(MessageType.Meta);
+        if (maxId1 == null) {
+            return 0;
+        }
+        return maxId1;
+    }
+
+    @Override
+    public long getDataMinId() {
+        Long minId = notifyMessageRepository.getMinId(MessageType.Meta);
+        if (minId == null) {
+            return 0;
+        }
+        return minId;
+    }
+
     @Override
     public long getRbMaxId(long lastNotifyMessageId) {
         Long maxId1 = notifyMessageRepository.getMaxId(lastNotifyMessageId, MessageType.Rb);
@@ -35,5 +62,16 @@ public class NotifyMessageServiceImpl extends AbstractBaseService<NotifyMessageE
         Long mindId=notifyMessageRepository.getMinId(MessageType.Rb);
         if (mindId==null) return 0;
         return mindId;
+    }
+
+    @Override
+    public int clearOld(long clearOldTime, long maxId) {
+        return notifyMessageRepository.clearOld(clearOldTime,maxId);
+    }
+
+    @Override
+    public long getMinId() {
+        Long minId1 = notifyMessageRepository.getMinId1();
+        return minId1==null?0:minId1;
     }
 }
