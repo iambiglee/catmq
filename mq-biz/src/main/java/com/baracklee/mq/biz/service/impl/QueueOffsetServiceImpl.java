@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 
 @Service
 public class QueueOffsetServiceImpl extends AbstractBaseService<QueueOffsetEntity>
@@ -95,43 +96,92 @@ public class QueueOffsetServiceImpl extends AbstractBaseService<QueueOffsetEntit
 
     @Override
     public int commitOffset(QueueOffsetEntity entity) {
-        return 0;
+        return queueOffsetRepository.commitOffset(entity);
     }
 
     @Override
     public int commitOffsetAndUpdateVersion(QueueOffsetEntity entity) {
-        return 0;
+        return queueOffsetRepository.commitOffsetAndUpdateVersion(entity);
     }
 
     @Override
     public int commitOffsetById(QueueOffsetEntity entity) {
-        return 0;
+        return queueOffsetRepository.commitOffsetById(entity);
     }
 
     @Override
     public void deRegister(long consumerId) {
-
+        queueOffsetRepository.deRegister(consumerId);
     }
 
     @Override
     public Map<String, Map<String, List<QueueOffsetEntity>>> getCache() {
-        return null;
+        // TODO Auto-generated method stub
+        // return cacheDataMap.get();
+        Map<String, Map<String, List<QueueOffsetEntity>>> rs = cacheDataMap.get();
+        if (rs.size() == 0) {
+            cacheLock.lock();
+            try {
+                rs = cacheDataMap.get();
+                if (rs.size() == 0) {
+                    if (first.compareAndSet(true, false)) {
+                        updateCache();
+                    }
+                    rs = cacheDataMap.get();
+                }
+            } finally {
+                cacheLock.unlock();
+            }
+        }
+        return rs;
     }
 
 
     @Override
     public List<QueueOffsetEntity> getCacheData() {
-        return null;
+
+        List<QueueOffsetEntity> rs = cacheDataList.get();
+        if (rs.size() == 0) {
+            cacheLock.lock();
+            try {
+                rs = cacheDataList.get();
+                if (rs.size() == 0) {
+                    if (first.compareAndSet(true, false)) {
+                        updateCache();
+                    }
+                    rs = cacheDataList.get();
+                }
+            } finally {
+                cacheLock.unlock();
+            }
+        }
+        return rs;
     }
 
     @Override
     public Map<String, List<QueueOffsetEntity>> getConsumerGroupQueueOffsetMap() {
-        return null;
+
+        Map<String, List<QueueOffsetEntity>> rs = consumerGroupQueueOffsetMap.get();
+        if (rs.size() == 0) {
+            cacheLock.lock();
+            try {
+                rs = consumerGroupQueueOffsetMap.get();
+                if (rs.size() == 0) {
+                    if (first.compareAndSet(true, false)) {
+                        updateCache();
+                    }
+                    rs = consumerGroupQueueOffsetMap.get();
+                }
+            } finally {
+                cacheLock.unlock();
+            }
+        }
+        return rs;
     }
 
     @Override
     public Map<String, Set<String>> getSubEnvs() {
-        return null;
+        return consumerGroupEnvsMapRef.get();
     }
 
     @Override
@@ -144,9 +194,6 @@ public class QueueOffsetServiceImpl extends AbstractBaseService<QueueOffsetEntit
 
 
     @Override
-    /**
-     * @TODO 11月17日 写到这里
-     */
     public BaseUiResponse createQueueOffset(ConsumerGroupTopicEntity consumerGroupTopicEntity) {
         List<QueueEntity> queueEntityList = queueService.getQueuesByTopicId(consumerGroupTopicEntity.getTopicId());
         ConsumerGroupEntity consumerGroup = consumerGroupService.get(consumerGroupTopicEntity.getConsumerGroupId());
@@ -204,17 +251,26 @@ public class QueueOffsetServiceImpl extends AbstractBaseService<QueueOffsetEntit
 
     @Override
     public long countBy(Map<String, Object> conditionMap) {
-        return 0;
+        return queueOffsetRepository.countBy(conditionMap);
     }
 
+    /**
+     * 用来计算分页
+     */
     @Override
     public List<QueueOffsetEntity> getListBy(Map<String, Object> conditionMap, long page, long pageSize) {
-        return null;
+        conditionMap.put("start1", (page - 1) * pageSize);
+        conditionMap.put("offset1", pageSize);
+        return queueOffsetRepository.getListBy(conditionMap);
     }
 
     @Override
     public long getOffsetSumByIds(List<Long> ids) {
-        return 0;
+        if (CollectionUtils.isEmpty(ids)) return 0L;
+        Long offsetSumByIds = queueOffsetRepository.getOffsetSumByIds(ids);
+        if (offsetSumByIds==null)
+            return 0;
+        return offsetSumByIds;
     }
 
     @Override
@@ -242,27 +298,43 @@ public class QueueOffsetServiceImpl extends AbstractBaseService<QueueOffsetEntit
 
     @Override
     public Map<Long, List<QueueOffsetEntity>> getQueueIdQueueOffsetMap() {
-        return null;
+        Map<Long, List<QueueOffsetEntity>> rs = queueIdQueueOffsetMap.get();
+        if (rs.size() == 0) {
+            cacheLock.lock();
+            try {
+                rs = queueIdQueueOffsetMap.get();
+                if (rs.size() == 0) {
+                    if (first.compareAndSet(true, false)) {
+                        updateCache();
+                    }
+                    rs = queueIdQueueOffsetMap.get();
+                }
+            } finally {
+                cacheLock.unlock();
+            }
+        }
+        return rs;
     }
 
     @Override
     public Map<Long, OffsetVersionEntity> getOffsetVersion() {
-        return null;
+        List<OffsetVersionEntity> offsetVersion = queueOffsetRepository.getOffsetVersion();
+        return offsetVersion.stream().collect(Collectors.toMap(OffsetVersionEntity::getId,e->e));
     }
 
     @Override
     public List<QueueOffsetEntity> getUnSubscribeData() {
-        return null;
+        return queueOffsetRepository.getUnSubscribeData();
     }
 
     @Override
     public List<QueueOffsetEntity> getAllBasic() {
-        return null;
+        return queueOffsetRepository.getAllBasic();
     }
 
     @Override
     public long getLastVersion() {
-        return 0;
+        return lastVersion.get();
     }
 
     private AtomicBoolean updateFlag = new AtomicBoolean(false);

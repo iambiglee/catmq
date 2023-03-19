@@ -33,4 +33,6 @@ public interface ConsumerGroupService extends BaseService<ConsumerGroupEntity> {
     Map<Long, ConsumerGroupEntity> getIdCache();
 
     ConsumerGroupDeleteResponse deleteConsumerGroup(Long consumerGroupId, boolean b);
+
+    ConsumerGroupTopicEntity getTopic(String consumerGroupName, String topicName);
 }

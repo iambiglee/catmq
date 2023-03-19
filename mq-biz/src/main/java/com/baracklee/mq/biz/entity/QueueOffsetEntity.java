@@ -314,4 +314,58 @@ public class QueueOffsetEntity {
     public void setSubEnv(String subEnv) {
         this.subEnv = subEnv;
     }
+    /**
+     * 字段名常量值，在构造查询map时，key值就不需要hard code了。
+     * 如构造查询ID为121的查询map时，map.put(QueueOffsetEntity.FdId， "121");
+     */
+
+    public final static String TABLE_NAME = "queue_offset";
+
+    public static String FdId = "id";
+
+    public static String FdConsumerGroupId = "consumerGroupId";
+
+    public static String FdConsumerGroupName = "consumerGroupName";
+
+    public static String FdConsumerName = "consumerName";
+
+    public static String FdConsumerId = "consumerId";
+
+    public static String FdTopicId = "topicId";
+
+    public static String FdTopicName = "topicName";
+
+    public static String FdOriginTopicName = "originTopicName";
+
+    public static String FdTopicType = "topicType";
+
+    public static String FdQueueId = "queueId";
+
+    public static String FdOffset = "offset";
+
+    public static String FdStartOffset = "startOffset";
+
+    public static String FdOffsetVersion = "offsetVersion";
+
+    public static String FdStopFlag = "stopFlag";
+
+    public static String FdDbInfo = "dbInfo";
+
+    public static String FdInsertBy = "insertBy";
+
+    public static String FdInsertTime = "insertTime";
+
+    public static String FdUpdateBy = "updateBy";
+
+    public static String FdUpdateTime = "updateTime";
+
+    public static String FdIsActive = "isActive";
+
+    public static String FdMetaUpdateTime = "metaUpdateTime";
+
+    public static String FdOriginConsumerGroupName = "originConsumerGroupName";
+
+    public static String FdConsumerGroupMode = "consumerGroupMode";
+
+    public static String FdSubEnv = "subEnv";
 }

@@ -318,6 +318,18 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
         return doDelete(consumerGroupEntity,checkOnline);
     }
 
+    @Override
+    public ConsumerGroupTopicEntity getTopic(String consumerGroupName, String topicName) {
+        Map<String, ConsumerGroupEntity> cache = getCache();
+        if(!cache.containsKey(consumerGroupName)){
+            return null;
+        }
+        if (!consumerGroupTopicService.getCache().containsKey(cache.get(consumerGroupName).getId())) {
+            return null;
+        }
+        return consumerGroupTopicService.getCache().get(cache.get(consumerGroupName).getId()).get(topicName);
+    }
+
     /**
      * 删除消费者组,广播模式专用
      * 1. 检查是否权限
