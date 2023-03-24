@@ -74,6 +74,7 @@ public class QueueOffsetCheckServiceImpl implements RedundanceCheckService {
             if (StringUtils.isEmpty(queueOffsetEntity.getConsumerName()) && queueOffsetEntity.getConsumerId() != 0) {
                 resultBuilder.append("queue_offset表中Id为：" + queueOffsetEntity.getId() + "的行，ConsumerId不为0但是ConsumerName字段为空。"+"<br/>");
             }
+
             if (!StringUtils.isEmpty(queueOffsetEntity.getConsumerName()) && queueOffsetEntity.getConsumerId() == 0) {
                 resultBuilder.append("queue_offset表中Id为：" + queueOffsetEntity.getId() + "的行，ConsumerId字段为0，但是ConsumerName不为空！。"+"<br/>");
             }

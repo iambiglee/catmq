@@ -8,11 +8,13 @@ import com.baracklee.mq.biz.common.util.JsonUtil;
 import com.baracklee.mq.biz.common.util.Util;
 import com.baracklee.mq.biz.dal.meta.ConsumerRepository;
 import com.baracklee.mq.biz.dto.LogDto;
+import com.baracklee.mq.biz.dto.base.MessageDto;
 import com.baracklee.mq.biz.dto.client.*;
 import com.baracklee.mq.biz.entity.*;
 import com.baracklee.mq.biz.service.*;
 import com.baracklee.mq.biz.service.common.AbstractBaseService;
 import com.baracklee.mq.client.MqClient;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +25,7 @@ import org.springframework.util.StringUtils;
 
 import javax.annotation.Resource;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Service
@@ -50,6 +53,16 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
 
     @Resource
     QueueService queueService;
+
+    @Resource
+    DbNodeService dbNodeService;
+
+    @Resource
+    Message01Service message01Service;
+
+    //记录topic和dbNode失败时间
+    protected Map<String, Long> dbFailMap = new ConcurrentHashMap<>();
+
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -93,6 +106,12 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
             return new ArrayList<>();
         }
         return consumerGroupConsumerService.getByConsumerGroupIds(consumerGroupIds);
+    }
+
+    @Override
+    public List<ConsumerGroupConsumerEntity> getConsumerGroupByConsumerIds(List<Long> consumerIds) {
+        if(CollectionUtils.isEmpty(consumerIds)) return new ArrayList<>();
+        return consumerGroupConsumerService.getByConsumerIds(consumerIds);
     }
 
     @Override
@@ -142,6 +161,96 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
             response.setMsg("topic1_"+request.getTopicName()+"has no queue");
         }
 
+        return null;
+    }
+
+    @Override
+    public PullDataResponse pullData(PullDataRequest request) {
+        PullDataResponse response = new PullDataResponse();
+        response.setSuc(true);
+        Map<Long, QueueEntity> data = queueService.getAllQueueMap();
+        checkVaild(request,response,data);
+        if (!response.isSuc()) return response;
+
+        QueueEntity temp = data.get(request.getQueueId());
+        Map<Long, DbNodeEntity> dbNodeMap = dbNodeService.getCache();
+        List<Message01Entity> entity=new ArrayList<>();
+        if(checkFailTime(request.getTopicName(),temp,null)&&checkStatus(temp,dbNodeMap)){
+            message01Service.setDbId(temp.getDbNodeId());
+
+            try {
+                entity = message01Service.getListDy(temp.getTopicName(), temp.getDbName(), request.getOffsetStart(), request.getOffsetEnd());
+                dbFailMap.put(temp.getIp(),System.currentTimeMillis()-soaConfig.getDbFailWaitTime()*2000L);
+            } catch (Exception e) {
+                dbFailMap.put(temp.getIp(),System.currentTimeMillis());
+                throw new RuntimeException(e);
+            }
+
+        }
+        List<MessageDto> messageDtos = convertMessageDto(entity);
+        response.setMsgs(messageDtos);
+        return response;
+    }
+
+    protected boolean checkFailTime(String topicName, QueueEntity entity, List<String> logLst) {
+        if (dbFailMap.containsKey(entity.getIp())
+                && (System.currentTimeMillis() - dbFailMap.get((entity.getIp()))) < soaConfig.getDbFailWaitTime()
+                * 1000L) {
+            if (logLst == null) {
+                log.info("topicName_{}_queueid_{}_is_fail", topicName, entity.getId());
+            }
+            return false;
+        }
+        return true;
+    }
+
+    protected boolean checkStatus(QueueEntity temp, Map<Long, DbNodeEntity> dbNodeMap) {
+        if (!dbNodeMap.containsKey(temp.getDbNodeId())) {
+            return false;
+        }
+        if (dbNodeMap.get(temp.getDbNodeId()).getReadOnly() == 3) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public FailMsgPublishAndUpdateResultResponse publishAndUpdateResultFailMsg(FailMsgPublishAndUpdateResultRequest request) {
+        return null;
+    }
+
+    @Override
+    public GetMessageCountResponse getMessageCount(GetMessageCountRequest request) {
+        return null;
+    }
+
+    @Override
+    public int heartbeat(List<Long> ids) {
+        return 0;
+    }
+
+    @Override
+    public List<ConsumerEntity> findByHeartTimeInterval(long heartTimeInterval) {
+        return null;
+    }
+
+    @Override
+    public boolean deleteByConsumers(List<ConsumerEntity> consumers) {
+        return false;
+    }
+
+    @Override
+    public ConsumerEntity getConsumerByConsumerGroupId(Long consumerGroupId) {
+        return null;
+    }
+
+    @Override
+    public long countBy(Map<String, Object> conditionMap) {
+        return 0;
+    }
+
+    @Override
+    public List<ConsumerEntity> getListBy(Map<String, Object> conditionMap) {
         return null;
     }
 
@@ -509,5 +618,44 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
                     "topic_" + request.getTopicName() + "_and_token_" + request.getToken() + "_is_not_correct!");
             return;
         }
+    }
+
+    private void checkVaild(PullDataRequest request, PullDataResponse response, Map<Long, QueueEntity> data) {
+        if (request == null) {
+            response.setSuc(false);
+            response.setMsg("参数不能为空！");
+            return;
+
+        }
+        if (request.getQueueId() <= 0 || request.getOffsetStart() < 0
+                || request.getOffsetStart() >= request.getOffsetEnd()) {
+            response.setSuc(false);
+            response.setMsg("参数不对！");
+            return;
+        }
+        if (!data.containsKey(request.getQueueId())) {
+            response.setSuc(false);
+            response.setMsg("queueId_" + request.getQueueId() + "_is_not_exist！");
+            return;
+        }
+    }
+
+    private List<MessageDto> convertMessageDto(List<Message01Entity> entities) {
+        List<MessageDto> messageDtos = new ArrayList<>(entities.size());
+        entities.forEach(t1 -> {
+            MessageDto messageDto = new MessageDto();
+            messageDto.setBizId(t1.getBizId());
+            messageDto.setBody(t1.getBody());
+            messageDto.setHead(JsonUtil.parseJson(t1.getHead(), new TypeReference<Map<String, String>>() {
+            }));
+            messageDto.setId(t1.getId());
+            messageDto.setRetryCount(t1.getRetryCount());
+            messageDto.setTag(t1.getTag());
+            messageDto.setTraceId(t1.getTraceId());
+            messageDto.setSendTime(t1.getSendTime());
+            messageDto.setSendIP(t1.getSendIp());
+            messageDtos.add(messageDto);
+        });
+        return messageDtos;
     }
 }
