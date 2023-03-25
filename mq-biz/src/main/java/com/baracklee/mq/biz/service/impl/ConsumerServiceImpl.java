@@ -249,6 +249,22 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
 
     @Override
     public GetMessageCountResponse getMessageCount(GetMessageCountRequest request) {
+        GetMessageCountResponse response = new GetMessageCountResponse();
+        response.setSuc(true);
+        if (request == null || StringUtils.isEmpty(request.getConsumerGroupName())) {
+            response.setSuc(false);
+            response.setMsg("ConsumerGroupName不能为空！");
+            return response;
+        }
+        Map<String, ConsumerGroupEntity> cache = consumerGroupService.getCache();
+        if(!cache.containsKey(request.getConsumerGroupName())){
+            response.setSuc(false);
+            response.setMsg("ConsumerGroupName不能为空！");
+            return response;
+        }
+
+
+
         return null;
     }
 
