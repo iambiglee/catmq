@@ -9,6 +9,7 @@ import com.baracklee.mq.biz.common.util.Util;
 import com.baracklee.mq.biz.dal.meta.ConsumerRepository;
 import com.baracklee.mq.biz.dto.LogDto;
 import com.baracklee.mq.biz.dto.base.MessageDto;
+import com.baracklee.mq.biz.dto.base.ProducerDataDto;
 import com.baracklee.mq.biz.dto.client.*;
 import com.baracklee.mq.biz.entity.*;
 import com.baracklee.mq.biz.service.*;
@@ -216,7 +217,34 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
 
     @Override
     public FailMsgPublishAndUpdateResultResponse publishAndUpdateResultFailMsg(FailMsgPublishAndUpdateResultRequest request) {
-        return null;
+        FailMsgPublishAndUpdateResultResponse response = new FailMsgPublishAndUpdateResultResponse();
+        response.setSuc(true);
+        QueueEntity queue = queueService.getAllQueueMap().get(request.getQueueId());
+        if(request.getFailMsg()==null){
+            PublishMessageResponse publishMessageResponse = publish(request.getFailMsg());
+            response.setSuc(publishMessageResponse.isSuc());
+            //删除旧的失败消息
+            if (request.getFailMsg().getMsgs() != null) {
+                request.getFailMsg().getMsgs().forEach(t1 -> {
+                    deleteOldFailMsg(request.getFailMsg(), t1, queue);
+                });
+            }
+        }
+        if(CollectionUtils.isEmpty(request.getIds())){
+            if(queue!=null&&queue.getNodeType()==2&&!CollectionUtils.isEmpty(request.getIds())){
+                message01Service.setDbId(queue.getDbNodeId());
+                message01Service.updateFailMsgResult(queue.getTbName(),request.getIds(),Message01Service.failMsgRetryCountSuc);
+            }
+        }
+        return response;
+    }
+
+    private int deleteOldFailMsg(PublishMessageRequest request, ProducerDataDto t1, QueueEntity temp) {
+        if (temp != null && temp.getNodeType() == 2 && temp.getTopicName().equals(request.getTopicName())) {
+            message01Service.setDbId(temp.getDbNodeId());
+            return message01Service.deleteOldFailMsg(temp.getTbName(), t1.getId(), t1.getRetryCount() - 1);
+        }
+        return 0;
     }
 
     @Override
