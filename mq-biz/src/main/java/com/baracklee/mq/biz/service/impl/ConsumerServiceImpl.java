@@ -3,12 +3,11 @@ package com.baracklee.mq.biz.service.impl;
 import com.baracklee.mq.biz.MqConst;
 import com.baracklee.mq.biz.MqEnv;
 import com.baracklee.mq.biz.common.SoaConfig;
-import com.baracklee.mq.biz.common.util.ConsumerGroupUtil;
-import com.baracklee.mq.biz.common.util.JsonUtil;
-import com.baracklee.mq.biz.common.util.Util;
+import com.baracklee.mq.biz.common.util.*;
 import com.baracklee.mq.biz.dal.meta.ConsumerRepository;
 import com.baracklee.mq.biz.dto.LogDto;
 import com.baracklee.mq.biz.dto.base.MessageDto;
+import com.baracklee.mq.biz.dto.base.PartitionInfo;
 import com.baracklee.mq.biz.dto.base.ProducerDataDto;
 import com.baracklee.mq.biz.dto.client.*;
 import com.baracklee.mq.biz.entity.*;
@@ -27,6 +26,7 @@ import org.springframework.util.StringUtils;
 import javax.annotation.Resource;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 @Service
@@ -63,6 +63,10 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
 
     //记录topic和dbNode失败时间
     protected Map<String, Long> dbFailMap = new ConcurrentHashMap<>();
+
+    // 记录消息推送通知的时间
+    private AtomicReference<Map<Long, Long>> speedLimitMapRef = new AtomicReference<Map<Long, Long>>(
+            new ConcurrentHashMap<>(1000));
 
 
     @Override
@@ -263,45 +267,194 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
             return response;
         }
 
+        Map<String, Map<String, List<QueueOffsetEntity>>> map = queueOffsetService.getCache();
+        List<QueueOffsetEntity> rs = new ArrayList<>();
+        for (String topic : request.getTopics()) {
+            if (map.get(request.getConsumerGroupName()).containsKey(topic)){
+                rs.addAll(map.get(request.getConsumerGroupName()).get(topic));
+            }else {
+                map.get(request.getConsumerGroupName()).values().forEach(rs::addAll);
+            }
+        }
+        List<Long> ids = rs.stream().map(QueueOffsetEntity::getId).collect(Collectors.toList());
 
+        long offsetSum = queueOffsetService.getOffsetSumByIds(ids);
+        long totalCount = 0;
 
-        return null;
+        Map<Long, QueueEntity> queues = queueService.getAllQueueMap();
+        for (QueueOffsetEntity offsetEntity : rs) {
+            QueueEntity temp = queues.get(offsetEntity.getQueueId());
+            message01Service.setDbId(temp.getDbNodeId());
+            long maxId=queueService.getMaxId(temp.getId(),temp.getTbName());
+            totalCount = totalCount + maxId - 1;
+        }
+        totalCount = totalCount - offsetSum;
+        response.setCount(totalCount);
+        return response;
+
     }
 
     @Override
     public int heartbeat(List<Long> ids) {
+        if (!CollectionUtils.isEmpty(ids)) {
+            return consumerRepository.heartbeat(ids);
+        }
         return 0;
     }
 
     @Override
     public List<ConsumerEntity> findByHeartTimeInterval(long heartTimeInterval) {
-        return null;
+        return consumerRepository.findByHeartTimeInterval(heartTimeInterval);
     }
 
     @Override
     public boolean deleteByConsumers(List<ConsumerEntity> consumers) {
-        return false;
+        if (CollectionUtils.isEmpty(consumers))
+            return true;
+        return doDeleteConsumer(consumers,0);
     }
 
     @Override
     public ConsumerEntity getConsumerByConsumerGroupId(Long consumerGroupId) {
-        return null;
+        return consumerRepository.getConsumerByConsumerGroupId(consumerGroupId);
+
     }
 
     @Override
     public long countBy(Map<String, Object> conditionMap) {
-        return 0;
+        return consumerRepository.countBy(conditionMap);
     }
 
     @Override
     public List<ConsumerEntity> getListBy(Map<String, Object> conditionMap) {
-        return null;
+        return consumerRepository.getListBy(conditionMap);
     }
 
     private void saveMsg(PublishMessageRequest request, PublishMessageResponse response, List<QueueEntity> queueEntities) {
         Map<Long, QueueEntity> entityMap = queueEntities.stream().collect(Collectors.toMap(QueueEntity::getId, a -> a));
 
+        Map<String, PartitionInfo> partitionMap = new HashMap<>();
+        //将消息根据queueId 分类
+        Map<Long, List<Message01Entity>> msgQueueMap = new HashMap<>();
+        createMsg(request,msgQueueMap,partitionMap);
+
+
     }
+
+    private void createMsg(PublishMessageRequest request, Map<Long, List<Message01Entity>> queueMsg,
+                           Map<String, PartitionInfo> partitionMap) {
+        request.getMsgs().forEach(t1 -> {
+            Message01Entity entity = new Message01Entity();
+            entity.setBizId(t1.getBizId());
+            entity.setBody(t1.getBody());
+            entity.setHead(JsonUtil.toJson(t1.getHead()));
+            entity.setRetryCount(t1.getRetryCount());
+            entity.setTag(t1.getTag() + "");
+            if (StringUtils.isEmpty(t1.getTraceId())) {
+                t1.setTraceId(UUID.randomUUID().toString().replaceAll("-", ""));
+            }
+            entity.setTraceId(t1.getTraceId());
+            entity.setSendIp(request.getClientIp());
+            if (t1.getPartitionInfo() != null) {
+                if (!queueMsg.containsKey(t1.getPartitionInfo().getQueueId())) {
+                    queueMsg.put(t1.getPartitionInfo().getQueueId(), new ArrayList<>(10));
+                }
+                queueMsg.get(t1.getPartitionInfo().getQueueId()).add(entity);
+                partitionMap.put(t1.getTraceId(), t1.getPartitionInfo());
+            } else {
+                if (!queueMsg.containsKey(Long.MAX_VALUE)) {
+                    queueMsg.put(Long.MAX_VALUE, new ArrayList<>());
+                }
+                queueMsg.get(Long.MAX_VALUE).add(entity);
+            }
+
+        });
+
+    }
+
+    protected void doSaveMsg(List<Message01Entity> message01Entities, PublishMessageRequest request,
+                             PublishMessageResponse response, QueueEntity temp){
+        try {
+            message01Service.setDbId(temp.getDbNodeId());
+            message01Service.insertBatchDy(request.getTopicName(),temp.getTbName(),message01Entities);
+            if (soaConfig.getMqPushFlag() == 1) {// apollo开关
+                notifyClient(temp);
+            }
+            dbFailMap.put(getFailDbUp(temp), System.currentTimeMillis() - soaConfig.getDbFailWaitTime() * 2000L);
+            response.setSuc(true);
+        } catch (Exception e) {
+            dbFailMap.put(getFailDbUp(temp), System.currentTimeMillis());
+            throw new RuntimeException(e);
+        }
+    }
+    private final int timeout = 5000;
+    private IHttpClient httpClient = new HttpClient(timeout, timeout);
+
+    private void notifyClient(QueueEntity queueEntity) {
+        Map<Long, List<QueueOffsetEntity>> queueIdQueueOffsetMap = queueOffsetService.getQueueIdQueueOffsetMap();
+        Map<String, ConsumerGroupEntity> consumerGroupMap = consumerGroupService.getCache();
+        List<QueueOffsetEntity> queueOffsetList = queueIdQueueOffsetMap.get(queueEntity.getId());
+        if (queueOffsetList == null) {
+            return;
+        }
+        Map<String, List<MsgNotifyDto>> notifyMap = new HashMap<>();
+        for (QueueOffsetEntity queueOffset : queueOffsetList) {
+            // 如果消费者组开启了实时消息，则给对应的客户端发送异步通知。
+            if (consumerGroupMap.get(queueOffset.getConsumerGroupName()).getPushFlag() == 1
+                    && speedLimit(queueEntity.getId())){
+                ConsumerUtil.ConsumerVo consumerVo = ConsumerUtil.parseConsumerId(queueOffset.getConsumerName());
+                if (StringUtils.isEmpty(consumerVo.port)) {
+                    continue;
+                }
+                String clienturl = "http://" + consumerVo.ip + ":" + consumerVo.port;
+                if (!notifyMap.containsKey(clienturl)) {
+                    notifyMap.put(clienturl, new ArrayList<>());
+                }
+                MsgNotifyDto msgNotifyDto = new MsgNotifyDto();
+                msgNotifyDto.setConsumerGroupname(queueOffset.getConsumerGroupName());
+                msgNotifyDto.setQueueId(queueEntity.getId());
+                notifyMap.get(clienturl).add(msgNotifyDto);
+            }
+        }
+        if (notifyMap.size()==0){
+            return;
+        }
+        speedLimitMapRef.get().put(queueEntity.getId(), System.currentTimeMillis());
+        for (String url : notifyMap.keySet()) {
+            // 给对应的客户端发送拉取通知
+            try {
+                MsgNotifyRequest request = new MsgNotifyRequest();
+                request.setMsgNotifyDtos(notifyMap.get(url));
+                if (notifyFailTentativeLimit(url)) {
+                    httpClient.postAsyn(url + "/mq/client/notify", request, new NotifyCallBack(url));
+                }
+
+            } catch (Exception e) {
+                log.error("给客户端发送拉取通知异常：", e);
+            }
+        }
+
+
+    }
+
+    private boolean speedLimit(Long queueId) {
+        Long lastTime = speedLimitMapRef.get().get(queueId);
+        if (lastTime == null) {
+            return true;
+        }
+//		System.out.println("差值："+(System.currentTimeMillis() - lastTime)+"----"+(System.currentTimeMillis() - lastTime > soaConfig.getMqClientNotifyTime()));
+
+        if (System.currentTimeMillis() - lastTime > soaConfig.getMqClientNotifyTime()) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    private String getFailDbUp(QueueEntity temp) {
+        return temp.getIp();
+    }
+
 
     /**
      * 下线消费者

@@ -1,22 +1,15 @@
 package com.baracklee.mq.biz.dto.client;
 
+import java.util.List;
+
 public class MsgNotifyRequest {
-    private long queueId;
-    private String consumerGroupName;
+    private List<MsgNotifyDto> msgNotifyDtos;
 
-    public long getQueueId() {
-        return queueId;
+    public List<MsgNotifyDto> getMsgNotifyDtos() {
+        return msgNotifyDtos;
     }
 
-    public void setQueueId(long queueId) {
-        this.queueId = queueId;
-    }
-
-    public String getConsumerGroupName() {
-        return consumerGroupName;
-    }
-
-    public void setConsumerGroupName(String consumerGroupName) {
-        this.consumerGroupName = consumerGroupName;
+    public void setMsgNotifyDtos(List<MsgNotifyDto> msgNotifyDtos) {
+        this.msgNotifyDtos = msgNotifyDtos;
     }
 }
