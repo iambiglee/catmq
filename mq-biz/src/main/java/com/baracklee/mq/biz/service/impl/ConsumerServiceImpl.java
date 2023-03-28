@@ -6,6 +6,8 @@ import com.baracklee.mq.biz.common.SoaConfig;
 import com.baracklee.mq.biz.common.util.*;
 import com.baracklee.mq.biz.dal.meta.ConsumerRepository;
 import com.baracklee.mq.biz.dto.LogDto;
+import com.baracklee.mq.biz.dto.MqConstanst;
+import com.baracklee.mq.biz.dto.NotifyFailVo;
 import com.baracklee.mq.biz.dto.base.MessageDto;
 import com.baracklee.mq.biz.dto.base.PartitionInfo;
 import com.baracklee.mq.biz.dto.base.ProducerDataDto;
@@ -26,6 +28,7 @@ import org.springframework.util.StringUtils;
 import javax.annotation.Resource;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -61,14 +64,22 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
     @Resource
     Message01Service message01Service;
 
+    @Resource
+    private EmailUtil emailUtil;
+
     //记录topic和dbNode失败时间
     protected Map<String, Long> dbFailMap = new ConcurrentHashMap<>();
 
     // 记录消息推送通知的时间
     private AtomicReference<Map<Long, Long>> speedLimitMapRef = new AtomicReference<Map<Long, Long>>(
             new ConcurrentHashMap<>(1000));
+    //记录消息推送失败的消息
+    private AtomicReference<Map<String, NotifyFailVo>> notifyFailMapRef = new AtomicReference<Map<String, NotifyFailVo>>(
+            new ConcurrentHashMap<>(1000));
 
 
+    private AtomicReference<Map<String, AtomicInteger>> counter = new AtomicReference<Map<String, AtomicInteger>>(
+            new ConcurrentHashMap<>(1000));
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ConsumerRegisterResponse register(ConsumerRegisterRequest request) {
@@ -136,6 +147,12 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
         return response;
     }
 
+//每个主题设置的最大熔断值
+    protected Map<String, AtomicInteger> topicPerMax = new ConcurrentHashMap<>();
+    //总的最大熔断值
+    protected AtomicInteger totalMax = new AtomicInteger(0);
+
+
     /**
      * 1. 检查队列是否负载过大
      * 2. 检查能否插入进去
@@ -146,27 +163,102 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
     @Override
     public PublishMessageResponse publish(PublishMessageRequest request) {
         PublishMessageResponse response = new PublishMessageResponse();
-        checkVaild(request,response);
+        checkVaild(request, response);
         if (!response.isSuc()) {
             return response;
         }
-        String topicName=request.getTopicName();
-        Map<String, List<QueueEntity>> queueMap = queueService.getAllLocatedTopicWriteQueue();
-        Map<String, List<QueueEntity>> topicQueueMap = queueService.getAllLocatedTopicQueue();
-        if (queueMap.containsKey(topicName)||topicQueueMap.containsKey(topicName)){
-            List<QueueEntity> queueEntities = queueMap.get(topicName);
-            if(CollectionUtils.isEmpty(queueEntities)){
-                response.setSuc(false);
-                response.setMsg("topic_"+request.getTopicName()+"_has no queue");
-            }else {
-                saveMsg(request,response,queueEntities);
+        try {
+            if (!checkTopicRate(request, response)) {
+                return response;
             }
-        }else {
+            Map<String, List<QueueEntity>> queueMap = queueService.getAllLocatedTopicWriteQueue();
+            Map<String, List<QueueEntity>> topicQueueMap = queueService.getAllLocatedTopicQueue();
+            if (queueMap.containsKey(request.getTopicName()) || topicQueueMap.containsKey(request.getTopicName())) {
+                List<QueueEntity> queueEntities = queueMap.get(request.getTopicName());
+                if (queueEntities == null || queueEntities.size() == 0) {
+                    response.setSuc(false);
+                    response.setMsg("topic_" + request.getTopicName() + "_and_has_no_queue!");
+                    if (topicQueueMap.containsKey(request.getTopicName()) && soaConfig.getPublishMode() == 1) {
+                        queueEntities = topicQueueMap.get(request.getTopicName());
+                        updateQueueCache(request.getTopicName());
+                    } else {
+                        updateQueueCache(request.getTopicName());
+                        return response;
+                    }
+                }
+                if (queueEntities.size() > 0) {
+                    saveMsg(request, response, queueEntities);
+                }
+            } else {
+                response.setSuc(false);
+                response.setMsg("topic1_" + request.getTopicName() + "_and_has_no_queue!");
+                return response;
+            }
+        } catch (Exception e) {
+            log.error("publish_error,and request json is " + JsonUtil.toJsonNull(request), e);
             response.setSuc(false);
-            response.setMsg("topic1_"+request.getTopicName()+"has no queue");
+            response.setMsg(e.getMessage());
+        } finally {
+            if (soaConfig.getEnableTopicRate() == 1) {
+                totalMax.decrementAndGet();
+                topicPerMax.get(request.getTopicName()).decrementAndGet();
+            }
         }
+        return response;
+    }
 
-        return null;
+    protected volatile long lastTime = 0;
+
+    private void updateQueueCache(String topicName) {
+        if (System.currentTimeMillis() - lastTime > 10 * 1000) {
+            lastTime = System.currentTimeMillis();
+            try {
+                emailUtil.sendErrorMail(topicName + "没有可用的队列请注意", "没有可用的队列，请注意！！");
+                queueService.resetCache();
+                queueService.updateCache();
+            } catch (Exception e) {
+
+            }
+        }
+    }
+
+    private boolean checkTopicRate(PublishMessageRequest request, PublishMessageResponse response) {
+        // 关闭限速
+        if (soaConfig.getEnableTopicRate() == 0) {
+            return true;
+        }
+        if (!topicPerMax.containsKey(request.getTopicName())) {
+            synchronized (this) {
+                if (!topicPerMax.containsKey(request.getTopicName())) {
+                    topicPerMax.put(request.getTopicName(), new AtomicInteger(0));
+                }
+            }
+        }
+        int totalMax1 = totalMax.incrementAndGet();
+        int topicMax1 = topicPerMax.get(request.getTopicName()).incrementAndGet();
+        if (soaConfig.getTopicFlag(request.getTopicName()).equals("0")) {
+            response.setMsg(String.format("当前topic被设置为禁止发送topic", request.getTopicName()));
+            response.setSleepTime(0);
+            response.setCode(MqConstanst.YES);
+            response.setSuc(false);
+            return false;
+        }
+        if (soaConfig.getTopicHostMax() > 0 && totalMax1 > soaConfig.getTopicHostMax()) {
+            response.setMsg(String.format("当前发送超过最大并发数了，需要降速,最大值为%s,当前值为%s", soaConfig.getTopicHostMax(), totalMax1));
+            response.setSleepTime(Math.round(Math.random() * 1000));
+            response.setCode(MqConstanst.NO);
+            response.setSuc(false);
+            return false;
+        }
+        int topicPer = soaConfig.getTopicPerMax(request.getTopicName());
+        if (topicPer > 0 && topicMax1 > topicPer) {
+            response.setMsg(String.format("当前topic发送超过最大并发数了，需要降速,最大值为%s,当前值为%s", topicPer, topicMax1));
+            response.setSleepTime(Math.round(Math.random() * 1000));
+            response.setCode(MqConstanst.NO);
+            response.setSuc(false);
+            return false;
+        }
+        return true;
     }
 
     @Override
@@ -329,14 +421,37 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
     public List<ConsumerEntity> getListBy(Map<String, Object> conditionMap) {
         return consumerRepository.getListBy(conditionMap);
     }
+    
 
     private void saveMsg(PublishMessageRequest request, PublishMessageResponse response, List<QueueEntity> queueEntities) {
-        Map<Long, QueueEntity> entityMap = queueEntities.stream().collect(Collectors.toMap(QueueEntity::getId, a -> a));
+        //<queueId,queue实体对象>
+        Map<Long, QueueEntity> queueMap = queueEntities.stream().collect(Collectors.toMap(QueueEntity::getId, a -> a));
 
+        //<traceId,分区信息,也就是一个queueId>
         Map<String, PartitionInfo> partitionMap = new HashMap<>();
-        //将消息根据queueId 分类
+        // <queueId,all message> 如果没有指定queueId,则使用最大值，不指定分区
         Map<Long, List<Message01Entity>> msgQueueMap = new HashMap<>();
         createMsg(request,msgQueueMap,partitionMap);
+
+        for (Map.Entry<Long, List<Message01Entity>> listEntry : msgQueueMap.entrySet()) {
+            Long queueId = listEntry.getKey();
+            List<Message01Entity> message01Entities = listEntry.getValue();
+
+            if (queueMap.containsKey(queueId)){
+                doSaveMsg(request,response, Collections.singletonList(queueMap.get(queueId)),message01Entities);
+            }else if (queueId==Long.MAX_VALUE){
+                doSaveMsg(request, response, queueEntities, message01Entities);
+            }else {
+                for (Message01Entity message01Entity : message01Entities) {
+                    if(partitionMap.containsKey(message01Entity.getTraceId())){
+                        if(partitionMap.get(message01Entity.getTraceId()).getStrictMode()==0){
+                            doSaveMsg(request,response,queueEntities, Collections.singletonList(message01Entity));
+                        }
+                    }
+                }
+            }
+
+        }
 
 
     }
@@ -370,6 +485,84 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
 
         });
 
+    }
+
+    /**
+     * 本段实现两个功能，一个是分配消息分配到哪个队列，一个是失败重发，并且添加远程log记录
+     */
+    private void doSaveMsg(PublishMessageRequest request, PublishMessageResponse response,
+                           List<QueueEntity> queueEntities, List<Message01Entity> message01Entities) {
+        int tryCount = 0;
+        int queueSize = queueEntities.size();
+        Exception last = null;
+        String key = request.getTopicName();
+        Map<String, AtomicInteger> counterTemp = counter.get();
+        if (!counterTemp.containsKey(key)) {
+            counterTemp.put(key, new AtomicInteger(0));
+        }
+        counterTemp.get(key).compareAndSet(Integer.MAX_VALUE, 0);
+        int count = counterTemp.get(key).incrementAndGet();
+        while (tryCount <= queueSize) {
+            try {
+                QueueEntity temp = queueEntities.get(count % queueEntities.size());
+                count++;
+                if (!checkFailTime(request.getTopicName(), temp, null)) {
+                    continue;
+                }
+                doSaveMsg(message01Entities, request, response, temp);
+                last = null;
+                if (response.isSuc()) {
+                    addPublishLog(message01Entities, request, MqConst.INFO, null);
+                } else {
+                    last = new RuntimeException(response.getMsg());
+                }
+                break;
+            } catch (Exception e) {
+                tryCount++;
+                response.setSuc(false);
+                response.setMsg("消息保存失败！");
+                last = e;
+            }
+        }
+        if (last != null) {
+            addPublishLog(message01Entities, request, MqConst.ERROR, last);
+            sendPublishFailMail(request, last, 2);
+        }
+    }
+
+    @Resource
+    EmailService emailService;
+    private void sendPublishFailMail(PublishMessageRequest request, Exception last, int type) {
+        if (soaConfig.enableSendFailTopicMail(request.getTopicName())) {
+            SendMailRequest request2 = new SendMailRequest();
+            request2.setServer(true);
+            request2.setSubject("服务端,发送失败,topic:" + request.getTopicName());
+            request2.setContent(last.getMessage() + " and request json is " + JsonUtil.toJsonNull(request)
+                    + ",注意此邮件只是发给管理员注意情况,不代表消息发送最终失败,消息发送最终失败以客户端发送的邮件为准!");
+            request2.setType(type);
+            request2.setTopicName(request.getTopicName());
+            request2.setKey("topic:" + request.getTopicName() + "-发送失败！");
+            emailService.sendProduceMail(request2);
+        }
+    }
+
+    private void addPublishLog(List<Message01Entity> message01Entities, PublishMessageRequest request, int info, Throwable th) {
+        for (Message01Entity message01Entity : message01Entities) {
+            LogDto logDto = new LogDto();
+            logDto.setAction("message_publish");
+            logDto.setBizId(message01Entity.getBizId());
+            logDto.setTopicName(request.getTopicName());
+            logDto.setTraceId(message01Entity.getTraceId());
+
+            if (info==MqConst.ERROR){
+                logDto.setThrowable(th);
+                logDto.setAction("message_publish_erro");
+                logDto.setMsg(JsonUtil.toJsonNull(message01Entity));
+            }
+
+            logDto.setType(info);
+            logService.addBrokerLog(logDto);
+        }
     }
 
     protected void doSaveMsg(List<Message01Entity> message01Entities, PublishMessageRequest request,
@@ -426,7 +619,7 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
                 MsgNotifyRequest request = new MsgNotifyRequest();
                 request.setMsgNotifyDtos(notifyMap.get(url));
                 if (notifyFailTentativeLimit(url)) {
-                    httpClient.postAsyn(url + "/mq/client/notify", request, new NotifyCallBack(url));
+                    httpClient.postAsyn(url + "/mq/client/notify", request, new NotifyCallBack(url,notifyFailMapRef));
                 }
 
             } catch (Exception e) {
@@ -435,6 +628,35 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
         }
 
 
+    }
+
+    private boolean notifyFailTentativeLimit(String url) {
+        NotifyFailVo notifyFailVo = notifyFailMapRef.get().get(url);
+        if (notifyFailVo==null){
+            return true;
+        }
+        if (notifyFailVo.isStatus()){
+            return true;
+        }
+        //探测时间设定，若是httpClient超时设定为最小值
+        int retryTime=Math.max(soaConfig.getMqNotifyFailTime(),timeout);
+        if (System.currentTimeMillis() - notifyFailVo.getLastRetryTime() > retryTime) {
+            // 处于重试失败状态
+            // 如果已经有线程去试探了，直接返回
+            if (notifyFailVo.getIsRetrying().get()) {
+                return false;
+            } else {// 否则试探一次
+                if (notifyFailVo.getIsRetrying().compareAndSet(false, true)) {
+                    notifyFailVo.setLastRetryTime(System.currentTimeMillis());
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+
+        } else {
+            return false;
+        }
     }
 
     private boolean speedLimit(Long queueId) {

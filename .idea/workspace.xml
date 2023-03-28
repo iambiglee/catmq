@@ -4,11 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f69a7e71-d25e-4eb5-898c-ebacc0b8ef24" name="Changes" comment="consumerService的pull data">
-      <change afterPath="$PROJECT_DIR$/mq-client/mq-core/src/main/java/com/baracklee/mq/biz/dto/client/MsgNotifyDto.java" afterDir="false" />
+    <list default="true" id="f69a7e71-d25e-4eb5-898c-ebacc0b8ef24" name="Changes" comment="consumerService的getMesagecount">
+      <change afterPath="$PROJECT_DIR$/mq-biz/src/main/java/com/baracklee/mq/biz/dto/NotifyFailVo.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/mq-biz/src/main/java/com/baracklee/mq/biz/entity/NotifyCallBack.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mq-biz/src/main/java/com/baracklee/mq/biz/service/impl/ConsumerServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/mq-biz/src/main/java/com/baracklee/mq/biz/service/impl/ConsumerServiceImpl.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mq-biz/src/main/resources/mysql/Consumer.xml" beforeDir="false" afterPath="$PROJECT_DIR$/mq-biz/src/main/resources/mysql/Consumer.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -25,6 +25,7 @@
         <option value="Class" />
       </list>
     </option>
+    <option name="SCHEME" value="Project" />
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -75,13 +76,14 @@
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
     &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;editor.preferences.fonts.default&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;fileTemplates&quot;,
     &quot;spring.configuration.checksum&quot;: &quot;ae71fc61790ac0bf69edd158cb1e0bdb&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
 }</component>
   <component name="RecentsManager">
     <key name="CreateClassDialog.RecentsKey">
+      <recent name="com.baracklee.mq.biz.service" />
       <recent name="com.baracklee.mq.biz.service.impl" />
       <recent name="com.baracklee.mq.biz.dto" />
     </key>
@@ -136,7 +138,9 @@
       <workItem from="1678948663302" duration="235000" />
       <workItem from="1679297349482" duration="5027000" />
       <workItem from="1679652482384" duration="3683000" />
-      <workItem from="1679885737623" duration="8416000" />
+      <workItem from="1679885737623" duration="8813000" />
+      <workItem from="1679967986505" duration="15786000" />
+      <workItem from="1679998861824" duration="1087000" />
     </task>
     <task id="LOCAL-00001" summary="完成消费Service,开始完善mqclient">
       <created>1676377765977</created>
@@ -264,7 +268,14 @@
       <option name="project" value="LOCAL" />
       <updated>1679656151203</updated>
     </task>
-    <option name="localTasksCounter" value="19" />
+    <task id="LOCAL-00019" summary="consumerService的getMesagecount">
+      <created>1679912727196</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1679912727196</updated>
+    </task>
+    <option name="localTasksCounter" value="20" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -297,7 +308,8 @@
     <MESSAGE value="完成topicService的所有会应用方法" />
     <MESSAGE value="commit QueueOffsetServiceImpl" />
     <MESSAGE value="consumerService的pull data" />
-    <option name="LAST_COMMIT_MESSAGE" value="consumerService的pull data" />
+    <MESSAGE value="consumerService的getMesagecount" />
+    <option name="LAST_COMMIT_MESSAGE" value="consumerService的getMesagecount" />
   </component>
   <component name="VgoProject">
     <integration-enabled>false</integration-enabled>
