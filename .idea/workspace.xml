@@ -4,11 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f69a7e71-d25e-4eb5-898c-ebacc0b8ef24" name="Changes" comment="consumerService的getMesagecount">
-      <change afterPath="$PROJECT_DIR$/mq-biz/src/main/java/com/baracklee/mq/biz/dto/NotifyFailVo.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/mq-biz/src/main/java/com/baracklee/mq/biz/entity/NotifyCallBack.java" afterDir="false" />
+    <list default="true" id="f69a7e71-d25e-4eb5-898c-ebacc0b8ef24" name="Changes" comment="consumerService完成">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mq-biz/src/main/java/com/baracklee/mq/biz/service/impl/ConsumerServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/mq-biz/src/main/java/com/baracklee/mq/biz/service/impl/ConsumerServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mq-biz/src/main/java/com/baracklee/mq/biz/service/ConsumerGroupService.java" beforeDir="false" afterPath="$PROJECT_DIR$/mq-biz/src/main/java/com/baracklee/mq/biz/service/ConsumerGroupService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mq-biz/src/main/java/com/baracklee/mq/biz/service/impl/ConsumerGroupServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/mq-biz/src/main/java/com/baracklee/mq/biz/service/impl/ConsumerGroupServiceImpl.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -140,7 +139,9 @@
       <workItem from="1679652482384" duration="3683000" />
       <workItem from="1679885737623" duration="8813000" />
       <workItem from="1679967986505" duration="15786000" />
-      <workItem from="1679998861824" duration="1087000" />
+      <workItem from="1679998861824" duration="1911000" />
+      <workItem from="1680072784093" duration="1571000" />
+      <workItem from="1680083882411" duration="231000" />
     </task>
     <task id="LOCAL-00001" summary="完成消费Service,开始完善mqclient">
       <created>1676377765977</created>
@@ -275,7 +276,14 @@
       <option name="project" value="LOCAL" />
       <updated>1679912727196</updated>
     </task>
-    <option name="localTasksCounter" value="20" />
+    <task id="LOCAL-00020" summary="consumerService完成">
+      <created>1680000214146</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1680000214146</updated>
+    </task>
+    <option name="localTasksCounter" value="21" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -309,7 +317,8 @@
     <MESSAGE value="commit QueueOffsetServiceImpl" />
     <MESSAGE value="consumerService的pull data" />
     <MESSAGE value="consumerService的getMesagecount" />
-    <option name="LAST_COMMIT_MESSAGE" value="consumerService的getMesagecount" />
+    <MESSAGE value="consumerService完成" />
+    <option name="LAST_COMMIT_MESSAGE" value="consumerService完成" />
   </component>
   <component name="VgoProject">
     <integration-enabled>false</integration-enabled>

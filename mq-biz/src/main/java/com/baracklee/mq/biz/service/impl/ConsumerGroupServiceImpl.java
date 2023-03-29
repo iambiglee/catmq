@@ -4,6 +4,7 @@ import com.baracklee.mq.biz.common.SoaConfig;
 import com.baracklee.mq.biz.dal.meta.ConsumerGroupRepository;
 import com.baracklee.mq.biz.dto.UserRoleEnum;
 import com.baracklee.mq.biz.dto.request.ConsumerGroupTopicCreateRequest;
+import com.baracklee.mq.biz.dto.response.BaseUiResponse;
 import com.baracklee.mq.biz.dto.response.ConsumerGroupDeleteResponse;
 import com.baracklee.mq.biz.entity.*;
 import com.baracklee.mq.biz.service.*;
@@ -87,6 +88,11 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
     }
 
     @Override
+    public Map<String, ConsumerGroupEntity> getData() {
+        return null;
+    }
+
+    @Override
     public void copyAndNewConsumerGroup(ConsumerGroupEntity consumerGroupEntityOld,
                                         ConsumerGroupEntity consumerGroupEntityNew) {
         consumerGroupEntityNew.setId(0);
@@ -118,6 +124,11 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
                 }
             }
         }
+    }
+
+    @Override
+    public BaseUiResponse deleteTopicNameFromConsumerGroup(ConsumerGroupTopicEntity consumerGroupTopicEntity) {
+        return null;
     }
 
     private Map<String, ConsumerGroupEntity> getConsumerGroupByName(String name) {
@@ -206,6 +217,21 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
         return map;
     }
 
+    @Override
+    public List<ConsumerGroupTopicEntity> getGroupTopic() {
+        return null;
+    }
+
+    @Override
+    public List<ConsumerGroupEntity> getByOwnerNames(Map<String, Object> parameterMap) {
+        return null;
+    }
+
+    @Override
+    public long countByOwnerNames(Map<String, Object> parameterMap) {
+        return 0;
+    }
+
     @Transactional(rollbackFor = Exception.class)
     @Override
     public void notifyRb(List<Long> ids) {
@@ -227,8 +253,30 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
     }
 
     @Override
-    public void notifyRb(Long ids) {
-        notifyRb(Arrays.asList(ids));
+    public void notifyRbByNames(List<String> consumerGroupNames) {
+
+    }
+
+    @Override
+    public void notifyMetaByNames(List<String> consumerGroupNames) {
+
+    }
+
+
+
+    @Override
+    public void notifyMeta(List<Long> consumerGroupIds) {
+
+    }
+
+    @Override
+    public void notifyOffset(long consumerGroupId) {
+
+    }
+
+    @Override
+    public List<ConsumerGroupEntity> getLastMetaConsumerGroup(long minMessageId, long maxMessageId) {
+        return null;
     }
 
     @Override
@@ -251,6 +299,11 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
     }
 
     @Override
+    public void notifyRb(long consumerGroupId) {
+
+    }
+
+    @Override
     public void addTopicNameToConsumerGroup(ConsumerGroupTopicEntity consumerGroupTopicEntity) {
         ConsumerGroupEntity consumerGroupEntity = get(consumerGroupTopicEntity.getConsumerGroupId());
         String oldTopicNames=consumerGroupEntity.getTopicNames();
@@ -266,10 +319,15 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
     }
 
     @Override
-    public void notifyMeta(Long id) {
-        updateMetaVersion(Arrays.asList(id));
+    public void deleteUnuseBroadConsumerGroup() {
+
+    }
+
+    @Override
+    public void notifyMeta(long consumerGroupId) {
+        updateMetaVersion(Arrays.asList(consumerGroupId));
         NotifyMessageEntity notifyMessageEntity = new NotifyMessageEntity();
-        notifyMessageEntity.setConsumerGroupId(id);
+        notifyMessageEntity.setConsumerGroupId(consumerGroupId);
         notifyMessageEntity.setMessageType(MessageType.Meta);
         notifyMessageService.insert(notifyMessageEntity);
     }
@@ -292,6 +350,11 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
             }
         }
         return rs;
+    }
+
+    @Override
+    public List<String> getSubEnvList() {
+        return null;
     }
 
     @Override
@@ -328,6 +391,21 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
             return null;
         }
         return consumerGroupTopicService.getCache().get(cache.get(consumerGroupName).getId()).get(topicName);
+    }
+
+    @Override
+    public ConsumerGroupCreateResponse createConsumerGroup(ConsumerGroupCreateRequest consumerGroupCreateRequest) {
+        return null;
+    }
+
+    @Override
+    public ConsumerGroupEditResponse editConsumerGroup(ConsumerGroupEntity consumerGroupEntity) {
+        return null;
+    }
+
+    @Override
+    public ConsumerGroupDeleteResponse deleteConsumerGroup(long consumerGroupId, boolean checkOnline) {
+        return null;
     }
 
     /**
