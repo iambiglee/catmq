@@ -462,7 +462,7 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
 
         consumerGroupTopicService.updateEmailByGroupName(consumerGroupEntity.getName(),
                 consumerGroupEntity.getAlarmEmails());
-        AuditLogService.recordAudit(ConsumerGroupEntity.TABLE_NAME, oldConsumerGroupEntity.getId(),
+        auditLogService.recordAudit(ConsumerGroupEntity.TABLE_NAME, oldConsumerGroupEntity.getId(),
                 "更新ConsumerGroup:" + consumerGroupEntity.getName() + ".更新信息："
                         + AuditUtil.diff(oldConsumerGroupEntity, consumerGroupEntity));
         notifyMeta(oldConsumerGroupEntity.getId());
