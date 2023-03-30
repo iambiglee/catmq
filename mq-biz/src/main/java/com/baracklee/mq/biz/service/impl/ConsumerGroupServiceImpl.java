@@ -1,23 +1,34 @@
 package com.baracklee.mq.biz.service.impl;
 
 import com.baracklee.mq.biz.common.SoaConfig;
+import com.baracklee.mq.biz.common.inf.TimerService;
+import com.baracklee.mq.biz.common.thread.SoaThreadFactory;
+import com.baracklee.mq.biz.common.util.JsonUtil;
+import com.baracklee.mq.biz.common.util.Util;
 import com.baracklee.mq.biz.dal.meta.ConsumerGroupRepository;
 import com.baracklee.mq.biz.dto.UserRoleEnum;
+import com.baracklee.mq.biz.dto.request.ConsumerGroupCreateRequest;
 import com.baracklee.mq.biz.dto.request.ConsumerGroupTopicCreateRequest;
 import com.baracklee.mq.biz.dto.response.BaseUiResponse;
+import com.baracklee.mq.biz.dto.response.ConsumerGroupCreateResponse;
 import com.baracklee.mq.biz.dto.response.ConsumerGroupDeleteResponse;
+import com.baracklee.mq.biz.dto.response.ConsumerGroupEditResponse;
 import com.baracklee.mq.biz.entity.*;
 import com.baracklee.mq.biz.service.*;
 import com.baracklee.mq.biz.service.common.AbstractBaseService;
+import com.baracklee.mq.biz.service.common.AuditUtil;
+import com.baracklee.mq.biz.service.common.CacheUpdateHelper;
 import com.baracklee.mq.biz.service.common.MessageType;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
@@ -27,7 +38,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupEntity>
-        implements CacheUpdateService, ConsumerGroupService{
+        implements CacheUpdateService, ConsumerGroupService, TimerService {
     @PostConstruct
     protected void init() {
         super.setBaseRepository(consumerGroupRepository);
@@ -54,6 +65,12 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
     private ConsumerService consumerService;
     @Resource
     private TopicService topicService;
+
+    protected volatile boolean isRunning = true;
+    private AtomicBoolean startFlag = new AtomicBoolean(false);
+
+    @Resource
+    AuditLogService auditLogService;
 
     protected AtomicReference<Map<String, ConsumerGroupEntity>> consumerGroupRefMap = new AtomicReference<>(
             new HashMap<>());
@@ -304,18 +321,24 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
     }
 
     @Override
-    public void addTopicNameToConsumerGroup(ConsumerGroupTopicEntity consumerGroupTopicEntity) {
+    public BaseUiResponse<Void> addTopicNameToConsumerGroup(ConsumerGroupTopicEntity consumerGroupTopicEntity) {
         ConsumerGroupEntity consumerGroupEntity = get(consumerGroupTopicEntity.getConsumerGroupId());
-        String oldTopicNames=consumerGroupEntity.getTopicNames();
-        if(!StringUtils.isEmpty(oldTopicNames)){
+        String oldTopicNames = consumerGroupEntity.getTopicNames();
+
+        // 如果mq3的group的订阅关系中，没有该topic则添加
+        if (StringUtils.isNotEmpty(oldTopicNames)) {
             List<String> oldTopicNameList = Arrays.asList(oldTopicNames.split(","));
             if (!oldTopicNameList.contains(consumerGroupTopicEntity.getTopicName())) {
                 consumerGroupEntity.setTopicNames(oldTopicNames + "," + consumerGroupTopicEntity.getTopicName());
             }
-        }else {
+        } else {
             consumerGroupEntity.setTopicNames(consumerGroupTopicEntity.getTopicName());
         }
         update(consumerGroupEntity);
+        auditLogService.recordAudit(ConsumerGroupEntity.TABLE_NAME, consumerGroupEntity.getId(),
+                "新增订阅，修改consumerGroup的topic字段，从" + oldTopicNames + "变为：" + consumerGroupEntity.getTopicNames());
+
+        return new BaseUiResponse<Void>();
     }
 
     @Override
@@ -358,7 +381,7 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
     }
 
     @Override
-    public ConsumerGroupDeleteResponse deleteConsumerGroup(Long consumerGroupId, boolean checkOnline) {
+    public ConsumerGroupDeleteResponse deleteConsumerGroup(long consumerGroupId, boolean checkOnline) {
         forceUpdateCache();
         Map<String, ConsumerGroupEntity> cache = getCache();
         ConsumerGroupEntity consumerGroupEntity = get(consumerGroupId);
@@ -399,14 +422,56 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public ConsumerGroupEditResponse editConsumerGroup(ConsumerGroupEntity consumerGroupEntity) {
-        return null;
+
+        CacheUpdateHelper.updateCache();
+        ConsumerGroupEntity oldConsumerGroupEntity = get(consumerGroupEntity.getId());
+        consumerGroupEntity.setTopicNames(oldConsumerGroupEntity.getTopicNames());
+        consumerGroupEntity.setRbVersion(oldConsumerGroupEntity.getRbVersion());
+        consumerGroupEntity.setMetaVersion(oldConsumerGroupEntity.getMetaVersion());
+        consumerGroupEntity.setVersion(oldConsumerGroupEntity.getVersion());
+        consumerGroupEntity.setInsertBy(oldConsumerGroupEntity.getInsertBy());
+        consumerGroupEntity.setIsActive(oldConsumerGroupEntity.getIsActive());
+        consumerGroupEntity.setOriginName(oldConsumerGroupEntity.getOriginName());
+
+        String userId = userInfoHolder.getUserId();
+        consumerGroupEntity.setUpdateBy(userId);
+
+        //如果是广播模式，原始消费者和镜像消费者都要更新
+        if(consumerGroupEntity.getMode()==2){
+            //用原始名称为key去更新数据
+            updateOriginName(consumerGroupEntity)
+        }else {
+            update(consumerGroupEntity);
+        }
+
+        // 如果修改了appid字段，则需要修改consumerGroup对应的失败topic的AppId
+        if (!StringUtils.equals(oldConsumerGroupEntity.getAppId(), consumerGroupEntity.getAppId())) {
+            topicService.updateFailTopic(consumerGroupEntity);
+        }
+
+        //如果修改了消费模式，queueoffset 的消费模式也要修改
+        if(consumerGroupEntity.getMode()!=oldConsumerGroupEntity.getMode()){
+            Map<String, List<QueueOffsetEntity>> map = queueOffsetService.getConsumerGroupQueueOffsetMap();
+            for (QueueOffsetEntity queueOffset : map.get(consumerGroupEntity.getName())) {
+                queueOffset.setConsumerGroupMode(consumerGroupEntity.getMode());
+                queueOffsetService.update(queueOffset);
+            }
+        }
+
+        consumerGroupTopicService.updateEmailByGroupName(consumerGroupEntity.getName(),
+                consumerGroupEntity.getAlarmEmails());
+        AuditLogService.recordAudit(ConsumerGroupEntity.TABLE_NAME, oldConsumerGroupEntity.getId(),
+                "更新ConsumerGroup:" + consumerGroupEntity.getName() + ".更新信息："
+                        + AuditUtil.diff(oldConsumerGroupEntity, consumerGroupEntity));
+        notifyMeta(oldConsumerGroupEntity.getId());
+
+        ConsumerGroupEditResponse consumerGroupEditResponse = new ConsumerGroupEditResponse();
+        consumerGroupEditResponse.setMsg("success");
+        return consumerGroupEditResponse;
     }
 
-    @Override
-    public ConsumerGroupDeleteResponse deleteConsumerGroup(long consumerGroupId, boolean checkOnline) {
-        return null;
-    }
 
     /**
      * 删除消费者组,广播模式专用
@@ -455,6 +520,30 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
 
     @Override
     public String getCacheJson() {
+        return JsonUtil.toJsonNull(getCache());
+    }
+
+    @Override
+    public void start() {
+        if(startFlag.compareAndSet(false,true)){
+            updateCache();
+            ScheduledExecutorService service = Executors.newScheduledThreadPool(1, SoaThreadFactory.create("ConsumerGroupService_"));
+            service.submit(()->{
+                while (isRunning){
+                    updateCache();
+                    Util.sleep(soaConfig.getMqConsumerGroupCacheInterval());
+                }
+            });
+        }
+    }
+
+    @Override
+    public void stop() {
+        isRunning = false;
+    }
+
+    @Override
+    public String info() {
         return null;
     }
 }
