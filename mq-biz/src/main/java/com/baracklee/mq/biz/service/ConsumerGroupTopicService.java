@@ -21,4 +21,6 @@ public interface ConsumerGroupTopicService extends BaseService<ConsumerGroupTopi
     List<String> getFailTopicNames(long id);
 
     void deleteByConsumerGroupId(long id);
+
+    void updateEmailByGroupName(String name, String alarmEmails);
 }

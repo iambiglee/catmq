@@ -4,19 +4,31 @@ import com.baracklee.mq.biz.dal.common.BaseRepository;
 import com.baracklee.mq.biz.entity.ConsumerGroupEntity;
 import com.baracklee.mq.biz.entity.LastUpdateEntity;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
+import java.util.Map;
 
 @Mapper
 public interface ConsumerGroupRepository extends BaseRepository <ConsumerGroupEntity>{
 
+    List<ConsumerGroupEntity> getLastConsumerGroup(@Param("minMessageId") long minMessageId,
+                                                   @Param("maxMessageId") long maxMessageId, @Param("messageType") int messageType);
+
+    void updateRbVersion(@Param("ids") List<Long> ids);
+
+    void updateMetaVersion(@Param("ids") List<Long> ids);
+
+    List<ConsumerGroupEntity> getByNames(@Param("names") List<String> names);
+
+    List<ConsumerGroupEntity> getByOwnerNames(Map<String, Object> parameterMap);
+
+    long countByOwnerNames(Map<String, Object> parameterMap);
+
     LastUpdateEntity getLastUpdate();
 
-    List<ConsumerGroupEntity> getByNames(List<String> names);
+    void updateByOriginName(ConsumerGroupEntity consumerGroupEntity);
 
-    void updateRbVersion(List<Long> ids);
+    List<ConsumerGroupEntity> getUnuseBroadConsumerGroup();
 
-    List<ConsumerGroupEntity> getLastConsumerGroup(long minMessageId, long maxMessageId, int rb);
-
-    void updateMetaVersion(List<Long> ids);
 }

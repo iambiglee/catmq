@@ -1,5 +1,6 @@
 package com.baracklee.mq.biz.service.impl;
 
+import com.baracklee.mq.biz.MqConst;
 import com.baracklee.mq.biz.common.SoaConfig;
 import com.baracklee.mq.biz.common.inf.TimerService;
 import com.baracklee.mq.biz.common.thread.SoaThreadFactory;
@@ -20,12 +21,16 @@ import com.baracklee.mq.biz.service.common.AuditUtil;
 import com.baracklee.mq.biz.service.common.CacheUpdateHelper;
 import com.baracklee.mq.biz.service.common.MessageType;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
+import java.lang.invoke.MethodHandles;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -69,6 +74,7 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
     protected volatile boolean isRunning = true;
     private AtomicBoolean startFlag = new AtomicBoolean(false);
 
+    private Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     @Resource
     AuditLogService auditLogService;
 
@@ -145,7 +151,24 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
 
     @Override
     public BaseUiResponse deleteTopicNameFromConsumerGroup(ConsumerGroupTopicEntity consumerGroupTopicEntity) {
-        return null;
+        ConsumerGroupEntity consumerGroupEntity = get(consumerGroupTopicEntity.getConsumerGroupId());
+        String oldTopicNames = consumerGroupEntity.getTopicNames();
+        String[] names = oldTopicNames.split(",");
+        String finalTopicNames = "";
+        for (String name : names) {
+            if (!name.equals(consumerGroupTopicEntity.getOriginTopicName())) {
+                finalTopicNames += name;
+                finalTopicNames += ",";
+            }
+        }
+        if (StringUtils.isNotEmpty(finalTopicNames)) {
+            finalTopicNames = finalTopicNames.substring(0, finalTopicNames.length() - 1);
+        }
+        consumerGroupEntity.setTopicNames(finalTopicNames);
+        update(consumerGroupEntity);
+        auditLogService.recordAudit(ConsumerGroupEntity.TABLE_NAME, consumerGroupEntity.getId(),
+                "取消订阅，修改consumerGroup的topic字段，从" + oldTopicNames + "变为：" + finalTopicNames);
+        return new BaseUiResponse<Void>();
     }
 
     private Map<String, ConsumerGroupEntity> getConsumerGroupByName(String name) {
@@ -236,17 +259,17 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
 
     @Override
     public List<ConsumerGroupTopicEntity> getGroupTopic() {
-        return null;
+        return consumerGroupTopicService.getList();
     }
 
     @Override
     public List<ConsumerGroupEntity> getByOwnerNames(Map<String, Object> parameterMap) {
-        return null;
+        return consumerGroupRepository.getByOwnerNames(parameterMap);
     }
 
     @Override
     public long countByOwnerNames(Map<String, Object> parameterMap) {
-        return 0;
+        return consumerGroupRepository.countByOwnerNames(parameterMap);
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -270,30 +293,71 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void notifyRbByNames(List<String> consumerGroupNames) {
-
+        if (CollectionUtils.isEmpty(consumerGroupNames)){
+            return;
+        }
+        List<Long> ids = new ArrayList<>();
+        Map<String, ConsumerGroupEntity> entityMap = consumerGroupRefMap.get();
+        if (CollectionUtils.isEmpty(entityMap)){
+            return;
+        }
+        for (String groupName : consumerGroupNames) {
+            if (entityMap.containsKey(groupName)){
+                ids.add(entityMap.get(groupName).getId());
+            }
+        }
+        notifyRb(ids);
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void notifyMetaByNames(List<String> consumerGroupNames) {
-
+        if (CollectionUtils.isEmpty(consumerGroupNames)){
+            return;
+        }
+        List<Long> ids = new ArrayList<>();
+        Map<String, ConsumerGroupEntity> entityMap = consumerGroupRefMap.get();
+        if (CollectionUtils.isEmpty(entityMap)){
+            return;
+        }
+        for (String groupName : consumerGroupNames) {
+            if (entityMap.containsKey(groupName)){
+                ids.add(entityMap.get(groupName).getId());
+            }
+        }
+        notifyMeta(ids);
     }
 
 
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void notifyMeta(List<Long> consumerGroupIds) {
-
+        if (CollectionUtils.isEmpty(consumerGroupIds)){
+            return;
+        }
+        updateMetaVersion(consumerGroupIds);
+        List<NotifyMessageEntity> notifyMessageEntities = new ArrayList<>();
+        for (Long consumerGroupId : consumerGroupIds) {
+            NotifyMessageEntity notifyMessageEntity = new NotifyMessageEntity();
+            notifyMessageEntity.setConsumerGroupId(consumerGroupId);
+            notifyMessageEntity.setMessageType(MessageType.Meta);
+            notifyMessageEntities.add(notifyMessageEntity);
+            auditLogService.recordAudit(ConsumerGroupEntity.TABLE_NAME,consumerGroupId,"此消费者组元数据发生变更！");
+        }
+        notifyMessageService.insertBatch(notifyMessageEntities);
     }
 
     @Override
     public void notifyOffset(long consumerGroupId) {
-
+        notifyMeta(consumerGroupId);
     }
 
     @Override
     public List<ConsumerGroupEntity> getLastMetaConsumerGroup(long minMessageId, long maxMessageId) {
-        return null;
+        return consumerGroupRepository.getLastConsumerGroup(minMessageId, maxMessageId, MessageType.Meta);
     }
 
     @Override
@@ -316,8 +380,9 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void notifyRb(long consumerGroupId) {
-
+        notifyRb(Collections.singletonList(consumerGroupId));
     }
 
     @Override
@@ -341,9 +406,21 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
         return new BaseUiResponse<Void>();
     }
 
+    private long lastCheckTime=System.currentTimeMillis();
     @Override
     public void deleteUnuseBroadConsumerGroup() {
+        if(System.currentTimeMillis()-lastCheckTime>24*60*60*1000){
+            lastCheckTime=System.currentTimeMillis();
+            List<ConsumerGroupEntity> unuse = consumerGroupRepository.getUnuseBroadConsumerGroup();
+            if(unuse.size()>0){
+                for (ConsumerGroupEntity group : unuse) {
+                    userInfoHolder.setUserId(soaConfig.getMqAdminUser());
+                    deleteConsumerGroup(group.getId(),true);
+                    log.info("delete boradcast_{}",group.getName());
+                }
+            }
 
+        }
     }
 
     @Override
@@ -416,9 +493,76 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
         return consumerGroupTopicService.getCache().get(cache.get(consumerGroupName).getId()).get(topicName);
     }
 
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public ConsumerGroupCreateResponse createConsumerGroup(ConsumerGroupCreateRequest consumerGroupCreateRequest) {
-        return null;
+        CacheUpdateHelper.updateCache();
+        ConsumerGroupEntity consumerGroupEntity = new ConsumerGroupEntity();
+        consumerGroupEntity.setName(StringUtils.trim(consumerGroupCreateRequest.getName()));
+        consumerGroupEntity.setName(consumerGroupCreateRequest.getName());
+        consumerGroupEntity.setOwnerIds(consumerGroupCreateRequest.getOwnerIds());
+        consumerGroupEntity.setOwnerNames(consumerGroupCreateRequest.getOwnerNames());
+        consumerGroupEntity.setAlarmFlag(consumerGroupCreateRequest.getAlarmFlag());
+        consumerGroupEntity.setTraceFlag(consumerGroupCreateRequest.getTraceFlag());
+        consumerGroupEntity.setAlarmEmails(StringUtils.trim(consumerGroupCreateRequest.getAlarmEmails()));
+        consumerGroupEntity.setAppId(consumerGroupCreateRequest.getAppId());
+        consumerGroupEntity.setMode(consumerGroupCreateRequest.getMode());
+        consumerGroupEntity.setPushFlag(consumerGroupCreateRequest.getPushFlag());
+        consumerGroupEntity.setConsumerQuality(consumerGroupCreateRequest.getConsumerQuality());
+        if(Util.isEmpty(consumerGroupCreateRequest.getSubEnv())){
+            consumerGroupCreateRequest.setSubEnv(MqConst.DEFAULT_SUBENV);
+        }
+        consumerGroupEntity.setSubEnv(consumerGroupCreateRequest.getSubEnv());
+        if(consumerGroupCreateRequest.getMode()==2){
+            //如果是广播模式，需要修改一下consumerGroupName的originName
+            consumerGroupEntity.setOriginName(getOriginConsumerName(consumerGroupCreateRequest.getName()));
+        }else {
+            consumerGroupEntity.setOriginName(consumerGroupCreateRequest.getName());
+        }
+
+        consumerGroupEntity.setTels(consumerGroupCreateRequest.getTels());
+        consumerGroupEntity.setDptName(consumerGroupCreateRequest.getDptName());
+        if (consumerGroupCreateRequest.getIpFlag() != null && consumerGroupCreateRequest.getIpFlag() == 1) {
+            consumerGroupEntity.setIpWhiteList(null);
+            consumerGroupEntity.setIpBlackList(StringUtils.trim(consumerGroupCreateRequest.getIpList()));
+        } else if (consumerGroupCreateRequest.getIpFlag() != null && consumerGroupCreateRequest.getIpFlag() == 0) {
+            consumerGroupEntity.setIpBlackList(null);
+            consumerGroupEntity.setIpWhiteList(StringUtils.trim(consumerGroupCreateRequest.getIpList()));
+        }
+        consumerGroupEntity.setRemark(consumerGroupCreateRequest.getRemark());
+        String userId=userInfoHolder.getUserId();
+
+        //根据是否设定了consumerId来设定不同的group
+        if(StringUtils.isNotEmpty(consumerGroupCreateRequest.getId())){
+            consumerGroupEntity.setId(Long.parseLong(consumerGroupCreateRequest.getId()));
+            consumerGroupEntity.setUpdateBy(userId);
+            editConsumerGroup(consumerGroupEntity);
+            notifyMeta(consumerGroupEntity.getId());
+        }else {
+            consumerGroupEntity.setInsertBy(userId);
+            List<String> names = new ArrayList<>();
+            names.add(consumerGroupEntity.getName());
+            Map<String, ConsumerGroupEntity> checkEntityMap = getByNames(names);
+            if(!checkEntityMap.isEmpty()){
+                return new ConsumerGroupCreateResponse("1",
+                        "consumerGroup:" + consumerGroupEntity.getName() + "重复，检查是否有重名consumerGroup已经存在。");
+            }
+            try {
+                insert(consumerGroupEntity);
+            }catch (DuplicateKeyException e){
+                return new ConsumerGroupCreateResponse("1", "consumerGroup重复，检查是否有重名consumerGroup已经存在。");
+            }
+            ArrayList<String> consumerGroupEntityNames = new ArrayList<>();
+            consumerGroupEntityNames.add(consumerGroupEntity.getName());
+            List<ConsumerGroupEntity> consumerGroupEntityList = consumerGroupRepository
+                    .getByNames(consumerGroupEntityNames);
+            long consumerGroupId = consumerGroupEntityList.get(0).getId();
+
+            auditLogService.recordAudit(ConsumerGroupEntity.TABLE_NAME, consumerGroupId, "新建consumerGroup："
+                    + consumerGroupEntity.getName() + "." + JsonUtil.toJson(consumerGroupEntityList.get(0)));
+            notifyMeta(consumerGroupId);
+        }
+        return new ConsumerGroupCreateResponse();
     }
 
     @Override
@@ -441,7 +585,7 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
         //如果是广播模式，原始消费者和镜像消费者都要更新
         if(consumerGroupEntity.getMode()==2){
             //用原始名称为key去更新数据
-            updateOriginName(consumerGroupEntity)
+            updateOriginName(consumerGroupEntity);
         }else {
             update(consumerGroupEntity);
         }
@@ -470,6 +614,10 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
         ConsumerGroupEditResponse consumerGroupEditResponse = new ConsumerGroupEditResponse();
         consumerGroupEditResponse.setMsg("success");
         return consumerGroupEditResponse;
+    }
+
+    private void updateOriginName(ConsumerGroupEntity consumerGroupEntity) {
+        consumerGroupRepository.updateByOriginName(consumerGroupEntity);
     }
 
 
@@ -546,4 +694,16 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
     public String info() {
         return null;
     }
+    private String getOriginConsumerName(String consumerGroupName){
+        if(!consumerGroupName.contains("_")){
+            return consumerGroupName;
+        }else {
+            return consumerGroupName.substring(0,consumerGroupName.lastIndexOf("_"));
+        }
+    }
+
+    private String getBroadcastConsumerName(String consumerGroupName, String ip,long consumerId){
+        return String.format("%s_%s-%s", consumerGroupName, ip, consumerId);
+    }
+
 }

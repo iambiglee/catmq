@@ -4,14 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f69a7e71-d25e-4eb5-898c-ebacc0b8ef24" name="Changes" comment="consumerGroupService开始">
-      <change afterPath="$PROJECT_DIR$/mq-biz/src/main/java/com/baracklee/mq/biz/dto/request/ConsumerGroupCreateRequest.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/mq-biz/src/main/java/com/baracklee/mq/biz/dto/response/ConsumerGroupCreateResponse.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/mq-biz/src/main/java/com/baracklee/mq/biz/dto/response/ConsumerGroupEditResponse.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/mq-biz/src/main/java/com/baracklee/mq/biz/service/common/AuditUtil.java" afterDir="false" />
+    <list default="true" id="f69a7e71-d25e-4eb5-898c-ebacc0b8ef24" name="Changes" comment="更新consumerGroup">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mq-biz/src/main/java/com/baracklee/mq/biz/service/ConsumerGroupService.java" beforeDir="false" afterPath="$PROJECT_DIR$/mq-biz/src/main/java/com/baracklee/mq/biz/service/ConsumerGroupService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mq-biz/src/main/java/com/baracklee/mq/biz/dal/meta/ConsumerGroupRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/mq-biz/src/main/java/com/baracklee/mq/biz/dal/meta/ConsumerGroupRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mq-biz/src/main/java/com/baracklee/mq/biz/service/ConsumerGroupTopicService.java" beforeDir="false" afterPath="$PROJECT_DIR$/mq-biz/src/main/java/com/baracklee/mq/biz/service/ConsumerGroupTopicService.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mq-biz/src/main/java/com/baracklee/mq/biz/service/impl/ConsumerGroupServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/mq-biz/src/main/java/com/baracklee/mq/biz/service/impl/ConsumerGroupServiceImpl.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mq-biz/src/main/resources/mysql/ConsumerGroup.xml" beforeDir="false" afterPath="$PROJECT_DIR$/mq-biz/src/main/resources/mysql/ConsumerGroup.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -60,27 +58,27 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.go.formatter.settings.were.checked": "true",
-    "RunOnceActivity.go.migrated.go.modules.settings": "true",
-    "SONARLINT_PRECOMMIT_ANALYSIS": "false",
-    "WebServerToolWindowFactoryState": "false",
-    "git-widget-placeholder": "master",
-    "go.import.settings.migrated": "true",
-    "jdk.selected.JAVA_MODULE": "1.8",
-    "last_opened_file_path": "D:/ideaworkspace/myMessageQueue/mq-biz/src/main/resources/mysql",
-    "node.js.detected.package.eslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "editor.preferences.import",
-    "spring.configuration.checksum": "5dcfd945bbd775ff26e716b57a614b1f",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.formatter.settings.were.checked&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.migrated.go.modules.settings&quot;: &quot;true&quot;,
+    &quot;SONARLINT_PRECOMMIT_ANALYSIS&quot;: &quot;false&quot;,
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;go.import.settings.migrated&quot;: &quot;true&quot;,
+    &quot;jdk.selected.JAVA_MODULE&quot;: &quot;1.8&quot;,
+    &quot;last_opened_file_path&quot;: &quot;D:/ideaworkspace/myMessageQueue/mq-biz/src/main/resources/mysql&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;reference.settings.ide.settings.new.ui&quot;,
+    &quot;spring.configuration.checksum&quot;: &quot;5dcfd945bbd775ff26e716b57a614b1f&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CreateClassDialog.RecentsKey">
       <recent name="com.baracklee.mq.biz.service" />
@@ -143,7 +141,9 @@
       <workItem from="1679998861824" duration="1911000" />
       <workItem from="1680072784093" duration="1571000" />
       <workItem from="1680083882411" duration="330000" />
-      <workItem from="1680166390627" duration="4806000" />
+      <workItem from="1680166390627" duration="4920000" />
+      <workItem from="1680492497458" duration="99000" />
+      <workItem from="1680494283883" duration="11404000" />
     </task>
     <task id="LOCAL-00001" summary="完成消费Service,开始完善mqclient">
       <created>1676377765977</created>
@@ -292,7 +292,21 @@
       <option name="project" value="LOCAL" />
       <updated>1680084186125</updated>
     </task>
-    <option name="localTasksCounter" value="22" />
+    <task id="LOCAL-00022" summary="consumerGroupService开始">
+      <created>1680176537454</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1680176537454</updated>
+    </task>
+    <task id="LOCAL-00023" summary="更新consumerGroup">
+      <created>1680176589723</created>
+      <option name="number" value="00023" />
+      <option name="presentableId" value="LOCAL-00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1680176589723</updated>
+    </task>
+    <option name="localTasksCounter" value="24" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -328,7 +342,8 @@
     <MESSAGE value="consumerService的getMesagecount" />
     <MESSAGE value="consumerService完成" />
     <MESSAGE value="consumerGroupService开始" />
-    <option name="LAST_COMMIT_MESSAGE" value="consumerGroupService开始" />
+    <MESSAGE value="更新consumerGroup" />
+    <option name="LAST_COMMIT_MESSAGE" value="更新consumerGroup" />
   </component>
   <component name="VgoProject">
     <integration-enabled>false</integration-enabled>
