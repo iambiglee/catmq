@@ -1,6 +1,7 @@
 package com.baracklee.mq.biz.service;
 
 import com.baracklee.mq.biz.dto.request.ConsumerGroupTopicCreateRequest;
+import com.baracklee.mq.biz.dto.request.ConsumerGroupTopicDeleteResponse;
 import com.baracklee.mq.biz.dto.response.ConsumerGroupTopicCreateResponse;
 import com.baracklee.mq.biz.entity.ConsumerGroupEntity;
 import com.baracklee.mq.biz.entity.ConsumerGroupTopicEntity;
@@ -12,15 +13,22 @@ import java.util.Map;
 
 @Service
 public interface ConsumerGroupTopicService extends BaseService<ConsumerGroupTopicEntity> {
-    Map<Long, Map<String, ConsumerGroupTopicEntity>> getCache();
-
-    ConsumerGroupTopicCreateResponse subscribe(ConsumerGroupTopicCreateRequest request2, Map<String, ConsumerGroupEntity> consumerGroupMap);
-
+    /*
+     * key为consumergroupid，内层key为topicname
+     * */
+    Map<Long,Map<String, ConsumerGroupTopicEntity>> getCache();
+    void deleteByConsumerGroupId(long consumerGroupId);
+    void deleteByOriginTopicName(long consumerGroupId,String originTopicName);
+    List<String> getFailTopicNames(long consumerGroupId);
+    ConsumerGroupTopicEntity getCorrespondConsumerGroupTopic(Map<String, Object> parameterMap);
     Map<String, ConsumerGroupTopicEntity> getGroupTopic();
+    void updateCache();
+    void updateEmailByGroupName(String groupName,String alarmEmails);
+    ConsumerGroupTopicCreateResponse subscribe(ConsumerGroupTopicCreateRequest consumerGroupTopicCreateRequest);
+    ConsumerGroupTopicCreateResponse subscribe(ConsumerGroupTopicCreateRequest consumerGroupTopicCreateRequest,Map<String, ConsumerGroupEntity> consumerGroupMap) ;
+    ConsumerGroupTopicDeleteResponse deleteConsumerGroupTopic(long consumerGroupTopicId);
+    ConsumerGroupTopicEntity createConsumerGroupTopic(
+            ConsumerGroupTopicCreateRequest consumerGroupTopicCreateRequest);
 
-    List<String> getFailTopicNames(long id);
-
-    void deleteByConsumerGroupId(long id);
-
-    void updateEmailByGroupName(String name, String alarmEmails);
+    Map<String, List<ConsumerGroupTopicEntity>> getTopicSubscribeMap();
 }

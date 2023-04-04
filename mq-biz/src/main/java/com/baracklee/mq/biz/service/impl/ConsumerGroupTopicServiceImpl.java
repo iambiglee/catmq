@@ -2,9 +2,13 @@ package com.baracklee.mq.biz.service.impl;
 
 
 import com.baracklee.mq.biz.common.SoaConfig;
+import com.baracklee.mq.biz.common.inf.TimerService;
+import com.baracklee.mq.biz.common.util.JsonUtil;
+import com.baracklee.mq.biz.common.util.Util;
 import com.baracklee.mq.biz.dal.meta.ConsumerGroupTopicRepository;
 import com.baracklee.mq.biz.dto.UserRoleEnum;
 import com.baracklee.mq.biz.dto.request.ConsumerGroupTopicCreateRequest;
+import com.baracklee.mq.biz.dto.request.ConsumerGroupTopicDeleteResponse;
 import com.baracklee.mq.biz.dto.response.ConsumerGroupTopicCreateResponse;
 import com.baracklee.mq.biz.entity.ConsumerGroupEntity;
 import com.baracklee.mq.biz.entity.ConsumerGroupTopicEntity;
@@ -17,6 +21,7 @@ import com.baracklee.mq.biz.service.common.MqReadMap;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import javax.annotation.Resource;
@@ -34,7 +39,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class ConsumerGroupTopicServiceImpl
         extends AbstractBaseService<ConsumerGroupTopicEntity>
-        implements ConsumerGroupTopicService , CacheUpdateService {
+        implements ConsumerGroupTopicService , CacheUpdateService, TimerService {
     protected AtomicReference<Map<Long, Map<String, ConsumerGroupTopicEntity>>> consumerGroupTopicRefMap = new AtomicReference<>(
             new HashMap<>());
 
@@ -50,6 +55,8 @@ public class ConsumerGroupTopicServiceImpl
     private Lock cacheLock = new ReentrantLock();
     protected AtomicBoolean first = new AtomicBoolean(true);
     private final Logger log = LoggerFactory.getLogger(this.getClass());
+    private AtomicBoolean startFlag = new AtomicBoolean(false);
+
 
     @Resource
     SoaConfig soaConfig;
@@ -66,6 +73,8 @@ public class ConsumerGroupTopicServiceImpl
     private TopicService topicService;
     @Resource
     private QueueOffsetService queueOffsetService;
+
+    protected volatile boolean isRunning = true;
     @Override
     public Map<Long, Map<String, ConsumerGroupTopicEntity>> getCache() {
         Map<Long, Map<String, ConsumerGroupTopicEntity>> rs = consumerGroupTopicRefMap.get();
@@ -87,6 +96,16 @@ public class ConsumerGroupTopicServiceImpl
     }
 
     @Override
+    public void deleteByConsumerGroupId(long consumerGroupId) {
+
+    }
+
+    @Override
+    public void deleteByOriginTopicName(long consumerGroupId, String originTopicName) {
+
+    }
+
+    @Override
     public ConsumerGroupTopicCreateResponse subscribe(ConsumerGroupTopicCreateRequest consumerGroupTopicCreateRequest, Map<String, ConsumerGroupEntity> consumerGroupMap) {
         ConsumerGroupEntity consumerGroupEntity =
                 consumerGroupMap.get(consumerGroupTopicCreateRequest.getConsumerGroupName());
@@ -94,6 +113,64 @@ public class ConsumerGroupTopicServiceImpl
             createConsumerGroupTopicByOrigin(consumerGroupTopicCreateRequest,consumerGroupMap);
         }
         return createConsumerGroupTopicAndFailTopic(consumerGroupTopicCreateRequest, consumerGroupMap);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ConsumerGroupTopicDeleteResponse deleteConsumerGroupTopic(long consumerGroupTopicId) {
+        CacheUpdateHelper.updateCache();
+        ConsumerGroupTopicDeleteResponse response = new ConsumerGroupTopicDeleteResponse();
+        response.setCode("0");
+
+
+        try {
+            ConsumerGroupTopicEntity consumerGroupTopicEntity = consumerGroupTopicRepository.getById(consumerGroupTopicId);
+            if (consumerGroupTopicEntity==null){
+                return new ConsumerGroupTopicDeleteResponse();
+            }
+
+            Map<String, ConsumerGroupEntity> cache = consumerGroupService.getCache();
+            String name=consumerGroupTopicEntity.getConsumerGroupName();
+
+            ConsumerGroupEntity consumerGroupEntity = cache.get(name);
+            if (roleService.getRole(userInfoHolder.getUserId(), consumerGroupEntity.getOwnerIds()) >= UserRoleEnum.USER
+                    .getRoleCode()) {
+                response.setMsg("没有操作权限");
+                return response;
+            }
+
+            //如果是广播模式，并且是原始消费者组，原始消费者组下面的所有镜像取消
+            if(consumerGroupEntity.getMode()==2
+                    &&consumerGroupEntity.getOriginName().equals(consumerGroupEntity.getName())){
+                deleteByOrigin(cache,consumerGroupEntity,consumerGroupTopicEntity);
+            }
+
+            doDelete(consumerGroupTopicEntity);
+            CacheUpdateHelper.updateCache();
+        } catch (Exception e) {
+            response.setCode("1");
+            response.setMsg(e.getMessage());
+        }
+        return response;
+    }
+
+    private void deleteByOrigin(Map<String, ConsumerGroupEntity> cache,
+                                ConsumerGroupEntity consumerGroupEntity,
+                                ConsumerGroupTopicEntity consumerGroupTopicEntity) {
+        Map<String, List<ConsumerGroupTopicEntity>> topicSubscribeMap = getTopicSubscribeMap();
+
+        List<ConsumerGroupTopicEntity> consumerGroupTopicEntities =
+                topicSubscribeMap.get(consumerGroupTopicEntity.getOriginTopicName());
+
+        for (ConsumerGroupTopicEntity groupTopicEntity : consumerGroupTopicEntities) {
+            //如果是镜像消费者组
+            if (cache.get(groupTopicEntity.getConsumerGroupName()).getOriginName().equals(consumerGroupEntity.getName())){
+                //排除原始组，取消订阅
+                if (groupTopicEntity.getId()!=consumerGroupTopicEntity.getId()){
+                    doDelete(groupTopicEntity);
+                }
+            }
+        }
     }
 
     @Override
@@ -118,6 +195,11 @@ public class ConsumerGroupTopicServiceImpl
     @Override
     public List<String> getFailTopicNames(long id) {
         return consumerGroupTopicRepository.getFailTopicNames(id);
+    }
+
+    @Override
+    public ConsumerGroupTopicEntity getCorrespondConsumerGroupTopic(Map<String, Object> parameterMap) {
+        return consumerGroupTopicRepository.getCorrespondConsumerGroupTopic(parameterMap);
     }
 
     private void createConsumerGroupTopicByOrigin(ConsumerGroupTopicCreateRequest consumerGroupTopicCreateRequest, Map<String, ConsumerGroupEntity> consumerGroupMap) {
@@ -194,7 +276,7 @@ public class ConsumerGroupTopicServiceImpl
         return consumerGroupTopicCreateResponse;
     }
 
-    private ConsumerGroupTopicEntity createConsumerGroupTopic(ConsumerGroupTopicCreateRequest consumerGroupTopicCreateRequest) {
+    public ConsumerGroupTopicEntity createConsumerGroupTopic(ConsumerGroupTopicCreateRequest consumerGroupTopicCreateRequest) {
         ConsumerGroupTopicEntity consumerGroupTopicEntity = new ConsumerGroupTopicEntity();
         consumerGroupTopicEntity.setConsumerGroupId(consumerGroupTopicCreateRequest.getConsumerGroupId());
         consumerGroupTopicEntity.setConsumerGroupName(consumerGroupTopicCreateRequest.getConsumerGroupName());
@@ -237,6 +319,11 @@ public class ConsumerGroupTopicServiceImpl
         }
     }
 
+    @Override
+    public Map<String, List<ConsumerGroupTopicEntity>> getTopicSubscribeMap() {
+        return topicSubscribeRefMap.get();
+    }
+
     private AtomicBoolean updateFlag = new AtomicBoolean(false);
     @Override
     public void updateCache() {
@@ -246,6 +333,16 @@ public class ConsumerGroupTopicServiceImpl
             }
             updateFlag.set(false);
         }
+    }
+
+    @Override
+    public void updateEmailByGroupName(String groupName, String alarmEmails) {
+        consumerGroupTopicRepository.updateEmailByGroupName(groupName,alarmEmails);
+    }
+
+    @Override
+    public ConsumerGroupTopicCreateResponse subscribe(ConsumerGroupTopicCreateRequest consumerGroupTopicCreateRequest) {
+        return subscribe(consumerGroupTopicCreateRequest,consumerGroupService.getCache());
     }
 
     protected volatile LastUpdateEntity lastUpdateEntity = null;
@@ -311,6 +408,36 @@ public class ConsumerGroupTopicServiceImpl
 
     @Override
     public String getCacheJson() {
+        return JsonUtil.toJson(getCache());
+    }
+
+    @Override
+    public void start() {
+        if (startFlag.compareAndSet(false, true)) {
+            updateCache();
+            executor.submit(new Runnable() {
+                @Override
+                public void run() {
+                    while (isRunning) {
+                        try {
+                            updateCache();
+                        } catch (Throwable e) {
+                            log.error("ConsumerGroupTopicService_updateCache_error", e);
+                        }
+                        Util.sleep(soaConfig.getMqConsumerGroupTopicCacheInterval());
+                    }
+                }
+            });
+        }
+    }
+
+    @Override
+    public void stop() {
+        isRunning = false;
+    }
+
+    @Override
+    public String info() {
         return null;
     }
 }

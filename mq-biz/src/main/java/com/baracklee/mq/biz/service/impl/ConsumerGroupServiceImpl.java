@@ -112,7 +112,10 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
 
     @Override
     public Map<String, ConsumerGroupEntity> getData() {
-        return null;
+
+        List<ConsumerGroupEntity> list = getList();
+        return list.stream().collect(Collectors.toMap(ConsumerGroupEntity::getName,consumerGroupEntity->consumerGroupEntity));
+
     }
 
     @Override
