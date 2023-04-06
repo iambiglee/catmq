@@ -73,7 +73,8 @@ public class ConsumerGroupTopicServiceImpl
     private TopicService topicService;
     @Resource
     private QueueOffsetService queueOffsetService;
-
+    @Resource
+    private AuditLogService auditLogService;
     protected volatile boolean isRunning = true;
     @Override
     public Map<Long, Map<String, ConsumerGroupTopicEntity>> getCache() {
@@ -97,12 +98,14 @@ public class ConsumerGroupTopicServiceImpl
 
     @Override
     public void deleteByConsumerGroupId(long consumerGroupId) {
-
+        consumerGroupTopicRepository.deleteByConsumerGroupId(consumerGroupId);
+        auditLogService.recordAudit(ConsumerGroupEntity.TABLE_NAME,consumerGroupId,
+                "取消ConsumerGroup 下所有的topic订阅，删除的consumer和topic 的匹配关系");
     }
 
     @Override
     public void deleteByOriginTopicName(long consumerGroupId, String originTopicName) {
-
+        consumerGroupTopicRepository.deleteByOriginTopicName(consumerGroupId,originTopicName);
     }
 
     @Override
@@ -115,13 +118,15 @@ public class ConsumerGroupTopicServiceImpl
         return createConsumerGroupTopicAndFailTopic(consumerGroupTopicCreateRequest, consumerGroupMap);
     }
 
+    /**
+     * 删除消费者组，包括关联的数据queue等
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ConsumerGroupTopicDeleteResponse deleteConsumerGroupTopic(long consumerGroupTopicId) {
         CacheUpdateHelper.updateCache();
         ConsumerGroupTopicDeleteResponse response = new ConsumerGroupTopicDeleteResponse();
         response.setCode("0");
-
 
         try {
             ConsumerGroupTopicEntity consumerGroupTopicEntity = consumerGroupTopicRepository.getById(consumerGroupTopicId);
@@ -170,6 +175,55 @@ public class ConsumerGroupTopicServiceImpl
                     doDelete(groupTopicEntity);
                 }
             }
+        }
+    }
+
+    /**
+     * 删除customer Group 和关联的所有数据
+     * @param groupTopicEntity
+     */
+    private void doDelete(ConsumerGroupTopicEntity groupTopicEntity) {
+        List<String> failTopicNames = new ArrayList<>();
+        // 删除失败topic，并且清理失败消息并且解绑失败topic
+        String failTopicName= String.format("%s_%s_fail", groupTopicEntity.getConsumerGroupName(), groupTopicEntity.getOriginTopicName());
+        failTopicNames.add(failTopicName);
+        try {
+            topicService.deleteFailTopic(failTopicNames,groupTopicEntity.getConsumerGroupId());
+        } catch (Exception e) {
+            throw new RuntimeException("操作失败请重试");
+        }
+
+        try {
+            // 清除topic和失败topic的queueOffset
+            queueOffsetService.deleteByConsumerGroupIdAndOriginTopicName(groupTopicEntity);
+        } catch (Exception e) {
+            throw new RuntimeException("操作失败请重试");
+        }
+
+        try {
+            // 更新consumerGroup中的topic字段
+            consumerGroupService.deleteTopicNameFromConsumerGroup(groupTopicEntity);
+        } catch (Exception e) {
+            throw new RuntimeException("操作失败，请重试");
+        }
+
+        try {
+            // 删除正常topic和失败topic的consumerGroupTopic
+            deleteByOriginTopicName(groupTopicEntity.getConsumerGroupId(),groupTopicEntity.getOriginTopicName());
+        } catch (Exception e) {
+            throw new RuntimeException("操作失败，请重试");
+        }
+
+        try {
+            auditLogService.recordAudit(ConsumerGroupEntity.TABLE_NAME,
+                    groupTopicEntity.getConsumerGroupId(),
+                    "取消consumerGroup：" + groupTopicEntity.getConsumerGroupName() + "对主题："
+                            + groupTopicEntity.getOriginTopicName() + "的订阅"
+                            + JsonUtil.toJson(groupTopicEntity));
+            consumerGroupService.notifyMeta(groupTopicEntity.getConsumerGroupId());
+            consumerGroupService.notifyRb(groupTopicEntity.getConsumerGroupId());
+        } catch (Exception e) {
+            throw new RuntimeException("操作失败，请重试");
         }
     }
 
