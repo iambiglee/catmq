@@ -8,6 +8,7 @@ import com.baracklee.mq.biz.dto.base.ConsumerQueueVersionDto;
 import com.baracklee.mq.biz.dto.client.CommitOffsetRequest;
 import com.baracklee.mq.biz.dto.client.CommitOffsetResponse;
 import com.baracklee.mq.biz.entity.OffsetVersionEntity;
+import com.baracklee.mq.biz.entity.QueueOffsetEntity;
 import com.baracklee.mq.biz.service.ConsumerCommitService;
 import com.baracklee.mq.biz.service.ConsumerGroupService;
 import com.baracklee.mq.biz.service.QueueOffsetService;
@@ -15,10 +16,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.lang.invoke.MethodHandles;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
@@ -55,9 +56,85 @@ public class ConsumerCommitServiceImpl implements ConsumerCommitService, BrokerT
         this.consumerGroupService = consumerGroupService;
     }
 
+    protected long lastTime = System.currentTimeMillis();
+
+    private Object lockObj = new Object();
+    private Object lockObj1 = new Object();
+    /**
+     * 添加request 进入抽象数组，待会查询
+     * @param request
+     * @return
+     */
     @Override
     public CommitOffsetResponse commitOffset(CommitOffsetRequest request) {
-        return null;
+
+        CommitOffsetResponse response = new CommitOffsetResponse();
+        response.setSuc(true);
+        Map<Long, ConsumerQueueVersionDto> map = mapAppPolling.get();
+        try {
+            if (request != null && !CollectionUtils.isEmpty(request.getQueueOffsets())) {
+                request.getQueueOffsets().forEach(t1 -> {
+                    ConsumerQueueVersionDto temp = map.get(t1.getQueueOffsetId());
+                    boolean flag1 = true;
+                    if (temp == null) {
+                        synchronized (lockObj1) {
+                            temp = map.get(t1.getQueueOffsetId());
+                            if (temp == null) {
+                                map.put(t1.getQueueOffsetId(), t1);
+                                flag1 = false;
+                            }
+                        }
+                    }
+                    if (flag1) {
+                        if (temp.getOffsetVersion() < t1.getOffsetVersion()) {
+                            clearOldData();
+                            map.put(t1.getQueueOffsetId(), t1);
+                        } else if (temp.getOffsetVersion() == t1.getOffsetVersion()
+                                && temp.getOffset() < t1.getOffset()) {
+                            clearOldData();
+                            map.put(t1.getQueueOffsetId(), t1);
+                        }
+                    }
+                });
+                if (request.getFlag() == 1) {
+                    executorCommit.submit(new Runnable() {
+                        @Override
+                        public void run() {
+                            commitAndUpdate(request);
+                        }
+                    });
+                }
+            }
+        } catch (Exception e) {
+        }
+        // catTransaction.setStatus(Transaction.SUCCESS);
+        // catTransaction.complete();
+        return response;
+    }
+
+    private void commitAndUpdate(CommitOffsetRequest request) {
+        Set<String> consumerGroupNames = new HashSet<>();
+        Map<Long, OffsetVersionEntity> versionEntityMap = queueOffsetService.getOffsetVersion();
+        for (ConsumerQueueVersionDto queueOffset : request.getQueueOffsets()) {
+            doCommitOffset(queueOffset,1,versionEntityMap,0);
+            consumerGroupNames.add(queueOffset.getConsumerGroupName())
+        }
+        if (consumerGroupNames.size()>0){
+            consumerGroupService.notifyMetaByNames(new ArrayList<>(consumerGroupNames));
+        }
+    }
+
+    private void clearOldData() {
+        boolean flag = (System.currentTimeMillis() - lastTime - 10 * 60 * 1000) > 0;
+        if (flag) {
+            synchronized (lockObj) {
+                if ((System.currentTimeMillis() - lastTime - 30 * 60 * 1000) > 0) {
+                    mapAppPolling.set(new ConcurrentHashMap<>(failMapAppPolling));
+                    failMapAppPolling.clear();
+                    lastTime = System.currentTimeMillis();
+                }
+            }
+        }
     }
 
     @Override
@@ -139,14 +216,57 @@ public class ConsumerCommitServiceImpl implements ConsumerCommitService, BrokerT
         }
     }
 
-    private void doCommitOffset(ConsumerQueueVersionDto request,
+    private boolean doCommitOffset(ConsumerQueueVersionDto request,
                                 int flag,
                                 Map<Long, OffsetVersionEntity> offsetVersionMap,
                                 int count) {
-        OffsetVersionEntity offsetVersionEntity = offsetVersionMap.get(request.getQueueOffsetId());
+        try {
+            OffsetVersionEntity offsetVersionEntity = offsetVersionMap.get(request.getQueueOffsetId());
+            if(checkOffsetAndVersion(request,offsetVersionEntity)){
+                QueueOffsetEntity queueOffsetEntity = new QueueOffsetEntity();
+                queueOffsetEntity.setId(request.getQueueOffsetId());
+                queueOffsetEntity.setOffsetVersion(request.getOffsetVersion());
+                queueOffsetEntity.setOffset(request.getOffset());
+                queueOffsetEntity.setConsumerGroupName(request.getConsumerGroupName());
+                queueOffsetEntity.setTopicName(request.getTopicName());
+                boolean rs = false;
+                if (flag == 1) {
+                    rs = queueOffsetService.commitOffsetAndUpdateVersion(queueOffsetEntity) > 0 && offsetVersionEntity != null;
+                    if(rs){
+                        queueOffsetEntity.setOffsetVersion(queueOffsetEntity.getOffsetVersion()+1);
+                    }
+                } else {
+                    rs = queueOffsetService.commitOffset(queueOffsetEntity) > 0 && offsetVersionEntity != null;
+                }
+                if (rs) {
+                    reentrantLock.lock();
+                    if (request.getOffsetVersion() == offsetVersionEntity.getOffsetVersion()
+                            && request.getOffset() > offsetVersionEntity.getOffset()) {
+                        offsetVersionEntity.setOffset(request.getOffset());
+                    } else if (request.getOffsetVersion() > offsetVersionEntity.getOffsetVersion()) {
+                        offsetVersionEntity.setOffsetVersion(request.getOffsetVersion());
+                        offsetVersionEntity.setOffset(request.getOffset());
+                    }
+                    reentrantLock.unlock();
+                }
+            }
+        } catch (Exception e) {
+            log.error("commit_offset_error",e);
+            return false;
+        }
+        return true;
     }
 
-
+    protected boolean checkOffsetAndVersion(ConsumerQueueVersionDto request, OffsetVersionEntity offsetVersionEntity) {
+        if (offsetVersionEntity == null) {
+            return true;
+        } else if (request.getOffsetVersion() > offsetVersionEntity.getOffsetVersion()) {
+            return true;
+        } else if (request.getOffset() > offsetVersionEntity.getOffset()) {
+            return true;
+        }
+        return false;
+    }
     @Override
     public void stopBroker() {
 
