@@ -1,4 +1,4 @@
-package com.baracklee.controller.client;
+package com.baracklee.rest.mq.controller.client;
 
 
 import com.baracklee.MqConstanst;
