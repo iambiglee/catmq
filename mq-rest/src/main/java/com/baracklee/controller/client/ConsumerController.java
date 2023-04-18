@@ -4,6 +4,7 @@ import com.baracklee.MqConstanst;
 import com.baracklee.mq.biz.common.SoaConfig;
 import com.baracklee.mq.biz.dto.client.*;
 import com.baracklee.mq.biz.service.ConsumerService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,10 +16,13 @@ import javax.annotation.Resource;
 @RequestMapping(MqConstanst.CONSUMERPRE)
 public class ConsumerController {
 
-    @Resource
-    private ConsumerService consumerService;
+    @Autowired
+    public ConsumerController(ConsumerService consumerService, SoaConfig soaConfig) {
+        this.consumerService = consumerService;
+        this.soaConfig = soaConfig;
+    }
 
-    @Resource
+    private final ConsumerService consumerService;
     private SoaConfig soaConfig;
 
     @PostMapping("/register")
@@ -43,4 +47,23 @@ public class ConsumerController {
         return consumerService.publish(request);
     }
 
+    @PostMapping("pullData")
+    public PullDataResponse pulldata(@RequestBody PullDataRequest request ){
+        PullDataResponse pullDataResponse = consumerService.pullData(request);
+        return pullDataResponse;
+    }
+
+    @PostMapping("/publishAndUpdateResultFailMsg")
+    public FailMsgPublishAndUpdateResultResponse publishAndUpdateResultFailMsg(
+            @RequestBody FailMsgPublishAndUpdateResultRequest request) {
+        FailMsgPublishAndUpdateResultResponse response = consumerService.publishAndUpdateResultFailMsg(request);
+        return response;
+
+    }
+
+    @PostMapping("/getMessageCount")
+    public GetMessageCountResponse getMessageCount(@RequestBody GetMessageCountRequest request) {
+        GetMessageCountResponse response = consumerService.getMessageCount(request);
+        return response;
+    }
 }
