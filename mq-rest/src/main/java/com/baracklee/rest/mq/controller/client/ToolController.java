@@ -1,9 +1,9 @@
 package com.baracklee.rest.mq.controller.client;
 
-import com.baracklee.MqConstanst;
 import com.baracklee.mq.biz.common.util.EmailUtil;
 import com.baracklee.mq.biz.common.util.IPUtil;
 import com.baracklee.mq.biz.dto.BaseResponse;
+import com.baracklee.mq.biz.dto.MqConstanst;
 import com.baracklee.mq.biz.dto.client.LogRequest;
 import com.baracklee.mq.biz.dto.client.OpLogRequest;
 import com.baracklee.mq.biz.dto.client.SendMailRequest;
@@ -11,7 +11,6 @@ import com.baracklee.mq.biz.dto.client.UpdateMetaRequest;
 import com.baracklee.mq.biz.service.ConsumerGroupService;
 import com.baracklee.mq.biz.service.EmailService;
 import com.baracklee.mq.biz.service.LogService;
-import org.apache.ibatis.transaction.Transaction;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.web.bind.annotation.*;

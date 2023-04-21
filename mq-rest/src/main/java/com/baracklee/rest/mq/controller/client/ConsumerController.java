@@ -1,7 +1,7 @@
 package com.baracklee.rest.mq.controller.client;
 
-import com.baracklee.MqConstanst;
 import com.baracklee.mq.biz.common.SoaConfig;
+import com.baracklee.mq.biz.dto.MqConstanst;
 import com.baracklee.mq.biz.dto.client.*;
 import com.baracklee.mq.biz.service.ConsumerService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,8 +9,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import javax.annotation.Resource;
 
 @RestController
 @RequestMapping(MqConstanst.CONSUMERPRE)

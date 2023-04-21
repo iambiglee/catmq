@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.Set;
 
 public class GetConsumerGroupResponse extends BaseResponse {
-    private String sleepTime;
+    private long sleepTime;
 
     private Map<String, ConsumerGroupOneDto> consumerGroups;
 
@@ -17,11 +17,11 @@ public class GetConsumerGroupResponse extends BaseResponse {
 
     private int brokerMetaMode;
 
-    public String getSleepTime() {
+    public long getSleepTime() {
         return sleepTime;
     }
 
-    public void setSleepTime(String sleepTime) {
+    public void setSleepTime(long sleepTime) {
         this.sleepTime = sleepTime;
     }
 

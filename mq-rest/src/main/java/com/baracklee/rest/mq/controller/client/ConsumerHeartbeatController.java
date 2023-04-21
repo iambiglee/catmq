@@ -1,7 +1,7 @@
 package com.baracklee.rest.mq.controller.client;
 
-import com.baracklee.MqConstanst;
 import com.baracklee.mq.biz.common.SoaConfig;
+import com.baracklee.mq.biz.dto.MqConstanst;
 import com.baracklee.mq.biz.dto.client.HeartbeatRequest;
 import com.baracklee.mq.biz.dto.client.HeartbeatResponse;
 import com.baracklee.mq.biz.service.ConsumerService;

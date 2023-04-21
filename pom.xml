@@ -11,6 +11,7 @@
     <modules><module>mq-client</module>
         <module>mq-rest</module>
         <module>mq-biz</module>
+        <module>mq-ui</module>
 
     </modules>
 
@@ -27,6 +28,44 @@
             <version>4.13.1</version>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>com.baracklee</groupId>
+            <artifactId>mq-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.baracklee</groupId>
+            <artifactId>mq-client-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.baracklee</groupId>
+            <artifactId>mq-client-springboot</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.baracklee</groupId>
+            <artifactId>mq-client-spring</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.baracklee</groupId>
+            <artifactId>mq-biz</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.baracklee</groupId>
+            <artifactId>mq-ui</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.baracklee</groupId>
+            <artifactId>mq-rest</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
     </dependencies>
 </dependencyManagement>
 </project>

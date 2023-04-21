@@ -1,8 +1,8 @@
 package com.baracklee.rest.mq.controller.meta;
 
-import com.baracklee.MqConstanst;
 import com.baracklee.mq.biz.common.SoaConfig;
 import com.baracklee.mq.biz.common.util.Util;
+import com.baracklee.mq.biz.dto.MqConstanst;
 import com.baracklee.mq.biz.dto.client.*;
 import com.baracklee.mq.biz.entity.ConsumerGroupEntity;
 import com.baracklee.mq.biz.entity.QueueEntity;
