@@ -21,15 +21,17 @@ import java.util.Map;
 @RestController
 public class MqRestStatController {
 
+	@Autowired
 	private ConsumerGroupCacheService consumerGroupCacheService;
 
+	@Autowired
 	private EmailUtil emailUtil;
 
-	@Autowired
-	public MqRestStatController(ConsumerGroupCacheService consumerGroupCacheService, EmailUtil emailUtil) {
-		this.consumerGroupCacheService = consumerGroupCacheService;
-		this.emailUtil = emailUtil;
-	}
+//	@Autowired
+//	public MqRestStatController(ConsumerGroupCacheService consumerGroupCacheService, EmailUtil emailUtil) {
+//		this.consumerGroupCacheService = consumerGroupCacheService;
+//		this.emailUtil = emailUtil;
+//	}
 
 	@GetMapping("/cacheJson")
 	public String cacheJson(@RequestParam("key") String key) {

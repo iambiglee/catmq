@@ -117,7 +117,7 @@ public class ConsumerCommitServiceImpl implements ConsumerCommitService, BrokerT
         Map<Long, OffsetVersionEntity> versionEntityMap = queueOffsetService.getOffsetVersion();
         for (ConsumerQueueVersionDto queueOffset : request.getQueueOffsets()) {
             doCommitOffset(queueOffset,1,versionEntityMap,0);
-            consumerGroupNames.add(queueOffset.getConsumerGroupName())
+            consumerGroupNames.add(queueOffset.getConsumerGroupName());
         }
         if (consumerGroupNames.size()>0){
             consumerGroupService.notifyMetaByNames(new ArrayList<>(consumerGroupNames));

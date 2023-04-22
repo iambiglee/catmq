@@ -2,12 +2,13 @@ package com.baracklee.mq.biz.service.impl;
 
 import com.baracklee.mq.biz.dal.meta.DbRepository;
 import com.baracklee.mq.biz.service.DbService;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.util.Date;
 import java.util.Map;
 
+@Service
 public class DbServiceImpl implements DbService {
 
     @Resource

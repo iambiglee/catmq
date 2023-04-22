@@ -1,5 +1,8 @@
 package com.baracklee.mq.client.config;
 
+import com.baracklee.mq.biz.event.IAsynSubscriber;
+import com.baracklee.mq.biz.event.ISubscriber;
+import com.baracklee.mq.client.MqClient;
 import com.baracklee.mq.client.MqContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -119,6 +122,48 @@ public class ClientConfigHelper {
 
     }
 
+    private ISubscriber getSubscriber(String receiverType) {
+        if (MqClient.getSubscriberResolver() != null) {
+            try {
+                return MqClient.getSubscriberResolver().getSubscriber(receiverType);
+            } catch (Exception e) {
+                throw new RuntimeException(receiverType + "不存在!", e);
+            }
+        }
+        ISubscriber subscriber = null;
+        try {
+            Class<?> onwClass = Class.forName(receiverType);
+            if (ISubscriber.class.isAssignableFrom(onwClass)) {
+                subscriber = (ISubscriber) onwClass.newInstance();
+            }
+        } catch (Exception ex) {
+            throw new RuntimeException(receiverType + "不存在!", ex);
+        }
+        if (subscriber == null) {
+            throw new RuntimeException(receiverType + "不存在!");
+        }
+        return subscriber;
+    }
+    private IAsynSubscriber getAsySubscriber(String receiverType) {
+        if (MqClient.getSubscriberResolver() != null) {
+            try {
+                return MqClient.getSubscriberResolver().getAsnySubscriber(receiverType);
+            } catch (Exception e) {
+                throw new RuntimeException(receiverType + "不存在!", e);
+            }
+        }
+        IAsynSubscriber subscriber = null;
+        try {
+            Class<?> onwClass = Class.forName(receiverType);
+            if (IAsynSubscriber.class.isAssignableFrom(onwClass)) {
+                subscriber = (IAsynSubscriber) onwClass.newInstance();
+            }
+        } catch (Exception ex) {
+            throw new RuntimeException(receiverType + "不存在!", ex);
+        }
+        return subscriber;
+    }
+
     private Document loadDocument(InputStream inputStream) {
         Document document = null;
         DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
@@ -153,5 +198,7 @@ public class ClientConfigHelper {
         }
         return inputStream;
     }
+
+
 
 }
