@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.baracklee.mq.biz.dal.meta.ConsumerGroupRepository">
     <resultMap id="LastUpdateMap"
-               type="com.ppdai.baracklee.biz.entity.LastUpdateEntity">
+               type="com.baracklee.mq.biz.entity.LastUpdateEntity">
         <result column="lastDate" property="lastDate" />
         <result column="maxId" property="maxId" />
         <result column="count" property="count" />

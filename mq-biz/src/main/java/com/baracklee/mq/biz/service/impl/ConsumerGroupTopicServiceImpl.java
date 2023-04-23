@@ -21,9 +21,11 @@ import com.baracklee.mq.biz.service.common.MqReadMap;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -37,6 +39,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+@Service
 public class ConsumerGroupTopicServiceImpl
         extends AbstractBaseService<ConsumerGroupTopicEntity>
         implements ConsumerGroupTopicService , CacheUpdateService, TimerService {
@@ -57,6 +60,11 @@ public class ConsumerGroupTopicServiceImpl
     private final Logger log = LoggerFactory.getLogger(this.getClass());
     private AtomicBoolean startFlag = new AtomicBoolean(false);
 
+
+    @PostConstruct
+    public void init(){
+        super.setBaseRepository(consumerGroupTopicRepository);
+    }
 
     @Resource
     SoaConfig soaConfig;

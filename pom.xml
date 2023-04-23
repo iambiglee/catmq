@@ -68,4 +68,17 @@
 
     </dependencies>
 </dependencyManagement>
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                    <version>1.5.2.RELEASE</version>
+                </plugin>
+
+            </plugins>
+        </pluginManagement>
+    </build>
+
 </project>

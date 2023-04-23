@@ -3,6 +3,7 @@ package com.baracklee.mq.biz.polling;
 import com.baracklee.mq.biz.common.SoaConfig;
 import com.baracklee.mq.biz.entity.QueueEntity;
 import com.baracklee.mq.biz.service.QueueService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -16,6 +17,13 @@ public class QueueExpansionAlarmService extends AbstractTimerService{
     private QueueService queueService;
 
     private SoaConfig soaConfig;
+
+    @Autowired
+    public QueueExpansionAlarmService(QueueService queueService, SoaConfig soaConfig) {
+        this.queueService = queueService;
+        this.soaConfig = soaConfig;
+    }
+
     @PostConstruct
     private void init(){
         super.init("mq_queueExpansion_sk", 0, soaConfig);

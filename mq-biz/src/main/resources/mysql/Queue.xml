@@ -9,28 +9,6 @@
 		<result column="count" property="count" />
 	</resultMap>
 
-	<resultMap id="BaseResultMap"
-			   type="com.baracklee.mq.biz.entity.QueueEntity">
-		<result column="id" property="id"/>
-		<result column="topic_id" property="topicId"/>
-		<result column="topic_name" property="topicName"/>
-		<result column="db_node_id" property="dbNodeId"/>
-		<result column="node_type" property="nodeType"/>
-		<result column="ip" property="ip"/>
-		<result column="db_name" property="dbName"/>
-		<result column="tb_name" property="tbName"/>
-		<result column="read_only" property="readOnly"/>
-		<result column="min_id" property="minId"/>
-		<result column="insert_by" property="insertBy"/>
-		<result column="insert_time" property="insertTime"/>
-		<result column="update_by" property="updateBy"/>
-		<result column="update_time" property="updateTime"/>
-		<result column="is_active" property="isActive"/>
-		<result column="lock_version" property="lockVersion"/>
-		<result column="meta_update_time" property="metaUpdateTime"/>
-
-	</resultMap>
-
 
 	<select id="getLastUpdate" resultMap="LastUpdateMap"
 		useCache="false">

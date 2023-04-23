@@ -11,7 +11,7 @@
 	<appender name="stdout"
 		class="ch.qos.logback.core.ConsoleAppender">
 		<layout class="ch.qos.logback.classic.PatternLayout">
-			<pattern>%date %-5level %logger{80}- %msg,the guid is %X{guid}%n%n
+			<pattern>%date %-5level %logger{80}- %msg%n%n
 			</pattern>
 		</layout>
 	</appender>

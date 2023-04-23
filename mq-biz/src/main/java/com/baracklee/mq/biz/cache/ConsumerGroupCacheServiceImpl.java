@@ -122,7 +122,7 @@ public class ConsumerGroupCacheServiceImpl implements ConsumerGroupCacheService 
             consumerGroupRefMap.set(dataMap);
         }
         log.info("ConsumerGroup_init_suc, 初始化完成！");
-        initConsumerGroupCounter.inc();
+//        initConsumerGroupCounter.inc();
     }
 
     private Map<String, ConsumerGroupDto> doInitData() {

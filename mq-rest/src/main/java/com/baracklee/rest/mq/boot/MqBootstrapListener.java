@@ -7,6 +7,7 @@ import com.baracklee.mq.biz.common.inf.ConsumerGroupChangedListener;
 import com.baracklee.mq.biz.common.util.SpringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.core.Ordered;
@@ -26,6 +27,12 @@ public class MqBootstrapListener implements ApplicationListener<ContextRefreshed
     private ConsumerGroupCacheService consumerGroupCacheService;
 
     private ReportService reportService;
+
+    @Autowired
+    public MqBootstrapListener(ConsumerGroupCacheService consumerGroupCacheService, ReportService reportService) {
+        this.consumerGroupCacheService = consumerGroupCacheService;
+        this.reportService = reportService;
+    }
 
     @Override
     public void onApplicationEvent(ContextRefreshedEvent contextRefreshedEvent) {
