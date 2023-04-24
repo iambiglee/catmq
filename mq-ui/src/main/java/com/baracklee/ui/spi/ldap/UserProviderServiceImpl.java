@@ -1,11 +1,11 @@
-package com.baracklee.spi.ldap;
+package com.baracklee.ui.spi.ldap;
 
 import com.baracklee.mq.biz.common.SoaConfig;
 import com.baracklee.mq.biz.common.util.Util;
 import com.baracklee.mq.biz.dto.Organization;
 import com.baracklee.mq.biz.dto.UserInfo;
 import com.baracklee.mq.biz.service.RoleService;
-import com.baracklee.spi.UserProviderService;
+import com.baracklee.ui.spi.UserProviderService;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -1,4 +1,4 @@
-package com.baracklee.spi;
+package com.baracklee.ui.spi;
 
 import com.baracklee.mq.biz.common.SoaConfig;
 import com.baracklee.mq.biz.dto.Organization;
@@ -86,7 +86,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public String getNamesByUserIds(String userIdS) {
+    public String getNamesByUserIds(String userIds) {
         List<UserInfo> userInfoList = findByUserIds(Arrays.asList(userIds.split(",")));
         List<String> userIdList = userInfoList.stream().map(UserInfo::getUserId).collect(Collectors.toList());
         List<String> nameList = userInfoList.stream().map(UserInfo::getName).collect(Collectors.toList());

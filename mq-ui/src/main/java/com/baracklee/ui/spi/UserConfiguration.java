@@ -1,6 +1,6 @@
-package com.baracklee.spi;
+package com.baracklee.ui.spi;
 
-import com.baracklee.spi.ldap.UserProviderServiceImpl;
+import com.baracklee.ui.spi.ldap.UserProviderServiceImpl;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

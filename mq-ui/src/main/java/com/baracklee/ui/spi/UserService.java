@@ -1,4 +1,4 @@
-package com.baracklee.spi;
+package com.baracklee.ui.spi;
 
 import com.baracklee.mq.biz.dto.UserInfo;
 
