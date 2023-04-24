@@ -18,6 +18,7 @@ import com.baracklee.mq.client.resolver.ISubscriberResolver;
 import com.baracklee.mq.client.resource.IMqResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.CollectionUtils;
 
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -152,7 +153,7 @@ public class MqClient {
     }
 
     public static boolean registerConsumerGroup(Map<String, ConsumerGroupVo> groups) {
-        if(groups.isEmpty()) return false;
+        if(CollectionUtils.isEmpty(groups)) return false;
         if(hasInit()){
             log.info("已经初始化完成");
             return doRegisterConsumerGroup(groups);

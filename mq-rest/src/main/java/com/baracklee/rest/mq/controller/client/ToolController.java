@@ -53,6 +53,7 @@ public class ToolController {
 
     @GetMapping("/mtest")
     public void mtest() {
+        System.out.println("------------------------hello--------------");
         emailUtil.sendErrorMail("test", "test");
     }
 

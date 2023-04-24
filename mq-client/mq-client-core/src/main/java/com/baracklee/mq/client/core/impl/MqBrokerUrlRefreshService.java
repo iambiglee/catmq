@@ -56,7 +56,13 @@ public class MqBrokerUrlRefreshService implements IMqBrokerUrlRefreshService {
     }
 
     private void doUpdateBrokerUrls() {
-        GetMetaGroupResponse response = this.mqResource.getMetaGroup(request);
+        GetMetaGroupResponse response = null;
+        try {
+            response = this.mqResource.getMetaGroup(request);
+        } catch (Exception e) {
+            Util.sleep(3000);
+            throw new RuntimeException(e);
+        }
         if(response==null) return;
         if(response.isSuc()){
             mqContext.setBrokerMetaMode(response.getBrokerMetaMode());
