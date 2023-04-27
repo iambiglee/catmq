@@ -2,10 +2,12 @@ package com.baracklee.mq.biz.dal.meta;
 
 import com.baracklee.mq.biz.dal.common.BaseRepository;
 import com.baracklee.mq.biz.entity.ServerEntity;
+import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
+@Mapper
 public interface ServerRepository extends BaseRepository<ServerEntity> {
     int deleteOld(@Param("heartTime") int heartTime);
 
