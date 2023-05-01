@@ -22,7 +22,7 @@ public class CookieUtil {
         return userName;
     }
 
-    private static Cookie getCookie(HttpServletRequest request, String userSessionId) {
+    public static Cookie getCookie(HttpServletRequest request, String userSessionId) {
         Cookie[] cookies = request.getCookies();
         if (null != cookies){
             for (Cookie cookie : cookies) {
