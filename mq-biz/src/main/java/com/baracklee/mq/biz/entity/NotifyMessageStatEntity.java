@@ -75,4 +75,27 @@ public class NotifyMessageStatEntity {
     public void setIsActive(int isActive) {
         this.isActive = isActive;
     }
+    /**
+     * 字段名常量值，在构造查询map时，key值就不需要hard code了。
+     * 如构造查询ID为121的查询map时，map.put(NotifyMessageStatEntity.FdId， "121");
+     */
+
+    public final static String TABLE_NAME = "notify_message_stat";
+
+    public static String FdId = "id";
+
+    public static String FdKey1 = "key1";
+
+    public static String FdNotifyMessageId = "notifyMessageId";
+
+    public static String FdInsertBy = "insertBy";
+
+    public static String FdInsertTime = "insertTime";
+
+    public static String FdUpdateBy = "updateBy";
+
+    public static String FdUpdateTime = "updateTime";
+
+    public static String FdIsActive = "isActive";
+
 }
