@@ -238,4 +238,57 @@ public class ConsumerGroupTopicEntity {
     public void setTimeOut(int timeOut) {
         this.timeOut = timeOut;
     }
+
+    /**
+     * 字段名常量值，在构造查询map时，key值就不需要hard code了。
+     * 如构造查询ID为121的查询map时，map.put(ConsumerGroupTopicEntity.FdId， "121");
+     */
+
+    public final static String TABLE_NAME = "consumer_group_topic";
+
+    public static String FdId = "id";
+
+    public static String FdConsumerGroupId = "consumerGroupId";
+
+    public static String FdConsumerGroupName = "consumerGroupName";
+
+    public static String FdTopicId = "topicId";
+
+    public static String FdTopicName = "topicName";
+
+    public static String FdOriginTopicName = "originTopicName";
+
+    public static String FdTopicType = "topicType";
+
+    public static String FdRetryCount = "retryCount";
+
+    public static String FdThreadSize = "threadSize";
+
+    public static String FdMaxLag = "maxLag";
+
+    public static String FdTag = "tag";
+
+    public static String FdDelayProcessTime = "delayProcessTime";
+
+    public static String FdPullBatchSize = "pullBatchSize";
+
+    public static String FdConsumerBatchSize = "consumerBatchSize";
+
+    public static String FdMaxPullTime = "maxPullTime";
+
+    public static String FdAlarmEmails = "alarmEmails";
+
+    public static String FdInsertBy = "insertBy";
+
+    public static String FdInsertTime = "insertTime";
+
+    public static String FdUpdateBy = "updateBy";
+
+    public static String FdUpdateTime = "updateTime";
+
+    public static String FdIsActive = "isActive";
+
+    public static String FdMetaUpdateTime = "metaUpdateTime";
+
+    public static String FdTimeOut = "timeOut";
 }

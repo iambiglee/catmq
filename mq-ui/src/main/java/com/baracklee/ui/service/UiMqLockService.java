@@ -5,6 +5,8 @@ import com.baracklee.mq.biz.dto.request.BaseUiRequst;
 import com.baracklee.mq.biz.entity.MqLockEntity;
 import com.baracklee.mq.biz.service.MqLockService;
 import com.baracklee.mq.biz.service.impl.MqLockServiceImpl;
+import com.baracklee.mq.biz.ui.dto.response.MqLockDeleteResponse;
+import com.baracklee.mq.biz.ui.dto.response.MqLockGetListResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
