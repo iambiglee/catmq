@@ -52,7 +52,7 @@ public class QueueOffsetCheckServiceImpl implements RedundanceCheckService {
         return result;
     }
 
-    private String checkQueueOffset(List<QueueOffsetEntity> queueOffList, Map<String, TopicEntity> topicMap, Map<String, ConsumerGroupEntity> consumerGroupMap, Map<String, ConsumerGroupTopicEntity> groupTopicMap, Map<Long, QueueEntity> queueMap) {
+    public String checkQueueOffset(List<QueueOffsetEntity> queueOffList, Map<String, TopicEntity> topicMap, Map<String, ConsumerGroupEntity> consumerGroupMap, Map<String, ConsumerGroupTopicEntity> groupTopicMap, Map<Long, QueueEntity> queueMap) {
 
         StringBuilder resultBuilder = new StringBuilder();
         for (QueueOffsetEntity queueOffsetEntity : queueOffList) {

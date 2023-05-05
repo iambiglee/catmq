@@ -57,7 +57,7 @@ public class ConsumerGroupCheckServiceImpl implements RedundanceCheckService {
         return result;
     }
 
-    private String checkConsumerGroup(Map<String, ConsumerGroupEntity> consumerGroupMap,
+    public String checkConsumerGroup(Map<String, ConsumerGroupEntity> consumerGroupMap,
                                       Map<String, ConsumerGroupTopicEntity> consumerGroupTopicMap,
                                       Map<String, TopicEntity> topicMap) {
         StringBuilder resultBuilder = new StringBuilder();

@@ -60,7 +60,7 @@ public class ConsumerGroupTopicCheckServiceImpl
         return result;
     }
 
-    private String checkConsumerGroupTopic(Map<String, ConsumerGroupTopicEntity> consumerGroupTopicMap, Map<String, ConsumerGroupEntity> consumerGroupMap, Map<String, TopicEntity> topicMap, Map<String, QueueOffsetEntity> unQueueOffset) {
+    public String checkConsumerGroupTopic(Map<String, ConsumerGroupTopicEntity> consumerGroupTopicMap, Map<String, ConsumerGroupEntity> consumerGroupMap, Map<String, TopicEntity> topicMap, Map<String, QueueOffsetEntity> unQueueOffset) {
         StringBuilder resultBuilder=new StringBuilder();
 
         Set<String> queueOffsetSet=new HashSet<String>();
