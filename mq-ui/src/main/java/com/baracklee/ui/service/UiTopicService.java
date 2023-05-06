@@ -7,6 +7,7 @@ import com.baracklee.mq.biz.common.util.JsonUtil;
 import com.baracklee.mq.biz.common.util.Util;
 import com.baracklee.mq.biz.dto.Constants;
 import com.baracklee.mq.biz.dto.request.TopicCreateRequest;
+import com.baracklee.mq.biz.entity.ConsumerGroupTopicEntity;
 import com.baracklee.mq.biz.entity.QueueEntity;
 import com.baracklee.mq.biz.entity.TopicEntity;
 import com.baracklee.mq.biz.service.*;
@@ -14,6 +15,8 @@ import com.baracklee.mq.biz.service.common.AuditUtil;
 import com.baracklee.mq.biz.service.common.CacheUpdateHelper;
 import com.baracklee.mq.biz.ui.dto.request.TopicGetListRequest;
 import com.baracklee.mq.biz.ui.dto.response.TopicCreateResponse;
+import com.baracklee.mq.biz.ui.dto.response.TopicDeleteResponse;
+import com.baracklee.mq.biz.ui.dto.response.TopicExpandResponse;
 import com.baracklee.mq.biz.ui.dto.response.TopicGetListResponse;
 import com.baracklee.mq.biz.ui.enums.NodeTypeEnum;
 import com.baracklee.mq.biz.ui.exceptions.AuthFailException;
@@ -26,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.lang.invoke.MethodHandles;
 import java.util.*;
@@ -329,6 +333,123 @@ public class UiTopicService implements TimerService {
         topicService.distributeQueueWithLock(topicEntity, successQueueNum,
                 NodeTypeEnum.SUCCESS_NODE_TYPE.getTypeCode());
     }
+
+
+    public TopicDeleteResponse deleteTopic(Long topicId) {
+        CacheUpdateHelper.updateCache();
+        String currentUserId = userInfoHolder.getUserId();
+        Map<String, List<QueueVo>> queueVoMap = uiQueueService.getQueueListCount();
+        TopicEntity topicEntity = baseCheckRequest(topicId, currentUserId);
+
+        if (uiConsumerGroupTopicService.findByTopicId(topicId).size() > 0) {
+            throw new CheckFailException("目前有消费者订阅，不能删除，请通知取消订阅后再删除");
+        }
+
+        // 如果topic下存在消息量大于阈值的queue，则不允许删除
+        if (queueVoMap != null && soaConfig.isPro()) {
+            List<QueueVo> queueList = queueVoMap.get(topicEntity.getName());
+            if (queueList != null) {
+                for (QueueVo queueVo : queueList) {
+                    if (queueVo.getMsgCount() > soaConfig.getTopicDeleteLimitCount() * 10000L) {
+                        throw new CheckFailException("topic:" + topicEntity.getName() + "存在消息量大于"
+                                + soaConfig.getTopicDeleteLimitCount() + "万的queue,不能直接删除");
+                    }
+                }
+            }
+        }
+
+        uiAuditLogService.recordAudit(TopicEntity.TABLE_NAME, topicEntity.getId(),
+                "删除topic之前" + JsonUtil.toJson(topicEntity));
+        doDeleteTopic(topicEntity);
+        // 删除topic后，同步到mq2
+        // synService32.synTopicDelete(topicEntity);
+        return new TopicDeleteResponse();
+    }
+
+    private void doDeleteTopic(TopicEntity topicEntity) {
+        Long topicId = topicEntity.getId();
+        List<QueueEntity> queueEntities = queueService.getQueuesByTopicId(topicId);
+        if (soaConfig.isPro() && !isAdmin(userInfoHolder.getUserId())) {
+            queueEntities.forEach(queueEntity -> uiQueueService.remove(queueEntity.getId()));
+        } else {
+            queueEntities.forEach(queueEntity -> uiQueueService.forceRemove(queueEntity.getId()));
+        }
+        topicService.delete(topicId);
+        uiAuditLogService.recordAudit(TopicEntity.TABLE_NAME, topicEntity.getId(),
+                "删除topic，" + JsonUtil.toJson(topicEntity));
+    }
+
+    public List<TopicEntity> getFailTopic(String topicName) {
+        Map<String, Object> conditionMap = new HashMap<>();
+        conditionMap.put(TopicEntity.FdOriginName, topicName);
+        conditionMap.put(TopicEntity.FdTopicType, NodeTypeEnum.FAIL_NODE_TYPE.getTypeCode());
+        return topicService.getList(conditionMap);
+    }
+
+    public TopicExpandResponse expandTopic(Long topicId) {
+        String currentUserId = userInfoHolder.getUserId();
+        TopicEntity topicEntity = baseCheckRequest(topicId, currentUserId);
+        if (roleService.getRole(userInfoHolder.getUserId()) > 0) {
+            List<QueueEntity> queueEntities = queueService.getQueuesByTopicId(topicId);
+            checkQueueMessageCount(queueEntities);
+            checkQueueMax(queueEntities);
+        }
+        uiAuditLogService.recordAudit(TopicEntity.TABLE_NAME, topicId, "开始扩容, 扩容队列 1 条");
+        List<QueueEntity> normalQueueList = queueService.getTopUndistributed(1, topicEntity.getTopicType(), topicId);
+        if (CollectionUtils.isEmpty(normalQueueList)) {
+            uiAuditLogService.recordAudit(TopicEntity.TABLE_NAME, topicId, "数据节点不够分配");
+            throw new CheckFailException("数据节点不够分配，请联系管理员");
+        }
+        uiAuditLogService.recordAudit(TopicEntity.TABLE_NAME, topicId,
+                String.format("对备选队列进行分配： %s", normalQueueList.get(0).getId()));
+        topicService.distributeQueue(topicEntity, normalQueueList.get(0));
+        uiAuditLogService.recordAudit(TopicEntity.TABLE_NAME, topicId, "扩容结束");
+        uiQueueOffsetService.createQueueOffsetForExpand(normalQueueList.get(0), topicId, topicEntity);
+        uiAuditLogService.recordAudit(TopicEntity.TABLE_NAME, topicId,
+                "分配queue，" + JsonUtil.toJson(normalQueueList.get(0).getId()));
+        consumerGroupService.notifyRb(uiConsumerGroupTopicService.findByTopicId(topicId).stream()
+                .map(ConsumerGroupTopicEntity::getConsumerGroupId).collect(Collectors.toList()));
+
+        return new TopicExpandResponse();
+    }
+
+
+    private void checkQueueMessageCount(List<QueueEntity> queueEntities) {
+        if (!soaConfig.getMaxTableMessageSwitch()) {
+            return;
+        }
+        if (CollectionUtils.isEmpty(queueEntities)) {
+            return;
+        }
+        Long allMessageCount = 0L;
+
+        for (QueueEntity queueEntity : queueEntities) {
+            allMessageCount += getQueueMessage(queueEntity);
+        }
+
+        if (allMessageCount / queueEntities.size() > soaConfig.getMaxTableMessage()) {
+            throw new CheckFailException("每队列消息量未达到最大值，不允许扩容，可联系管理员强制扩容");
+        }
+    }
+
+    private void checkQueueMax(List<QueueEntity> queueEntities) {
+        int maxQueue = soaConfig.getMaxQueuePerTopic();
+        if (CollectionUtils.isEmpty(queueEntities)) {
+            return;
+        }
+        if (queueEntities.size() >= maxQueue) {
+            throw new CheckFailException("topic内队列数量达到上限，不允许扩容，可联系管理员强制扩容");
+        }
+    }
+
+    private Long getQueueMessage(QueueEntity queueEntity) {
+        message01Service.setDbId(queueEntity.getDbNodeId());
+        Long maxId = message01Service.getMaxId(queueEntity.getTbName());
+        Long minId = queueEntity.getMinId();
+        return maxId - minId - 1;
+    }
+
+
 
     @Override
     public void stop() {
