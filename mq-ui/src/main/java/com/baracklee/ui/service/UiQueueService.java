@@ -3,13 +3,15 @@ package com.baracklee.ui.service;
 import com.baracklee.mq.biz.common.SoaConfig;
 import com.baracklee.mq.biz.common.inf.TimerService;
 import com.baracklee.mq.biz.common.thread.SoaThreadFactory;
+import com.baracklee.mq.biz.common.util.JsonUtil;
 import com.baracklee.mq.biz.common.util.Util;
-import com.baracklee.mq.biz.entity.Message01Entity;
-import com.baracklee.mq.biz.entity.QueueEntity;
-import com.baracklee.mq.biz.entity.TableInfoEntity;
-import com.baracklee.mq.biz.entity.TopicEntity;
+import com.baracklee.mq.biz.dto.UserInfo;
+import com.baracklee.mq.biz.dto.response.BaseUiResponse;
+import com.baracklee.mq.biz.entity.*;
 import com.baracklee.mq.biz.service.*;
-import com.baracklee.mq.biz.ui.dto.response.QueueCountResponse;
+import com.baracklee.mq.biz.ui.dto.request.QueueGetListRequest;
+import com.baracklee.mq.biz.ui.dto.response.*;
+import com.baracklee.mq.biz.ui.exceptions.CheckFailException;
 import com.baracklee.mq.biz.ui.vo.QueueVo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -135,7 +137,14 @@ public class UiQueueService implements TimerService {
             });
         }
     }
+    public Map<String, List<QueueVo>> getQueueListCount() {
+        return queueListCountMap.get();
+    }
 
+
+    public List<QueueVo> getQueueListAvg() {
+        return queueListAvg.get();
+    }
     private void initMessageCount() {
         long count =0;
         long avg= 0;
@@ -146,6 +155,72 @@ public class UiQueueService implements TimerService {
         }
         messageCount=count;
         messageAvg=avg;
+    }
+
+    public BaseUiResponse remove(Long queueId){
+        if (queueId == null) {
+            throw new CheckFailException("队列Id不能为空。");
+        }
+
+        QueueEntity queueEntity = queueService.get(queueId);
+        if (queueEntity == null) {
+            throw new CheckFailException("队列Id无效。");
+        }
+
+        Long dbNodeId = queueEntity.getDbNodeId();
+        DbNodeEntity dbNodeEntity = dbNodeService.get(dbNodeId);
+        if (dbNodeEntity == null) {
+            throw new CheckFailException("该队列所使用的数据节点[" + dbNodeId + "]无效。");
+        }
+
+        // 如果该队列所在数据节点时读写状态，而且该队列也是读写状态，此时无法移除。
+        if (dbNodeEntity.getReadOnly() == 1 && queueEntity.getReadOnly() == 1) {
+            throw new CheckFailException("该队列不是只读，无法移除。");
+        }
+
+        Map<String, Object> conditionMap = new HashMap<>();
+        conditionMap.put("queueId", queueId);
+        List<QueueOffsetEntity> queueOffsetEntities = queueOffsetService.getList(conditionMap);
+        message01Service.setDbId(queueEntity.getDbNodeId());
+        // maxId为最大id+1
+        long maxId = queueService.getMaxId(queueEntity.getId(), queueEntity.getTbName());
+        // 若干对应的queueId已经有偏移量了，就要保证所有消息都被消费，才能移除。
+        if (!CollectionUtils.isEmpty(queueOffsetEntities)) {
+            for (QueueOffsetEntity queueOffsetEntity : queueOffsetEntities) {
+                //如果是广播模式的原始消费者组，则跳过检测
+                if(queueOffsetEntity.getConsumerGroupMode()==2&&
+                        queueOffsetEntity.getConsumerGroupName().equals(queueOffsetEntity.getOriginConsumerGroupName())){
+                    continue;
+
+                }
+                if (queueOffsetEntity.getOffset()!=maxId+1){
+                    throw new CheckFailException("Id为"+queueOffsetEntity.getId() + "的queueOffset，对应的队列中，还有消息未被消费，不能移除。");
+                }
+            }
+        }
+        long topicId = queueEntity.getTopicId();
+        doRemove(queueEntity,topicId);
+        auditLogService.recordAudit(TopicEntity.TABLE_NAME, topicId, "移除queue：" + JsonUtil.toJson(queueEntity));
+        return new BaseUiResponse();
+
+    }
+    private void doRemove(QueueEntity queueEntity, Long topicId) {
+        auditLogService.recordAudit(TopicEntity.TABLE_NAME, topicId, "清空队列消息之前" + queueEntity.getId());
+        deleteMessageFromTopic(Collections.singletonList(queueEntity), topicId);
+        uiQueueOffsetService.deleteByQueueId(queueEntity.getId(), topicId);
+        queueService.update(queueEntity);
+        queueChangeRb(topicId);
+    }
+
+    private void queueChangeRb(Long topicId) {
+        List<ConsumerGroupTopicEntity> consumerGroupTopicList = uiConsumerGroupTopicService.findByTopicId(topicId);
+        List<Long> consumerIds = new ArrayList<>();
+        if (!CollectionUtils.isEmpty(consumerGroupTopicList) && consumerGroupTopicList.size() != 0) {
+            for (ConsumerGroupTopicEntity consumerGroupTopicEntity : consumerGroupTopicList) {
+                consumerIds.add(consumerGroupTopicEntity.getConsumerGroupId());
+            }
+            consumerGroupService.notifyRb(consumerIds);
+        }
     }
 
     public List<QueueEntity> getBestRemoveQueue(Long topicId) {
@@ -305,9 +380,284 @@ public class UiQueueService implements TimerService {
         return new QueueCountResponse(resultMap);
     }
 
+    private void deleteMessageFromTopic(List<QueueEntity> queueEntities,long topicId){
+        for (QueueEntity queueEntity : queueEntities) {
+            queueService.doDeleteMessage(queueEntity);
+            auditLogService.recordAudit(TopicEntity.TABLE_NAME,topicId,"清空的队列消息，queue:"+ JsonUtil.toJson(queueEntity));
+        }
+    }
+
+    private QueueGetListResponse queryByPage(QueueGetListRequest queueGetListRequest){
+        HashMap<String, Object> conditionMap = new HashMap<>(16);
+        UserInfo userInfo = userInfoHolder.getUser();
+        if (!StringUtils.isEmpty(queueGetListRequest.getId())) {
+            conditionMap.put(QueueEntity.FdId, queueGetListRequest.getId());
+        }
+        if (!StringUtils.isEmpty(queueGetListRequest.getTopicName())) {
+            conditionMap.put(QueueEntity.FdTopicName, queueGetListRequest.getTopicName());
+        }
+        if (!StringUtils.isEmpty(queueGetListRequest.getDbNodeId())) {
+            conditionMap.put(QueueEntity.FdDbNodeId, Long.valueOf(queueGetListRequest.getDbNodeId()));
+        }
+        if (!StringUtils.isEmpty(queueGetListRequest.getNodeType())) {
+            conditionMap.put(QueueEntity.FdNodeType, Integer.valueOf(queueGetListRequest.getNodeType()));
+        }
+        if (!StringUtils.isEmpty(queueGetListRequest.getReadOnly())) {
+            conditionMap.put(QueueEntity.FdReadOnly, Integer.valueOf(queueGetListRequest.getReadOnly()));
+        }
+        if (!StringUtils.isEmpty(queueGetListRequest.getDistributeType())) {
+            conditionMap.put(QueueEntity.FdDistributeType, Integer.valueOf(queueGetListRequest.getDistributeType()));
+        }
+
+        long count = queueService.countBy(conditionMap);
+        if (count==0){
+            return new QueueGetListResponse(count,null);
+        }
+
+        List<QueueEntity> queueEntityList = queueService.getListBy(conditionMap,
+                Long.parseLong(queueGetListRequest.getPage()),
+                Long.parseLong(queueGetListRequest.getLimit()));
+
+        List<QueueVo> queueVos = new ArrayList<>();
+        for (QueueEntity queueEntity : queueEntityList) {
+            QueueVo queueVo = new QueueVo(queueEntity);
+            queueVo.setDbReadOnly(dbNodeService.getCache().get(queueEntity.getDbNodeId()).getReadOnly());
+            if (isAdmin(userInfo.getUserId())) {
+                queueVo.setRole(1);
+            } else if (isTopicOwner(userInfo.getUserId(), queueEntity.getTopicName())) {
+                queueVo.setRole(1);
+            }
+            message01Service.setDbId(queueEntity.getDbNodeId());
+            long maxId = message01Service.getMaxId(queueEntity.getTbName());
+            long minId = queueEntity.getMinId();
+            queueVo.setMsgCount(maxId - minId - 1);
+            queueVos.add(queueVo);
+        }
+        return new QueueGetListResponse(count,queueVos);
+    }
+
+    public boolean isTopicOwner(String userId, String topicName) {
+        if (StringUtils.hasLength(userId) && StringUtils.hasLength(topicName)) {
+            return Arrays.asList(topicService.getCache().get(topicName).getOwnerIds().split(",")).contains(userId);
+        }
+        return false;
+    }
+    public boolean isAdmin(String userId) {
+        if (StringUtils.hasLength(userId)) {
+            return roleService.isAdmin(userId);
+        }
+        return false;
+    }
+
+    public QueueReadOnlyResponse readOnly(Long queueId, int isReadOnly) {
+        String msg = isReadOnly == 1 ? "读写" : "只读";
+        if (queueId == null) {
+            throw new CheckFailException("队列Id不能为空。");
+        }
+        QueueEntity queueEntity = queueService.get(queueId);
+        if (queueEntity == null) {
+            throw new CheckFailException("队列Id无效。");
+        }
+        if (StringUtils.isEmpty(queueEntity.getTopicName())) {
+            throw new CheckFailException("该队列还未被分配");
+        }
+        if (isReadOnly == 2) {
+            if (!isCanSetReadOnly(queueId, queueEntity)) {
+                auditLogService.recordAudit(QueueEntity.TABLE_NAME, queueId, "设置Topic:" + queueEntity.getTopicName()
+                        + "下id为：" + queueId + "的队列状态为" + msg + "失败，该Topic下其他queue已经设置为只读");
+                throw new CheckFailException("Topic下其他queue已经设置为只读，" + queueId + "不能设置为只读。");
+            }
+        }
+        queueEntity.setReadOnly(isReadOnly);
+        int result = queueService.update(queueEntity);
+        if (result > 0) {
+            auditLogService.recordAudit(QueueEntity.TABLE_NAME, queueId,
+                    "设置Topic:" + queueEntity.getTopicName() + "下id为：" + queueId + "的队列状态为" + msg + "成功");
+        } else {
+            auditLogService.recordAudit(QueueEntity.TABLE_NAME, queueId,
+                    "设置Topic:" + queueEntity.getTopicName() + "下id为：" + queueId + "的队列状态为" + msg + "失败");
+        }
+        return new QueueReadOnlyResponse();
+    }
 
 
-    @Override
+    private boolean isCanSetReadOnly(Long queueId, QueueEntity queueEntity) {
+        boolean flag = false;
+        List<Long> nodeIds = queueService.getTopDistributedNodes(queueEntity.getTopicId());
+        List<QueueEntity> queueDistributedList = queueService.getDistributedList(nodeIds, queueEntity.getTopicId());
+        for (QueueEntity queue : queueDistributedList) {
+            if (queue.getId() != queueId) {
+                DbNodeEntity dbNodeEntity = dbNodeService.get(queue.getDbNodeId());
+                if (dbNodeEntity.getReadOnly() == 1 && queue.getReadOnly() == 1) {
+                    flag = true;
+                    break;
+                }
+            }
+        }
+        return flag;
+    }
+
+    public QueueReportResponse getQueueForReport(QueueGetListRequest queueGetListRequest, String userId) {
+        lastAccessTime = System.currentTimeMillis();
+        Map<String, Object> conditionMap = new HashMap<>(16);
+        if (!StringUtils.isEmpty(queueGetListRequest.getTopicName())){
+            conditionMap.put(QueueEntity.FdTopicName,queueGetListRequest.getTopicName());
+        }
+        if (!StringUtils.isEmpty(queueGetListRequest.getNodeType())) {
+            conditionMap.put(QueueEntity.FdNodeType, Integer.valueOf(queueGetListRequest.getNodeType()));
+        }
+        int page = Integer.parseInt(queueGetListRequest.getPage());
+        int pageSize = Integer.parseInt(queueGetListRequest.getLimit());
+        List<QueueVo> queueForPortal = new ArrayList<>(20000);
+        List<QueueVo> qlist ;
+        // 如果根据消息平均数排序的列表
+        if ("2".equals(queueGetListRequest.getSortTypeId())) {
+            qlist = queueListAvg.get();
+        } else if ("1".equals(queueGetListRequest.getSortTypeId())) {
+            qlist = queueListCount.get();
+        } else {
+            qlist =queueListByDataSize.get();
+        }
+
+        for (QueueVo queueVo : qlist) {
+            if (isAdmin(userId)) {
+                queueVo.setRole(1);
+            } else if (isTopicOwner(userId, queueVo.getTopicName())) {
+                queueVo.setRole(1);
+            }
+            QueueVo temp = queueVo;
+            if (!StringUtils.isEmpty(queueGetListRequest.getTopicName())) {
+                if (!queueGetListRequest.getTopicName().equals(temp.getTopicName())) {
+                    temp = null;
+                }
+            }
+
+            if (!StringUtils.isEmpty(queueGetListRequest.getNodeType())) {
+                if (temp != null && !queueGetListRequest.getNodeType().equals(temp.getNodeType() + "")) {
+                    temp = null;
+                }
+            }
+            if (!StringUtils.isEmpty(queueGetListRequest.getIsException()) && queueGetListRequest.getIsException() == 1) {
+                if (temp != null && queueGetListRequest.getIsException() != temp.getIsException()) {
+                    temp = null;
+                }
+            }
+            if (!StringUtils.isEmpty(queueGetListRequest.getIsException()) && queueGetListRequest.getIsException() == 2) {
+                if (temp != null && temp.getMsgCount() != 0) {
+                    temp = null;
+                }
+            }
+            if (!StringUtils.isEmpty(queueGetListRequest.getIsException()) && queueGetListRequest.getIsException() == 3) {
+                if (temp != null && temp.getMsgCount() >= 0) {
+                    temp = null;
+                }
+            }
+            if (!StringUtils.isEmpty(queueGetListRequest.getIp())) {
+                if (temp != null && !temp.getIp().equals(queueGetListRequest.getIp())) {
+                    temp = null;
+                }
+            }
+
+            if (temp != null) {
+                queueForPortal.add(temp);
+            }
+
+        }
+        int t = queueForPortal.size();
+        if ((page * pageSize) > queueForPortal.size()) {
+            queueForPortal = queueForPortal.subList((page - 1) * pageSize, queueForPortal.size());
+        } else {
+            queueForPortal = queueForPortal.subList((page - 1) * pageSize, page * pageSize);
+        }
+        return new QueueReportResponse((long) t, queueForPortal);
+
+    }
+
+
+    public BaseUiResponse<String> getQueueMinId(long queueId){
+        Map<Long, QueueEntity> queueMap=queueService.getAllQueueMap();
+        QueueEntity queueEntity=queueMap.get(queueId);
+        message01Service.setDbId(queueEntity.getDbNodeId());
+        Long tableMinId=message01Service.getTableMinId(queueEntity.getTbName());
+        long result=0;
+        if(tableMinId!=null){
+            result=tableMinId-1;
+        }else{
+            Map<Long, Long> queueMaxIdMap = queueService.getMax();
+            if (queueMaxIdMap.containsKey(queueEntity.getId())) {
+                long maxId = queueMaxIdMap.get(queueEntity.getId());
+                result=maxId-1;
+            }
+        }
+
+        if(result<0){
+            result=0;
+        }
+
+        return new BaseUiResponse(result);
+
+
+    }
+
+
+    public QueueUpdateMinIdResponse updateMinId(Long queueId, Long minId){
+        QueueUpdateMinIdResponse queueUpdateMinIdResponse=new QueueUpdateMinIdResponse();
+        try{
+            Map<Long, QueueEntity> queueMap=queueService.getAllQueueMap();
+            QueueEntity queueEntity=queueMap.get(queueId);
+            queueEntity.setMinId(minId);
+            queueService.update(queueEntity);
+            return queueUpdateMinIdResponse;
+        }catch(Exception e){
+            queueUpdateMinIdResponse.setCode("1");
+            queueUpdateMinIdResponse.setMsg(e.getMessage());
+            return queueUpdateMinIdResponse;
+        }
+
+
+    }
+
+    public QueueGetListResponse getAbnormalMinId(){
+        Map<Long,QueueEntity>queueMap=queueService.getAllQueueMap();
+        UserInfo userInfo = userInfoHolder.getUser();
+        List<QueueVo> queueVos = new ArrayList<>();
+        Map<Long,Long>maxIdMap=queueService.getMax();
+        for (QueueEntity queueEntity:queueMap.values()) {
+            QueueVo queueVo = new QueueVo(queueEntity);
+            queueVo.setDbReadOnly(dbNodeService.getCache().get(queueEntity.getDbNodeId()).getReadOnly());
+            if (isAdmin(userInfo.getUserId())) {
+                queueVo.setRole(1);
+            } else if (isTopicOwner(userInfo.getUserId(), queueEntity.getTopicName())) {
+                queueVo.setRole(1);
+            }
+            long maxId=maxIdMap.get(queueEntity.getId());
+            long minId = queueEntity.getMinId();
+            queueVo.setMsgCount(maxId - minId - 1);
+            if(queueVo.getMsgCount()<0){
+                queueVos.add(queueVo);
+            }
+
+        }
+        return new QueueGetListResponse(new Long(queueVos.size()), queueVos);
+    }
+
+    public void forceRemove(Long queueId) {
+        QueueEntity queueEntity = queueService.get(queueId);
+        Long topicId = queueEntity.getTopicId();
+        Map<String, Object> conditionMap = new HashMap<>();
+        conditionMap.put(QueueOffsetEntity.FdQueueId, queueId);
+        List<QueueOffsetEntity> queueOffsetEntityList = queueOffsetService.getList(conditionMap);
+        for (QueueOffsetEntity queueOffsetEntity : queueOffsetEntityList) {
+            if (queueOffsetEntity.getConsumerId() != 0) {
+                throw new CheckFailException(queueOffsetEntity.getId() + "该队列下消息正在被消费，不能移除。");
+            }
+        }
+        doRemove(queueEntity, topicId);
+        auditLogService.recordAudit(TopicEntity.TABLE_NAME, topicId, "强制移除queue：" + JsonUtil.toJson(queueEntity));
+    }
+
+
+        @Override
     public void stop() {
         isRunning=false;
     }
