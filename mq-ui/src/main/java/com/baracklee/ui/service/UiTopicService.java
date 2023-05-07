@@ -7,22 +7,20 @@ import com.baracklee.mq.biz.common.util.JsonUtil;
 import com.baracklee.mq.biz.common.util.Util;
 import com.baracklee.mq.biz.dto.Constants;
 import com.baracklee.mq.biz.dto.request.TopicCreateRequest;
-import com.baracklee.mq.biz.entity.ConsumerGroupTopicEntity;
-import com.baracklee.mq.biz.entity.QueueEntity;
-import com.baracklee.mq.biz.entity.TopicEntity;
+import com.baracklee.mq.biz.entity.*;
 import com.baracklee.mq.biz.service.*;
 import com.baracklee.mq.biz.service.common.AuditUtil;
 import com.baracklee.mq.biz.service.common.CacheUpdateHelper;
 import com.baracklee.mq.biz.ui.dto.request.TopicGetListRequest;
-import com.baracklee.mq.biz.ui.dto.response.TopicCreateResponse;
-import com.baracklee.mq.biz.ui.dto.response.TopicDeleteResponse;
-import com.baracklee.mq.biz.ui.dto.response.TopicExpandResponse;
-import com.baracklee.mq.biz.ui.dto.response.TopicGetListResponse;
+import com.baracklee.mq.biz.ui.dto.response.*;
 import com.baracklee.mq.biz.ui.enums.NodeTypeEnum;
+import com.baracklee.mq.biz.ui.enums.ReadWriteEnum;
 import com.baracklee.mq.biz.ui.exceptions.AuthFailException;
 import com.baracklee.mq.biz.ui.exceptions.CheckFailException;
+import com.baracklee.mq.biz.ui.vo.QueueRemoveInfoVo;
 import com.baracklee.mq.biz.ui.vo.QueueVo;
 import com.baracklee.mq.biz.ui.vo.TopicVo;
+import com.baracklee.ui.util.DesUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -414,6 +412,34 @@ public class UiTopicService implements TimerService {
     }
 
 
+
+
+    public TopicManualExpandResponse manualExpand(Long topicId, Long queueId) {
+        CacheUpdateHelper.updateCache();
+        String currentUserId = userInfoHolder.getUserId();
+        TopicEntity topicEntity = baseCheckRequest(topicId, currentUserId);
+
+        QueueEntity queueEntity = queueService.get(queueId);
+        if (topicEntity.getTopicType() != queueEntity.getNodeType()) {
+            throw new CheckFailException("所选择的队列类型与主题不一致！请重新选择！");
+        }
+        if (queueEntity.getTopicId() != 0) {
+            throw new CheckFailException("队列已经被分配！请重新选择！");
+        }
+        if (ReadWriteEnum.READ_WRITE.getCode() != dbNodeService.get(queueEntity.getDbNodeId()).getReadOnly()) {
+            throw new CheckFailException("队列所在节点不可写，请重新选择！");
+        }
+        topicService.distributeQueue(topicEntity, queueEntity);
+        uiQueueOffsetService.createQueueOffsetForExpand(queueEntity, topicId, topicEntity);
+        uiQueueService.queueChangeRb(topicId);
+        uiAuditLogService.recordAudit(TopicEntity.TABLE_NAME, topicId,
+                "手工分配queue，" + JsonUtil.toJson(queueEntity.getId()));
+
+        return new TopicManualExpandResponse();
+    }
+
+
+
     private void checkQueueMessageCount(List<QueueEntity> queueEntities) {
         if (!soaConfig.getMaxTableMessageSwitch()) {
             return;
@@ -447,6 +473,142 @@ public class UiTopicService implements TimerService {
         Long maxId = message01Service.getMaxId(queueEntity.getTbName());
         Long minId = queueEntity.getMinId();
         return maxId - minId - 1;
+    }
+
+    public TopicGenerateTokenResponse generateToken(Long topicId) {
+        String currentUserId = userInfoHolder.getUserId();
+        TopicEntity topicEntity = baseCheckRequest(topicId, currentUserId);
+
+        String token = DesUtil.getUuidToken();
+        topicEntity.setToken(token);
+        topicEntity.setUpdateBy(currentUserId);
+        topicService.update(topicEntity);
+        uiAuditLogService.recordAudit(TopicEntity.TABLE_NAME, topicId, "生成token");
+        return new TopicGenerateTokenResponse();
+    }
+
+    public TopicClearTokenResponse clearToken(Long topicId) {
+        String currentUserId = userInfoHolder.getUserId();
+        TopicEntity topicEntity = baseCheckRequest(topicId, currentUserId);
+        String token = topicEntity.getToken();
+        topicEntity.setToken("");
+        topicEntity.setUpdateBy(currentUserId);
+        topicService.update(topicEntity);
+        uiAuditLogService.recordAudit(TopicEntity.TABLE_NAME, topicId, "清除token:" + token);
+        return new TopicClearTokenResponse();
+    }
+
+    public List<TopicEntity> getSelectSearch(String keyword, int offset, int limit, String consumerGroupName) {
+        Map<String, ConsumerGroupEntity> consumerGroupEntityMap = consumerGroupService.getCache();
+        Map<String, TopicEntity> topicMap = topicService.getCache();
+        List<TopicEntity> topicInfos = new ArrayList<>();
+        List<String> subscribedTopics = new ArrayList<>();
+        // 该消费者组已经订阅过的topic
+        ConsumerGroupEntity consumerGroupEntity = consumerGroupEntityMap.get(consumerGroupName);
+        String topicNames = consumerGroupEntity.getTopicNames();
+        if (StringUtils.isNotEmpty(topicNames)) {
+            subscribedTopics = Arrays.asList(topicNames.split(","));
+        }
+        for (String key : topicMap.keySet()) {
+            if (key.toLowerCase().startsWith(keyword.toLowerCase()) && topicMap.get(key).getTopicType() == 1) {
+                // 排除已经订阅过的topic
+                if (!subscribedTopics.contains(key)) {
+                    // 如果该topic允许所有人订阅，或者该消费者组拥有订阅该topic的权限
+                    if (topicMap.get(key).getConsumerFlag() == 1 || Arrays
+                            .asList(topicMap.get(key).getConsumerGroupNames().split(",")).contains(consumerGroupName)) {
+                        topicInfos.add(topicMap.get(key));
+                    }
+
+                }
+            }
+            if (topicInfos.size() >= limit) {
+                break;
+            }
+        }
+        return topicInfos;
+    }
+
+
+    public TopicQueueRemoveListResponse queueRemoveList(Long topicId) {
+        CacheUpdateHelper.updateCache();
+        List<QueueEntity> queueEntityList = queueService.getQueuesByTopicId(topicId);
+
+        if (CollectionUtils.isEmpty(queueEntityList)) {
+            return new TopicQueueRemoveListResponse(0L, null);
+        }
+
+        Long bestQueueId = 0L;
+        if (queueEntityList.size() > 2) {
+            List<QueueEntity> bestQueueList = uiQueueService.getBestRemoveQueue(topicId);
+            if (!CollectionUtils.isEmpty(bestQueueList)) {
+                bestQueueId = findMinLeftMessage(bestQueueList).getId();
+            } else {
+                bestQueueId = findMinLeftMessage(queueEntityList).getId();
+            }
+        }
+
+        List<QueueRemoveInfoVo> queueRemoveInfoVoList = new ArrayList<>();
+
+        for (QueueEntity queueEntity : queueEntityList) {
+            QueueRemoveInfoVo queueRemoveInfoVo = new QueueRemoveInfoVo();
+            queueRemoveInfoVo.setId(queueEntity.getId());
+            queueRemoveInfoVo.setTopicId(topicId);
+            queueRemoveInfoVo.setQueueReadOnly(queueEntity.getReadOnly());
+            DbNodeEntity dbNodeEntity = dbNodeService.get(queueEntity.getDbNodeId());
+            queueRemoveInfoVo.setDbReadOnly(dbNodeEntity.getReadOnly());
+            if (dbNodeEntity.getReadOnly() != 1) {
+                queueRemoveInfoVo.setReadStatus(dbNodeEntity.getReadOnly());
+            } else {
+                queueRemoveInfoVo.setReadStatus(queueEntity.getReadOnly());
+            }
+            queueRemoveInfoVo.setConsumerGroups(String.join(",", getConsumerGroups(queueEntity.getId())));
+            queueRemoveInfoVo.setLeftMessage(getLeftMessage(queueEntity.getId()));
+            queueRemoveInfoVo.setDbNodeId(queueEntity.getDbNodeId());
+            if (queueEntity.getId() == bestQueueId) {
+                queueRemoveInfoVo.setIsBestRemove(1);
+            }
+            queueRemoveInfoVoList.add(queueRemoveInfoVo);
+        }
+        return new TopicQueueRemoveListResponse((long) queueRemoveInfoVoList.size(), queueRemoveInfoVoList);
+    }
+
+    private QueueEntity findMinLeftMessage(List<QueueEntity> queueEntities) {
+        QueueEntity queueEntity = null;
+        Long minLeftMessage = 999999999999999999L;
+        for (QueueEntity queueEntity1 : queueEntities) {
+            Long currentLeftMessage = getLeftMessage(queueEntity1.getId());
+            if (currentLeftMessage <= minLeftMessage) {
+                minLeftMessage = currentLeftMessage;
+                queueEntity = queueEntity1;
+            }
+        }
+        return queueEntity;
+
+    }
+
+    private List<String> getConsumerGroups(Long queueId) {
+        List<QueueOffsetEntity> queueOffsetEntityList = uiQueueOffsetService.findByQueueId(queueId);
+        List<String> consumerGroups = new ArrayList<>();
+        queueOffsetEntityList
+                .forEach(queueOffsetEntity -> consumerGroups.add(queueOffsetEntity.getConsumerGroupName()));
+        return consumerGroups;
+    }
+    private Long getLeftMessage(Long queueId) {
+        List<QueueOffsetEntity> queueOffsetEntityList = uiQueueOffsetService.findByQueueId(queueId);
+        if (CollectionUtils.isEmpty(queueOffsetEntityList)) {
+            return 0L;
+        }
+        Long maxId = queueService.getMax().get(queueId);
+        Long leftMessage = 0L;
+        for (QueueOffsetEntity queueOffsetEntity : queueOffsetEntityList) {
+            Long left = maxId - 1 - queueOffsetEntity.getOffset();
+            leftMessage += left > 0 ? left : 0;
+        }
+        return leftMessage;
+    }
+
+    public TopicGetByIdResponse getById(Long topicId) {
+        return new TopicGetByIdResponse(topicService.get(topicId));
     }
 
 

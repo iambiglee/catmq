@@ -69,4 +69,10 @@ public class UiQueueOffsetService {
         //synService32.synTopicExpand(topicEntity, queueEntity, queueOffsetEntityList);
 
     }
+
+    public List<QueueOffsetEntity> findByQueueId(Long queueId) {
+        Map<String, Object> conditionMap = new HashMap<>();
+        conditionMap.put(QueueOffsetEntity.FdQueueId, queueId);
+        return queueOffsetService.getList(conditionMap);
+    }
 }

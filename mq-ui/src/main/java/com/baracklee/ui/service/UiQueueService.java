@@ -212,7 +212,7 @@ public class UiQueueService implements TimerService {
         queueChangeRb(topicId);
     }
 
-    private void queueChangeRb(Long topicId) {
+    public void queueChangeRb(Long topicId) {
         List<ConsumerGroupTopicEntity> consumerGroupTopicList = uiConsumerGroupTopicService.findByTopicId(topicId);
         List<Long> consumerIds = new ArrayList<>();
         if (!CollectionUtils.isEmpty(consumerGroupTopicList) && consumerGroupTopicList.size() != 0) {
