@@ -1,8 +1,10 @@
 package com.baracklee.ui.service;
 
 import com.baracklee.mq.biz.common.util.JsonUtil;
+import com.baracklee.mq.biz.dto.UserInfo;
 import com.baracklee.mq.biz.entity.*;
 import com.baracklee.mq.biz.service.*;
+import com.baracklee.ui.spi.UserService;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -27,6 +29,8 @@ public class UiQueueOffsetService {
     private ConsumerGroupTopicService consumerGroupTopicService;
 
     private UserInfoHolder userInfoHolder;
+
+    private UserService userService;
 
     public void deleteByQueueId(long queueId, Long topicId) {
         Map<String, Object> conditionMap = new HashMap<>();
@@ -74,5 +78,15 @@ public class UiQueueOffsetService {
         Map<String, Object> conditionMap = new HashMap<>();
         conditionMap.put(QueueOffsetEntity.FdQueueId, queueId);
         return queueOffsetService.getList(conditionMap);
+    }
+
+    /**
+     * 判断负责人是否存在
+     * @param ownerIds
+     * @return
+     */
+    public boolean isOwnerAvailable(List<String> ownerIds){
+        List<UserInfo> users=userService.findByUserIds(ownerIds);
+        return !CollectionUtils.isEmpty(users);
     }
 }

@@ -7,6 +7,7 @@ import com.baracklee.mq.biz.common.util.JsonUtil;
 import com.baracklee.mq.biz.common.util.Util;
 import com.baracklee.mq.biz.dto.Constants;
 import com.baracklee.mq.biz.dto.request.TopicCreateRequest;
+import com.baracklee.mq.biz.dto.response.BaseUiResponse;
 import com.baracklee.mq.biz.entity.*;
 import com.baracklee.mq.biz.service.*;
 import com.baracklee.mq.biz.service.common.AuditUtil;
@@ -27,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
 import java.lang.invoke.MethodHandles;
@@ -611,6 +613,182 @@ public class UiTopicService implements TimerService {
         return new TopicGetByIdResponse(topicService.get(topicId));
     }
 
+    public void updateSaveDayNum(Long topicId, int saveDayNum) {
+        CacheUpdateHelper.updateCache();
+        TopicEntity topicEntity = topicService.get(topicId);
+        if (!hasAuth(userInfoHolder.getUserId(), topicEntity)) {
+            throw new AuthFailException("没有操作权限，请进行权限检查。");
+        }
+        int oldSaveDayNum = topicEntity.getSaveDayNum();
+        topicEntity.setSaveDayNum(saveDayNum);
+        topicService.update(topicEntity);
+        uiAuditLogService.recordAudit(TopicEntity.TABLE_NAME, topicId,
+                "更新[保留时间]: {" + oldSaveDayNum + "->" + saveDayNum + "}");
+        // synService32.synTopicSaveDayNum32(topicEntity);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public TopicQueueRemoveResponse queueRemove(Long queueId, Long topicId) {
+        CacheUpdateHelper.updateCache();
+        TopicEntity topicEntity = topicService.get(topicId);
+        if (roleService.getRole(userInfoHolder.getUserId(), topicEntity.getOwnerIds()) > 0) {
+            throw new AuthFailException("没有操作权限，请进行权限检查。");
+        }
+        Map<String, List<QueueVo>> queueVoMap = uiQueueService.getQueueListCount();
+//		 如果queue下的消息量大于阈值，则不允许缩容
+        if (queueVoMap != null) {
+            List<QueueVo> queueList = queueVoMap.get(topicEntity.getName());
+            if (queueList != null) {
+                for (QueueVo queueVo : queueList) {
+                    if(queueId==queueVo.getId()&&queueVo.getMsgCount()>soaConfig.getTopicDeleteLimitCount() * 10000L){
+                        throw new CheckFailException("topic:"+topicEntity.getName()+"存在消息量大于"+soaConfig.getTopicDeleteLimitCount() * 10000+"的queue,不能直接缩容");
+                    }
+                }
+            }
+        }
+        // List<QueueEntity> queueEntities = queueService.getQueuesByTopicId(topicId);
+        uiQueueService.remove(queueId);
+        consumerGroupService.notifyRb(uiConsumerGroupTopicService.findByTopicId(topicId).stream()
+                .map(ConsumerGroupTopicEntity::getConsumerGroupId).collect(Collectors.toList()));
+        return new TopicQueueRemoveResponse();
+    }
+
+    public TopicGetTopicNamesResponse getTopicNames(String keyword, int offset, int limit) {
+        Map<String, TopicEntity> topicMap = topicService.getCache();
+        Map<String,ConsumerGroupEntity> consumerGroupMap=consumerGroupService.getCache();
+        Map<String, List<ConsumerGroupTopicEntity>> consumerGroupTopicMap=consumerGroupTopicService.getTopicSubscribeMap();
+        List<String> topicList = new LinkedList<>();
+        for (String topicName : topicMap.keySet()) {
+            if (topicName.toLowerCase().startsWith(keyword.toLowerCase())){
+                topicList.add(topicName);
+            }
+        }
+
+        if (offset+ limit>topicList.size()){
+            limit=topicList.size()-offset;
+        }
+
+        return new TopicGetTopicNamesResponse((long) topicList.subList(offset, limit).size(),
+                topicList.subList(offset, limit));
+
+    }
+
+
+    public TopicGetTopicNamesResponse getTopicNamesForMessageTool(String keyword, int offset, int limit) {
+        Map<String, TopicEntity> topicMap = topicService.getCache();
+        List<String> topicList = new LinkedList<>();
+        for (String topicName : topicMap.keySet()) {
+            // 如果是超级管理员或者apollo配置了允许所有人发送，则展示所有topic
+            if (roleService.getRole(userInfoHolder.getUserId(), null) == 0
+                    || ("0".equals(soaConfig.getToolTopicFilterFlag()))) {
+                if (topicName.toLowerCase().startsWith(keyword.toLowerCase())) {
+                    topicList.add(topicName);
+                }
+            } else {
+                // 否则只展示负责人名下的topic，即只允许负责人发送
+                if (topicName.toLowerCase().startsWith(keyword.toLowerCase())
+                        && topicMap.get(topicName).getOwnerIds().contains(userInfoHolder.getUserId())) {
+                    topicList.add(topicName);
+                }
+            }
+
+        }
+
+        if (offset + limit > topicList.size()) {
+            limit = topicList.size() - offset;
+        }
+        return new TopicGetTopicNamesResponse((long) topicList.subList(offset, limit).size(),
+                topicList.subList(offset, limit));
+
+    }
+
+
+    public TopicReportResponse getTopicReport(TopicGetListRequest topicGetListRequest) {
+        lastAccessTime = System.currentTimeMillis();
+        int page = Integer.parseInt(topicGetListRequest.getPage());
+        int pageSize = Integer.parseInt(topicGetListRequest.getLimit());
+        List<TopicVo> topicVoList = new ArrayList<>();
+
+        Map<String, List<ConsumerGroupTopicEntity>> topicSubscribeMap = consumerGroupTopicService
+                .getTopicSubscribeMap();
+        for (TopicVo topicVo : topicVoListRf.get()) {
+            if (StringUtils.isNotEmpty(topicGetListRequest.getName())) {
+                if (!topicGetListRequest.getName().equals(topicVo.getName())) {
+                    continue;
+                }
+            }
+
+            if (StringUtils.isNotEmpty(topicGetListRequest.getTopicExceptionType())) {
+                // 过滤掉非僵尸topic
+                if ("1".equals(topicGetListRequest.getTopicExceptionType())) {
+                    if (topicVo.getMsgCount() > 0) {// 过滤有消息的topic
+                        continue;
+                    }
+                    if (topicSubscribeMap.containsKey(topicVo.getOriginName())) {// 过滤已经被订阅的topic
+                        continue;
+                    }
+                    //排除创建时间不到三天的topic
+                    if (System.currentTimeMillis()-topicVo.getInsertTime().getTime() < 3 * 24 * 60 * 60
+                            * 1000) {
+                        continue;
+                    }
+                }
+
+                // 过滤掉负责人正常的topic
+                if ("2".equals(topicGetListRequest.getTopicExceptionType())) {
+                    List<String> ownerIds = Arrays.asList(topicVo.getOwnerIds().split(","));
+                    if (uiQueueOffsetService.isOwnerAvailable(ownerIds)) {
+                        continue;
+                    }
+                }
+
+                //过滤掉已经被订阅的topic
+                if("3".equals(topicGetListRequest.getTopicExceptionType())){
+                    if (topicSubscribeMap.containsKey(topicVo.getOriginName())) {// 过滤已经被订阅的topic
+                        continue;
+                    }
+                }
+            }
+
+            if (StringUtils.isNotEmpty(topicGetListRequest.getQueueManagementType())) {
+                if ("1".equals(topicGetListRequest.getQueueManagementType())) {
+                    if (!shouldShrink.equals(topicVo.getIsReasonable())) {
+                        continue;
+                    }
+                }
+
+                if ("2".equals(topicGetListRequest.getQueueManagementType())) {
+                    if (!shouldExpand.equals(topicVo.getIsReasonable())) {
+                        continue;
+                    }
+                }
+            }
+
+            topicVoList.add(topicVo);
+        }
+
+        int t = topicVoList.size();
+        if ((page * pageSize) > topicVoList.size()) {
+            topicVoList = topicVoList.subList((page - 1) * pageSize, topicVoList.size());
+        } else {
+            topicVoList = topicVoList.subList((page - 1) * pageSize, page * pageSize);
+        }
+        return new TopicReportResponse(new Long(t), topicVoList);
+
+    }
+
+    public BaseUiResponse getTopicMsgCount(String topicName, String startTime, String endTime){
+        long msgCount=topicService.getMsgCount(topicName,startTime,endTime);
+        BaseUiResponse baseUiResponse=new BaseUiResponse();
+        baseUiResponse.setCode("0");
+        baseUiResponse.setMsg("消息总量为："+msgCount);
+        return baseUiResponse;
+    }
+
+
+    public List<TopicVo> getTopicVos(){
+        return topicVoListRf.get();
+    }
 
 
     @Override
