@@ -1,24 +1,35 @@
 package com.baracklee.ui.service;
 
+import com.baracklee.mq.biz.common.SoaConfig;
+import com.baracklee.mq.biz.common.inf.TimerService;
+import com.baracklee.mq.biz.common.thread.SoaThreadFactory;
 import com.baracklee.mq.biz.common.util.JsonUtil;
+import com.baracklee.mq.biz.common.util.Util;
 import com.baracklee.mq.biz.dto.UserInfo;
 import com.baracklee.mq.biz.entity.*;
 import com.baracklee.mq.biz.service.*;
+import com.baracklee.mq.biz.ui.vo.QueueOffsetVo;
 import com.baracklee.ui.spi.UserService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import javax.annotation.PreDestroy;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 /**
  * @author Barack Lee
  */
 @Service
-public class UiQueueOffsetService {
+public class UiQueueOffsetService implements TimerService {
 
     private QueueOffsetService queueOffsetService;
 
@@ -31,6 +42,57 @@ public class UiQueueOffsetService {
     private UserInfoHolder userInfoHolder;
 
     private UserService userService;
+
+    private RoleService roleService;
+
+    private TopicService topicService;
+
+    private UiTopicService uiTopicService;
+
+    private QueueService queueService;
+
+    private DbNodeService dbNodeService;
+
+    private Message01Service message01Service;
+
+    private SoaConfig soaConfig;
+
+    private AtomicBoolean startFlag = new AtomicBoolean(false);
+    private ThreadPoolExecutor executor = null;
+    private volatile boolean isRunning = true;
+    private AtomicReference<List<QueueOffsetVo>> queueOffsetVos = new AtomicReference<>(new ArrayList<>());
+    private AtomicReference<Map<String, List<QueueOffsetVo>>> usingConsumerGroups = new AtomicReference<>(
+            new ConcurrentHashMap<>());
+    private Logger log = LoggerFactory.getLogger(this.getClass().getName());
+    private volatile long lastUpdateTime = 0;
+
+    public UiQueueOffsetService(QueueOffsetService queueOffsetService,
+                                AuditLogService auditLogService,
+                                ConsumerGroupService consumerGroupService,
+                                ConsumerGroupTopicService consumerGroupTopicService,
+                                UserInfoHolder userInfoHolder,
+                                UserService userService,
+                                RoleService roleService,
+                                TopicService topicService,
+                                UiTopicService uiTopicService,
+                                QueueService queueService,
+                                DbNodeService dbNodeService,
+                                Message01Service message01Service,
+                                SoaConfig soaConfig) {
+        this.queueOffsetService = queueOffsetService;
+        this.auditLogService = auditLogService;
+        this.consumerGroupService = consumerGroupService;
+        this.consumerGroupTopicService = consumerGroupTopicService;
+        this.userInfoHolder = userInfoHolder;
+        this.userService = userService;
+        this.roleService = roleService;
+        this.topicService = topicService;
+        this.uiTopicService = uiTopicService;
+        this.queueService = queueService;
+        this.dbNodeService = dbNodeService;
+        this.message01Service = message01Service;
+        this.soaConfig = soaConfig;
+    }
 
     public void deleteByQueueId(long queueId, Long topicId) {
         Map<String, Object> conditionMap = new HashMap<>();
@@ -102,5 +164,75 @@ public class UiQueueOffsetService {
 
     public long getUsingConsumerGroupNum() {
         return usingConsumerGroups.get().size();
+    }
+    private volatile long lastAccessTime = System.currentTimeMillis() * 2;
+
+    @Override
+    public void start() {
+        if (startFlag.compareAndSet(false, true)) {
+            lastUpdateTime = System.currentTimeMillis() - soaConfig.getMqReportInterval() * 2;
+            executor = new ThreadPoolExecutor(2, 2, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(50),
+                    SoaThreadFactory.create("UiQueueOffsetService", true),
+                    new ThreadPoolExecutor.DiscardOldestPolicy());
+            executor.execute(() -> {
+                while (isRunning) {
+                    try {
+                        if (System.currentTimeMillis() - lastAccessTime < soaConfig.getMqReportInterval()
+                                || System.currentTimeMillis() - lastAccessTime > 1000 * 60 * 60 * 60) {
+                            if (System.currentTimeMillis() - lastUpdateTime > soaConfig.getMqReportInterval()) {
+                                initCache();
+                                if (queueOffsetVos.get().size() > 0) {
+                                    lastUpdateTime = System.currentTimeMillis();
+                                    lastAccessTime = System.currentTimeMillis() - soaConfig.getMqReportInterval() * 2;
+                                }
+                            }
+                        }
+                    } catch (Throwable e) {
+                        log.error("UiQueueOffsetServiceImpl_initCache_error", e);
+                    }
+                    if (queueOffsetVos.get().size() == 0) {
+                        Util.sleep(10 * 1000);
+                    } else {
+                        Util.sleep(1000);
+                    }
+                }
+            });
+        }
+    }
+
+    private boolean initCache() {
+        // 缓存数据
+        Map<String, ConsumerGroupEntity> consumerGroupMap = consumerGroupService.getCache();
+        Map<Long, QueueEntity> queueMap = queueService.getAllQueueMap();
+        Map<String, ConsumerGroupTopicEntity> consumerGroupTopicMap = consumerGroupTopicService.getGroupTopic();
+        Map<String, TopicEntity> topicMap = topicService.getCache();
+        Map<Long, Long> queueMaxIdMap = queueService.getMax();
+        List<QueueOffsetEntity> queueOffsetList = queueOffsetService.getCacheData();
+        if (consumerGroupMap.size() == 0 || consumerGroupTopicMap.size() == 0 || topicMap.size() == 0
+                || queueMaxIdMap.size() == 0 || queueOffsetList.size() == 0) {
+            return false;
+        }
+
+        List<QueueOffsetVo> queueOffsetVoList = new LinkedList<>();
+        Map<String, List<QueueOffsetVo>> usingConsumerGroupMap = new ConcurrentHashMap<>();
+
+        boolean flag = true;
+
+        for (QueueOffsetEntity queueOffsetEntity : queueOffsetList) {
+
+        }
+
+
+    }
+
+    @Override
+    @PreDestroy
+    public void stop() {
+        isRunning = false;
+    }
+
+    @Override
+    public String info() {
+        return null;
     }
 }
