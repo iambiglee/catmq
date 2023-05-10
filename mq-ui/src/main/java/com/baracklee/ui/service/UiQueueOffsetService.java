@@ -89,4 +89,18 @@ public class UiQueueOffsetService {
         List<UserInfo> users=userService.findByUserIds(ownerIds);
         return !CollectionUtils.isEmpty(users);
     }
+
+    public long getUselessConsumerGroupNum() {
+        // 缓存数据
+        Map<String, ConsumerGroupEntity> consumerGroupMap = consumerGroupService.getCache();
+        return consumerGroupMap.size() - usingConsumerGroups.get().size();
+    }
+
+    public long getConsumerGroupNum() {
+        return consumerGroupService.getCache().size();
+    }
+
+    public long getUsingConsumerGroupNum() {
+        return usingConsumerGroups.get().size();
+    }
 }
