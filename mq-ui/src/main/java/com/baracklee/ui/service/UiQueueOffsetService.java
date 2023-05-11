@@ -3,16 +3,21 @@ package com.baracklee.ui.service;
 import com.baracklee.mq.biz.common.SoaConfig;
 import com.baracklee.mq.biz.common.inf.TimerService;
 import com.baracklee.mq.biz.common.thread.SoaThreadFactory;
-import com.baracklee.mq.biz.common.trace.TraceMessageItem;
 import com.baracklee.mq.biz.common.util.JsonUtil;
 import com.baracklee.mq.biz.common.util.Util;
 import com.baracklee.mq.biz.dto.UserInfo;
+import com.baracklee.mq.biz.dto.UserRoleEnum;
 import com.baracklee.mq.biz.dto.response.BaseUiResponse;
 import com.baracklee.mq.biz.entity.*;
 import com.baracklee.mq.biz.service.*;
+import com.baracklee.mq.biz.service.common.CacheUpdateHelper;
 import com.baracklee.mq.biz.ui.dto.request.QueueOffsetAccumulationRequest;
 import com.baracklee.mq.biz.ui.dto.request.QueueOffsetGetListRequest;
 import com.baracklee.mq.biz.ui.dto.response.QueueOffsetGetListResponse;
+import com.baracklee.mq.biz.ui.dto.response.QueueOffsetIntelligentDetectionResponse;
+import com.baracklee.mq.biz.ui.dto.response.QueueOffsetUpdateResponse;
+import com.baracklee.mq.biz.ui.dto.response.QueueOffsetUpdateStopFlagResponse;
+import com.baracklee.mq.biz.ui.exceptions.AuthFailException;
 import com.baracklee.mq.biz.ui.vo.QueueOffsetVo;
 import com.baracklee.ui.spi.UserService;
 import org.apache.commons.lang3.StringUtils;
@@ -468,6 +473,170 @@ public class UiQueueOffsetService implements TimerService {
         return new BaseUiResponse<>(new Long(t), queueOffsetVoList);
     }
 
+    public BaseUiResponse<Object> accumulationAlert(String ownerName){
+        QueueOffsetAccumulationRequest queueOffsetAccumulationRequest=new QueueOffsetAccumulationRequest();
+        queueOffsetAccumulationRequest.setOwnerNames(ownerName);
+        queueOffsetAccumulationRequest.setPage("1");
+        queueOffsetAccumulationRequest.setLimit("10");
+        List<QueueOffsetVo> queueOffsetVoList = findAccumulation(queueOffsetAccumulationRequest).getData();
+        BaseUiResponse<Object> baseUiResponse = new BaseUiResponse<>();
+        Map<String,String> queueOffsetVoMap=new HashMap<>();
+        Map<String,TopicEntity> topicMap=topicService.getCache();
+        StringBuilder re=new StringBuilder();
+        if(queueOffsetVoList.size()>0){
+            re.append("您名下的consumerGroup:");
+            for (QueueOffsetVo queueOffsetVo:queueOffsetVoList) {
+                TopicEntity topic=topicMap.get(queueOffsetVo.getTopicName());
+                if(topic!=null&&queueOffsetVo.getPendingMessageNum()>topic.getMaxLag()&&!queueOffsetVoMap.containsKey(queueOffsetVo.getConsumerGroupName())){
+                    re.append(queueOffsetVo.getConsumerGroupName()+",");
+                    queueOffsetVoMap.put(queueOffsetVo.getConsumerGroupName(),queueOffsetVo.getConsumerGroupName());
+                }
+            }
+            re.append("消费慢，产生了堆积，请尽快处理！");
+        }
+        if(!queueOffsetVoMap.isEmpty()){
+            baseUiResponse.setCode("0");
+            baseUiResponse.setMsg(re.toString());
+        }
+        else{
+            baseUiResponse.setCode("1");
+            baseUiResponse.setMsg("");
+        }
+
+        return baseUiResponse;
+    }
+
+
+    public List<QueueOffsetEntity> doFindAllBy(Long topicId) {
+        Map<String, Object> conditionMap = new HashMap<>();
+        TopicEntity topicEntity = topicService.get(topicId);
+        if (topicEntity==null){
+            return null;
+        }
+        conditionMap.put(QueueOffsetEntity.FdQueueId,topicId);
+        List<QueueOffsetEntity> queueOffsetList = queueOffsetService.getList(conditionMap);
+        List<TopicEntity> failTopicEntities = uiTopicService.getFailTopic(topicEntity.getName());
+        for (TopicEntity topicEntity1 : failTopicEntities) {
+            conditionMap.put(QueueOffsetEntity.FdTopicId, topicEntity1.getId());
+            queueOffsetList.addAll(queueOffsetService.getList(conditionMap));
+        }
+        return queueOffsetList;
+
+    }
+
+    public QueueOffsetVo findById(long queueOffsetId){
+        Map<Long, Long> queueMaxIdMap = queueService.getMax();
+        QueueOffsetEntity queueOffsetEntity = queueOffsetService.get(queueOffsetId);
+        QueueOffsetVo queueOffsetVo = new QueueOffsetVo(queueOffsetEntity);
+        QueueEntity queueEntity = queueService.get(queueOffsetEntity.getQueueId());
+        long maxId = queueMaxIdMap.get(queueOffsetEntity.getQueueId());
+        queueOffsetVo.setMinId(queueEntity.getMinId());
+        if(maxId>queueOffsetVo.getMinId()){
+            queueOffsetVo.setMaxId(maxId - 1);
+        }else{
+            queueOffsetVo.setMaxId(maxId);
+        }
+        return queueOffsetVo;
+    }
+
+    public QueueOffsetUpdateResponse updateQueueOffset(long id, long offset) {
+        CacheUpdateHelper.updateCache();
+        // 缓存数据
+        Map<String, ConsumerGroupEntity> consumerGroupMap = consumerGroupService.getCache();
+        Map<Long, QueueEntity> queueMap = queueService.getAllQueueMap();
+        QueueOffsetEntity originQueueOffsetEntity = queueOffsetService.get(id);
+        if (roleService.getRole(userInfoHolder.getUserId(),
+                consumerGroupMap.get(originQueueOffsetEntity.getConsumerGroupName()).getOwnerIds()) >= UserRoleEnum.USER
+                .getRoleCode()) {
+            throw new AuthFailException("没有操作权限，请进行权限检查。");
+        }
+        // 偏移不能大于当前的最大ID
+        QueueEntity queueEntity = queueMap.get(originQueueOffsetEntity.getQueueId());
+        message01Service.setDbId(queueEntity.getDbNodeId());
+        // maxId为最大id+1
+        long maxId = queueService.getMaxId(originQueueOffsetEntity.getQueueId(), queueEntity.getTbName());
+        if (offset > (maxId - 1)) {
+            return new QueueOffsetUpdateResponse("1", "偏移值不能大于当前的最大Id");
+        }
+        if (offset < queueEntity.getMinId()) {
+            return new QueueOffsetUpdateResponse("1", "偏移值不能小于当前的最小Id");
+        }
+        String updateBy = userInfoHolder.getUserId();
+
+        Map<String, Object> parameterMap = new LinkedHashMap<String, Object>();
+        parameterMap.put(QueueOffsetEntity.FdId, id);
+        parameterMap.put(QueueOffsetEntity.FdUpdateBy, updateBy);
+        parameterMap.put(QueueOffsetEntity.FdOffset, offset);
+        queueOffsetService.updateQueueOffset(parameterMap);
+        consumerGroupService.notifyOffset(originQueueOffsetEntity.getConsumerGroupId());
+        consumerGroupService.notifyMeta(originQueueOffsetEntity.getConsumerGroupId());
+        auditLogService.recordAudit(ConsumerGroupEntity.TABLE_NAME, originQueueOffsetEntity.getConsumerGroupId(),
+                "queueOffset的偏移从" + originQueueOffsetEntity.getOffset() + "变为" + offset + "。原始queueOffset信息为："
+                        + JsonUtil.toJson(originQueueOffsetEntity));
+        return new QueueOffsetUpdateResponse();
+    }
+
+    public QueueOffsetUpdateStopFlagResponse updateStopFlag(long id, int stopFlag) {
+        CacheUpdateHelper.updateCache();
+        QueueOffsetEntity originQueueOffsetEntity = queueOffsetService.get(id);
+        String updateBy = userInfoHolder.getUserId();
+        queueOffsetService.updateStopFlag(id, stopFlag, updateBy);
+        auditLogService.recordAudit(ConsumerGroupEntity.TABLE_NAME, originQueueOffsetEntity.getConsumerGroupId(),
+                "消费标志从" + originQueueOffsetEntity.getStopFlag() + "变为" + stopFlag);
+        consumerGroupService.notifyMeta(originQueueOffsetEntity.getConsumerGroupId());
+        return new QueueOffsetUpdateStopFlagResponse();
+    }
+
+
+    public String getByConsumerGroupTopic(long consumerGroupTopicId) {
+        ConsumerGroupTopicEntity consumerGroupTopicEntity = consumerGroupTopicService.get(consumerGroupTopicId);
+        List<QueueOffsetEntity> queueOffsetEntityList = queueOffsetService.getByConsumerGroupTopic(
+                consumerGroupTopicEntity.getConsumerGroupId(), consumerGroupTopicEntity.getTopicId());
+        for (QueueOffsetEntity queueOffset : queueOffsetEntityList) {
+            if (StringUtils.isNotEmpty(queueOffset.getConsumerName())) {
+                return queueOffset.getConsumerName();
+            }
+        }
+        return null;
+    }
+
+    public QueueOffsetIntelligentDetectionResponse intelligentDetection(long queueOffsetId){
+        QueueOffsetEntity queueOffsetEntity = queueOffsetService.get(queueOffsetId);;
+        Map<Long, QueueEntity> queueMap=queueService.getAllQueueMap();
+        QueueEntity queueEntity=queueMap.get(queueOffsetEntity.getQueueId());
+        long minId=queueEntity.getMinId();
+        Map<String, ConsumerGroupTopicEntity> groupTopicMap=consumerGroupTopicService.getGroupTopic();
+        String consumerGroupName=queueOffsetEntity.getConsumerGroupName();
+        String topicName=queueOffsetEntity.getTopicName();
+        ConsumerGroupTopicEntity consumerGroupTopic=groupTopicMap.get(consumerGroupName+"_"+topicName);
+        message01Service.setDbId(queueEntity.getDbNodeId());
+        Long tableMinId=message01Service.getTableMinId(queueEntity.getTbName());
+        String result="正常，无需修复";
+        if(tableMinId!=null){
+            if((queueOffsetEntity.getOffset()+consumerGroupTopic.getPullBatchSize())<(tableMinId-1)){
+                if((tableMinId-1)!=minId){
+                    //schema表引起的最小id不准确问题
+                    queueEntity.setMinId(tableMinId-1);
+                    queueService.update(queueEntity);
+                }
+                queueOffsetEntity.setOffset(tableMinId-1);
+                queueOffsetService.update(queueOffsetEntity);
+                result="修复成功";
+
+                consumerGroupService.notifyMeta(queueOffsetEntity.getConsumerGroupId());
+            }
+        }
+
+        if(queueOffsetEntity.getOffset()<minId){
+            queueOffsetEntity.setOffset(minId);
+            queueOffsetService.update(queueOffsetEntity);
+            result="修复成功";
+            consumerGroupService.notifyMeta(queueOffsetEntity.getConsumerGroupId());
+        }
+
+        return new QueueOffsetIntelligentDetectionResponse("0",result);
+
+    }
 
 
         @Override
