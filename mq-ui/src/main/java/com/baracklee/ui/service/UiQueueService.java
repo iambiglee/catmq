@@ -387,7 +387,7 @@ public class UiQueueService implements TimerService {
         }
     }
 
-    private QueueGetListResponse queryByPage(QueueGetListRequest queueGetListRequest){
+    public QueueGetListResponse queryByPage(QueueGetListRequest queueGetListRequest){
         HashMap<String, Object> conditionMap = new HashMap<>(16);
         UserInfo userInfo = userInfoHolder.getUser();
         if (!StringUtils.isEmpty(queueGetListRequest.getId())) {

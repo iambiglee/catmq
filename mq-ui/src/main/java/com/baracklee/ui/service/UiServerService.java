@@ -46,7 +46,7 @@ public class UiServerService {
         return new ServerGetListResponse(count,serverList);
     }
 
-    private BaseUiResponse batchPull(List<ServerEntity> serverList){
+    public BaseUiResponse batchPull(List<ServerEntity> serverList){
         BaseUiResponse baseUiResponse=new BaseUiResponse();
         List<Long> serverIds=new ArrayList<>();
         try {

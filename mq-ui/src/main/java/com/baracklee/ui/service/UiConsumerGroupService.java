@@ -6,6 +6,7 @@ import com.baracklee.mq.biz.service.ConsumerGroupService;
 import com.baracklee.mq.biz.service.RoleService;
 import com.baracklee.mq.biz.service.UserInfoHolder;
 import com.baracklee.mq.biz.ui.dto.request.ConsumerGroupGetListRequest;
+import com.baracklee.mq.biz.ui.dto.response.ConsumerGroupGetByIdResponse;
 import com.baracklee.mq.biz.ui.dto.response.ConsumerGroupGetListResponse;
 import com.baracklee.mq.biz.ui.dto.response.ConsumerGroupGetNamesResponse;
 import com.baracklee.mq.biz.ui.dto.response.ConsumerGroupSelectResponse;
@@ -68,6 +69,11 @@ public class UiConsumerGroupService {
 
     public ConsumerGroupEntity findById(long consumerGroupId){
         return consumerGroupRepository.getById(consumerGroupId);
+    }
+
+
+    public ConsumerGroupGetByIdResponse getById(long id) {
+        return new ConsumerGroupGetByIdResponse(consumerGroupService.get(id));
     }
 
     public ConsumerGroupGetNamesResponse getConsumerGpNames(String keyword, int offset, int limit) {

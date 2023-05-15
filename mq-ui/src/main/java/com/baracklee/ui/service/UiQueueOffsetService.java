@@ -639,6 +639,26 @@ public class UiQueueOffsetService implements TimerService {
     }
 
 
+    public QueueOffsetGetListResponse findAllBy(Long topicId){
+        List<QueueOffsetEntity> queueOffsetList = doFindAllBy(topicId);
+        if (CollectionUtils.isEmpty(queueOffsetList)) {
+            return new QueueOffsetGetListResponse(0L, null);
+        }
+
+        List<QueueOffsetVo> queueOffsetVos = queueOffsetList.stream().map(queueOffsetEntity -> {
+            QueueOffsetVo queueOffsetVo = new QueueOffsetVo(queueOffsetEntity);
+            ConsumerGroupEntity consumerGroupEntity = consumerGroupService.get(queueOffsetEntity.getConsumerGroupId());
+            if (consumerGroupEntity != null) {
+                queueOffsetVo.setConsumerGroupOwners(consumerGroupEntity.getOwnerNames());
+                queueOffsetVo.setConsumerGroupOwnerIds(consumerGroupEntity.getOwnerIds());
+            }
+            return queueOffsetVo;
+        }).collect(Collectors.toList());
+        return new QueueOffsetGetListResponse((long) queueOffsetVos.size(), queueOffsetVos);
+    }
+
+
+
         @Override
     @PreDestroy
     public void stop() {
