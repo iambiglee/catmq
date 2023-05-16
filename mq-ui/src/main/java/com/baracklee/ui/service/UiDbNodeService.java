@@ -10,7 +10,10 @@ import com.baracklee.mq.biz.ui.dto.request.DbNodeCreateRequest;
 import com.baracklee.mq.biz.ui.dto.request.DbNodeGetListRequest;
 import com.baracklee.mq.biz.ui.dto.response.*;
 import com.baracklee.mq.biz.ui.exceptions.CheckFailException;
+import com.baracklee.mq.biz.ui.vo.PhysicalMachineReportVo;
+import com.baracklee.mq.biz.ui.vo.QueueVo;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
@@ -229,6 +232,36 @@ public class UiDbNodeService {
         return new DbNodeCreateSqlResponse(1L, data);
     }
 
+    private DbNodeEntity convertToDbNode(DbNodeCreateRequest dbNodeCreateRequest) {
+        DbNodeEntity dbNodeEntity = new DbNodeEntity();
+        dbNodeEntity.setIp(dbNodeCreateRequest.getIp());
+        dbNodeEntity.setPort(dbNodeCreateRequest.getPort());
+        dbNodeEntity.setDbName(dbNodeCreateRequest.getDbName());
+        dbNodeEntity.setDbUserName(dbNodeCreateRequest.getDbUserName());
+        dbNodeEntity.setDbPass(dbNodeCreateRequest.getDbPass());
+
+        if(!StringUtils.isEmpty(dbNodeCreateRequest.getIpBak())&&!StringUtils.isEmpty(dbNodeCreateRequest.getPortBak())&&
+                !StringUtils.isEmpty(dbNodeCreateRequest.getDbUserNameBak())&&!StringUtils.isEmpty(dbNodeCreateRequest.getDbPassBak())){
+            dbNodeEntity.setIpBak(dbNodeCreateRequest.getIpBak());
+            dbNodeEntity.setPortBak(dbNodeCreateRequest.getPortBak());
+            dbNodeEntity.setDbUserNameBak(dbNodeCreateRequest.getDbUserNameBak());
+            dbNodeEntity.setDbPassBak(dbNodeCreateRequest.getDbPassBak());
+        }
+
+        dbNodeEntity.setConStr(DATABASE_URL_PERFIX + dbNodeCreateRequest.getIp() + SEPARATOR_COLON + dbNodeCreateRequest.getPort() + SEPARATOR_SLANT + dbNodeCreateRequest.getDbName() + DATABASE_URL_SUFFIX);
+        dbNodeEntity.setNormalFlag(1);
+        dbNodeEntity.setUpdateBy(userInfoHolder.getUserId());
+        dbNodeEntity.setRemark(dbNodeCreateRequest.getRemark());
+        dbNodeEntity.setIsActive(0);
+        if(dbNodeCreateRequest.getId() == null) {
+            dbNodeEntity.setInsertBy(userInfoHolder.getUserId());
+            dbNodeEntity.setReadOnly(dbNodeCreateRequest.getReadOnly());
+            dbNodeEntity.setNodeType(dbNodeCreateRequest.getNodeTypes());
+        }else{
+            dbNodeEntity.setId(dbNodeCreateRequest.getId());
+        }
+        return dbNodeEntity;
+    }
     private QueueEntity createQueueByDbNode(DbNodeEntity dbNodeEntity) {
         QueueEntity queueEntity = new QueueEntity();
         queueEntity.setTopicId(0);
@@ -300,6 +333,139 @@ public class UiDbNodeService {
         } else {
             throw new CheckFailException("参数id不能为Null。");
         }
+    }
+
+    public DbNodeCreateTableResponse createTableIfNecessary(Long dbNodeId, Integer quantity) {
+        if(dbNodeId == null || quantity == null){
+            throw new CheckFailException("数据节点Id和创建表的数量都不能为null。");
+        }
+        message01Service.setDbId(dbNodeId);
+        for (int i = 1; i <= quantity; i++) {
+            String suffix = String.format("%02d", i);
+            String tableName = TABLE_NAME_PERFIX + suffix;
+            message01Service.createMessageTable(tableName);
+        }
+        return new DbNodeCreateTableResponse();
+    }
+
+    public DbNodeBeforeChangeResponse beforeChange(Long id, Integer readOnly) {
+        if(readOnly == 2 || readOnly == 3){
+            //根据dbNodeId查询出该节点下Topic的节点分布情况
+            List<AnalyseDto> analyseDtoList = queueService.getDistributedNodes(id);
+            if(!CollectionUtils.isEmpty(analyseDtoList)){
+                //讲analyseDtoList转换为<topicId , dbNodeIds>的形式
+                Map<Long,List<Long>> topicIdDbNodeIds = new HashMap<>();
+                analyseDtoList.stream().forEach(a -> {
+                    List<Long> dbNodeIds = null;
+                    if(!topicIdDbNodeIds.containsKey(a.getTopicId())){
+                        dbNodeIds = new ArrayList<>();
+                    }else {
+                        dbNodeIds = topicIdDbNodeIds.get(a.getTopicId());
+                    }
+                    dbNodeIds.add(a.getDbNodeId());
+                    topicIdDbNodeIds.put(a.getTopicId(),dbNodeIds);
+                });
+                List<Long> couldNotChangeTopicIds = new ArrayList<>();
+                for(Map.Entry<Long,List<Long>> entry : topicIdDbNodeIds.entrySet()){
+                    couldNotChangeTopicIds.add(entry.getKey());
+                    //取出每一个Topic分布的节点Id列表，如果Id列表数量大于1，表示此Topic除了当前节点外，还分配在了其它节点上。
+                    List<Long> dbNodeIds = entry.getValue();
+                    if(dbNodeIds.size() > 1){
+                        //获取此Topic除当前节点之外的其它节点
+                        dbNodeIds.remove(id);
+                        List<DbNodeEntity> dbNodeEntityList = dbNodeService.getList(dbNodeIds);
+                        //如果其它节点都是不可写（只读，不可读不可写）的状态，则不能将当前节点设为不可写。同时记录Topic到couldNotChangeTopicIds中。
+                        for (DbNodeEntity dbNodeEntity : dbNodeEntityList) {
+                            if(dbNodeEntity.getReadOnly() == 1){
+                                couldNotChangeTopicIds.remove(entry.getKey());
+                                break;
+                            }
+                        }
+                    }
+                }
+                if(couldNotChangeTopicIds.size() > 0){
+                    return new DbNodeBeforeChangeResponse("-1","下列Topic "+couldNotChangeTopicIds +"至少要保证有一个节点可写。");
+                }
+            }
+        }
+        return new DbNodeBeforeChangeResponse();
+    }
+
+
+    public DbNodeBatchDilatationResponse batchDilatation(){
+        List<DbNodeEntity> dbNodeEntityList = dbNodeService.getList();
+        if(!CollectionUtils.isEmpty(dbNodeEntityList)){
+            for (DbNodeEntity dbNodeEntity : dbNodeEntityList) {
+                Long id = dbNodeEntity.getId();
+                try{
+                    String dbName = dbNodeEntity.getDbName();
+                    List<Long> quantity = getQuantity(id,dbName);
+                    long quantityFromQueue = quantity.get(0);
+                    long quantityFromDb = quantity.get(1);
+                    if(quantityFromQueue != quantityFromDb){
+                        batchInsert(dbNodeEntity);
+                    }
+                }catch (Exception e){
+                    continue;
+                }
+            }
+        }
+        return new DbNodeBatchDilatationResponse();
+    }
+
+    private List<Long> getQuantity(Long dbNodeId, String dbName){
+        Map<String, Object> conditionMap = new HashMap<>();
+        conditionMap.put("dbNodeId", dbNodeId);
+        conditionMap.put("isActive", 0);
+        long quantityFromQueue = queueService.count(conditionMap);
+        message01Service.setDbId(dbNodeId);
+        int quantityFromDb = message01Service.getTableQuantityByDbName(dbName);
+        List<Long> quantity = new ArrayList<>();
+        quantity.add(quantityFromQueue);
+        quantity.add((long) quantityFromDb);
+        return quantity;
+    }
+
+    private void batchInsert(DbNodeEntity dbNodeEntity){
+        List<String> tableNamesFromQueue = queueService.getTableNamesByDbNode(dbNodeEntity.getId());
+        message01Service.setDbId(dbNodeEntity.getId());
+        List<String> tableNamesFromDb = message01Service.getTableNamesByDbName(dbNodeEntity.getDbName());
+        boolean initial = CollectionUtils.isEmpty(tableNamesFromQueue) && !CollectionUtils.isEmpty(tableNamesFromDb);
+        if (initial || tableNamesFromDb.removeAll(tableNamesFromQueue)) {
+            List<QueueEntity> queueEntityList = new ArrayList<>();
+            for (String tableName : tableNamesFromDb) {
+                QueueEntity queueEntity = createQueueByDbNode(dbNodeEntity);
+                queueEntity.setTbName(tableName);
+                queueEntityList.add(queueEntity);
+            }
+            queueService.insertBatch(queueEntityList);
+        }
+    }
+
+    public PhysicalMachineReportResponse getPhysicalMachineReportData(String ip){
+        List<PhysicalMachineReportVo> physicalMachineReportVos=new ArrayList<>();
+        Map<String, PhysicalMachineReportVo> physicalMachineReportMap=new HashMap<>();
+        List<QueueVo> queueListAvg=uiQueueService.getQueueListAvg();
+        for (QueueVo queueVo:queueListAvg) {
+            if(!physicalMachineReportMap.containsKey(queueVo.getIp())){
+                PhysicalMachineReportVo physicalMachineReportVo=new PhysicalMachineReportVo();
+                physicalMachineReportVo.setIp(queueVo.getIp());
+                physicalMachineReportMap.put(queueVo.getIp(),physicalMachineReportVo);
+            }
+            physicalMachineReportMap.get(queueVo.getIp()).setAvgCount(physicalMachineReportMap.get(queueVo.getIp()).getAvgCount()+queueVo.getAvgCount());
+            physicalMachineReportMap.get(queueVo.getIp()).setMsgCount(physicalMachineReportMap.get(queueVo.getIp()).getMsgCount()+queueVo.getMsgCount());
+        }
+
+        if(StringUtils.isEmpty(ip)){
+            for (String key:physicalMachineReportMap.keySet()) {
+                physicalMachineReportVos.add(physicalMachineReportMap.get(key));
+            }
+        }else{
+            physicalMachineReportVos.add(physicalMachineReportMap.get(ip));
+        }
+
+        return new PhysicalMachineReportResponse(new Long(physicalMachineReportVos.size()),physicalMachineReportVos);
+
     }
 
 }
