@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+import javax.annotation.Resource;
 import java.lang.invoke.MethodHandles;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -49,6 +50,7 @@ public class UiQueueService implements TimerService {
 
     private AuditLogService auditLogService;
 
+    @Resource
     private UiQueueOffsetService uiQueueOffsetService;
 
     private UiConsumerGroupTopicService uiConsumerGroupTopicService;
@@ -68,7 +70,6 @@ public class UiQueueService implements TimerService {
                           DbNodeService dbNodeService,
                           TopicService topicService,
                           AuditLogService auditLogService,
-                          UiQueueOffsetService uiQueueOffsetService,
                           UiConsumerGroupTopicService uiConsumerGroupTopicService,
                           ConsumerGroupService consumerGroupService,
                           RoleService roleService,
@@ -80,7 +81,6 @@ public class UiQueueService implements TimerService {
         this.dbNodeService = dbNodeService;
         this.topicService = topicService;
         this.auditLogService = auditLogService;
-        this.uiQueueOffsetService = uiQueueOffsetService;
         this.uiConsumerGroupTopicService = uiConsumerGroupTopicService;
         this.consumerGroupService = consumerGroupService;
         this.roleService = roleService;

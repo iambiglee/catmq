@@ -19,7 +19,7 @@ public class PropUtil {
                         Properties props = new Properties();
                         props.load(stream);
                         stream.close();
-                        sdkVersion = props.getProperty("version");
+                        sdkVersion = props.getProperty("application.version");
                         return sdkVersion;
                     } catch (Exception e) {
                         throw new RuntimeException("获取skd version 异常", e);

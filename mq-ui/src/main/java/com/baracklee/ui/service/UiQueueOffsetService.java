@@ -17,6 +17,7 @@ import com.baracklee.mq.biz.ui.dto.response.QueueOffsetGetListResponse;
 import com.baracklee.mq.biz.ui.dto.response.QueueOffsetIntelligentDetectionResponse;
 import com.baracklee.mq.biz.ui.dto.response.QueueOffsetUpdateResponse;
 import com.baracklee.mq.biz.ui.dto.response.QueueOffsetUpdateStopFlagResponse;
+import com.baracklee.mq.biz.ui.enums.NodeTypeEnum;
 import com.baracklee.mq.biz.ui.exceptions.AuthFailException;
 import com.baracklee.mq.biz.ui.vo.QueueOffsetVo;
 import com.baracklee.ui.spi.UserService;
@@ -27,6 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import javax.annotation.PreDestroy;
+import javax.annotation.Resource;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -58,7 +60,6 @@ public class UiQueueOffsetService implements TimerService {
 
     private TopicService topicService;
 
-    private UiTopicService uiTopicService;
 
     private QueueService queueService;
 
@@ -85,7 +86,6 @@ public class UiQueueOffsetService implements TimerService {
                                 UserService userService,
                                 RoleService roleService,
                                 TopicService topicService,
-                                UiTopicService uiTopicService,
                                 QueueService queueService,
                                 DbNodeService dbNodeService,
                                 Message01Service message01Service,
@@ -98,7 +98,6 @@ public class UiQueueOffsetService implements TimerService {
         this.userService = userService;
         this.roleService = roleService;
         this.topicService = topicService;
-        this.uiTopicService = uiTopicService;
         this.queueService = queueService;
         this.dbNodeService = dbNodeService;
         this.message01Service = message01Service;
@@ -515,13 +514,20 @@ public class UiQueueOffsetService implements TimerService {
         }
         conditionMap.put(QueueOffsetEntity.FdQueueId,topicId);
         List<QueueOffsetEntity> queueOffsetList = queueOffsetService.getList(conditionMap);
-        List<TopicEntity> failTopicEntities = uiTopicService.getFailTopic(topicEntity.getName());
+        List<TopicEntity> failTopicEntities = getFailTopic(topicEntity.getName());
         for (TopicEntity topicEntity1 : failTopicEntities) {
             conditionMap.put(QueueOffsetEntity.FdTopicId, topicEntity1.getId());
             queueOffsetList.addAll(queueOffsetService.getList(conditionMap));
         }
         return queueOffsetList;
 
+    }
+
+    public List<TopicEntity> getFailTopic(String topicName) {
+        Map<String, Object> conditionMap = new HashMap<>();
+        conditionMap.put(TopicEntity.FdOriginName, topicName);
+        conditionMap.put(TopicEntity.FdTopicType, NodeTypeEnum.FAIL_NODE_TYPE.getTypeCode());
+        return topicService.getList(conditionMap);
     }
 
     public QueueOffsetVo findById(long queueOffsetId){

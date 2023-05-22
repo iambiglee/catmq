@@ -9,7 +9,7 @@
 	<appender name="stdout"
 		class="ch.qos.logback.core.ConsoleAppender">
 		<layout class="ch.qos.logback.classic.PatternLayout">
-			<pattern>--${port}--%date [%thread] %-5level %logger{80}- %msg,the guid is %X{guid}%n%n
+			<pattern>--${port}--%date [%thread] %-5level %logger{80}- %msg%n
 			</pattern>
 		</layout>
 	</appender>

@@ -42,10 +42,8 @@ public class ConfigService {
                         desMap.put(fieldsName, fields[i].get(soaConfig).toString());
                     }
 
-                } catch (IllegalArgumentException e) {
-                    //e.printStackTrace();
-                } catch (IllegalAccessException e) {
-                    //e.printStackTrace();
+                } catch (IllegalArgumentException | IllegalAccessException e) {
+                    log.error("here is error"+i+""+fieldsName,e);
                 }
             }
         }
