@@ -45,7 +45,13 @@ public class RoleServiceImpl implements RoleService {
         if (StringUtils.isEmpty(userId)) {
             return false;
         }
-
+        if (soaConfig.getMqAdminUser().equals(userId)) {
+            return true;
+        }
+        List<String> userIdList = soaConfig.getAdminUserIds();
+        if (userIdList.contains(userId)) {
+            return true;
+        }
         return false;
     }
 

@@ -166,10 +166,10 @@ public class TopicServiceImpl extends AbstractBaseService<TopicEntity> implement
     public Map<String, TopicEntity> getCache() {
         List<TopicEntity> topicEntities = topicRepository.getAll();
         MqReadMap<String, TopicEntity> topicCacheMap = new MqReadMap<String, TopicEntity>(topicEntities.size());
-        topicCacheMap.setOnlyRead();
         for (TopicEntity topicEntity : topicEntities) {
             topicCacheMap.put(topicEntity.getName(),topicEntity);
         }
+        topicCacheMap.setOnlyRead();
         return topicCacheMap;
     }
 

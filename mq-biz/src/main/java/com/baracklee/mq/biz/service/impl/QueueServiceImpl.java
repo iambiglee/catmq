@@ -603,7 +603,7 @@ public class QueueServiceImpl extends
             }
             log.warn("dbNodeCache_lost");
         }
-        if(CollectionUtils.isEmpty(data)&&dbNodeCache.size()>0){
+        if(!CollectionUtils.isEmpty(data)&&dbNodeCache.size()>0){
             for (QueueEntity entity : data) {
                 queueIdMap.put(entity.getId(),entity);
                 if (StringUtils.isEmpty(entity.getTopicName())) continue;

@@ -596,7 +596,6 @@ public class UiQueueService implements TimerService {
 
         return new BaseUiResponse(result);
 
-
     }
 
 

@@ -99,7 +99,7 @@ public class QueueWarningInfoService extends AbstractTimerService {
         context.setVariable("QueuesWithExpiredMessageList", QueuesWithExpiredMessageList);
         logger.info(soaConfig.getEnvName() + "- MQ单表容量告警邮件开始发送");
         StringWriter content = new StringWriter();
-        templateEngine.process("queue/queueReportEmail", context, content);
+        templateEngine.process("templates/queueOffset/queueReportEmail", context, content);
 
         String revConfig = environment.getProperty("queue.report.receivers");
         Set<String> receivers = StringUtils.commaDelimitedListToSet(revConfig);

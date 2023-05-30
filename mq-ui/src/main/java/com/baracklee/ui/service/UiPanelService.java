@@ -43,6 +43,7 @@ public class UiPanelService {
             panelNodeVo.setReadOnly(ReadWriteEnum.getDescByCode(dbNodeEntity.getReadOnly()));
             long undistributedCount = queueEntityMap.values().stream().filter(
                     v -> v.getDbNodeId() == dbNodeEntity.getId() && v.getTopicId() == 0).count();
+            panelNodeVo.setUndistributedCount(undistributedCount);
             long distributedCount = queueEntityMap.values().stream().filter(
                     v -> v.getDbNodeId() == dbNodeEntity.getId() && v.getTopicId() != 0).count();
             panelNodeVo.setDistributedCount(distributedCount);
