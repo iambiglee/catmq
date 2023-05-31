@@ -93,7 +93,7 @@ public class ConsumerGroupCheckServiceImpl implements RedundanceCheckService {
             if(StringUtils.isNotEmpty(consumerGroupEntity.getIpWhiteList())
                     &&StringUtils.isNotEmpty(consumerGroupEntity.getIpBlackList()))
             {
-                resultBuilder.append("consumer_Group表中").append(groupName).append("同时存在黑白名单");
+                resultBuilder.append("consumer_Group表中").append(groupName).append("同时存在黑白名单").append("<br/>");
             }
 
             if (consumerGroupEntity.getMode() == 1&&!groupName.equals(consumerGroupEntity.getOriginName())) {

@@ -5,6 +5,7 @@ import com.baracklee.mq.biz.AbstractTest;
 import com.baracklee.mq.biz.common.util.ConsumerGroupUtil;
 import com.baracklee.mq.biz.dal.meta.ConsumerGroupRepository;
 import com.baracklee.mq.biz.dto.request.ConsumerGroupCreateRequest;
+import com.baracklee.mq.biz.dto.response.ConsumerGroupCreateResponse;
 import com.baracklee.mq.biz.dto.response.ConsumerGroupDeleteResponse;
 import com.baracklee.mq.biz.entity.*;
 import com.baracklee.mq.biz.service.*;
@@ -22,6 +23,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.mockito.Matchers.*;
 import static org.mockito.Mockito.*;
 
@@ -83,7 +85,7 @@ public class ConsumerGroupServiceImplTest extends AbstractTest {
 
 		ReflectionTestUtils.setField(consumerGroupServiceImpl, "userInfoHolder", userInfoHolder);
 
-		ReflectionTestUtils.setField(consumerGroupServiceImpl, "uiAuditLogService", uiAuditLogService);
+		ReflectionTestUtils.setField(consumerGroupServiceImpl, "auditLogService", uiAuditLogService);
 
 		ReflectionTestUtils.setField(consumerGroupServiceImpl, "topicService", topicService);
 
@@ -287,13 +289,11 @@ public class ConsumerGroupServiceImplTest extends AbstractTest {
 		consumerGroupCreateRequest.setIpFlag(1);
 		consumerGroupCreateRequest.setIpList("213");
 		boolean flag = false;
-		try {
+
 			// 因为已经存在
-			consumerGroupServiceImpl.createConsumerGroup(consumerGroupCreateRequest);
-		} catch (CheckFailException e) {
-			flag = true;
-		}
-		assertEquals(true, flag);
+		ConsumerGroupCreateResponse consumerGroup = consumerGroupServiceImpl.createConsumerGroup(consumerGroupCreateRequest);
+
+		assertEquals("1", consumerGroup.getCode());
 		ArgumentCaptor<ConsumerGroupEntity> argument = ArgumentCaptor.forClass(ConsumerGroupEntity.class);
 		consumerGroupServiceImpl.createConsumerGroup(consumerGroupCreateRequest);
 		verify(consumerGroupRepository).insert(argument.capture());
@@ -614,7 +614,7 @@ public class ConsumerGroupServiceImplTest extends AbstractTest {
 		
 		
 		doThrow(new RuntimeException("test")).when(consumerGroupRepository).getLastUpdate();
-		assertEquals(false, consumerGroupServiceImpl.checkChanged());
+		assertFalse(consumerGroupServiceImpl.checkChanged());
 		
 		consumerGroupServiceImpl.lastTime=System.currentTimeMillis()-soaConfig.getMqMetaRebuildMaxInterval()-10;
 		assertEquals(true, consumerGroupServiceImpl.checkChanged());

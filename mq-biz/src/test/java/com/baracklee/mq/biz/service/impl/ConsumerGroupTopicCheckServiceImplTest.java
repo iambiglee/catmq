@@ -73,7 +73,7 @@ public class ConsumerGroupTopicCheckServiceImplTest extends AbstractTest {
 		when(consumerGroupTopicService.getGroupTopic()).thenReturn(consumerGroupTopicMap);
 		
 		String rs=consumerGroupTopicCheckServiceImpl.checkResult();
-		assertEquals(9, search(rs, "<br/>"));
+		assertEquals(10, search(rs, "<br/>"));
 	}
 	
 	@Test

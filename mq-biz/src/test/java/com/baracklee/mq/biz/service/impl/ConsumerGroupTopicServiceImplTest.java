@@ -68,7 +68,7 @@ public class ConsumerGroupTopicServiceImplTest extends AbstractTest {
 		ReflectionTestUtils.setField(consumerGroupTopicServiceImpl, "consumerGroupTopicRepository",
 				consumerGroupTopicRepository);
 
-		ReflectionTestUtils.setField(consumerGroupTopicServiceImpl, "uiAuditLogService", uiAuditLogService);
+		ReflectionTestUtils.setField(consumerGroupTopicServiceImpl, "auditLogService", uiAuditLogService);
 
 		ReflectionTestUtils.setField(consumerGroupTopicServiceImpl, "consumerGroupService", consumerGroupService);
 

@@ -4,6 +4,7 @@ import com.baracklee.mq.biz.MqConst;
 import com.baracklee.mq.biz.common.SoaConfig;
 import com.baracklee.mq.biz.common.inf.TimerService;
 import com.baracklee.mq.biz.common.thread.SoaThreadFactory;
+import com.baracklee.mq.biz.common.trace.TraceMessageItem;
 import com.baracklee.mq.biz.common.util.JsonUtil;
 import com.baracklee.mq.biz.common.util.Util;
 import com.baracklee.mq.biz.dal.meta.ConsumerGroupRepository;
@@ -16,11 +17,9 @@ import com.baracklee.mq.biz.dto.response.ConsumerGroupDeleteResponse;
 import com.baracklee.mq.biz.dto.response.ConsumerGroupEditResponse;
 import com.baracklee.mq.biz.entity.*;
 import com.baracklee.mq.biz.service.*;
-import com.baracklee.mq.biz.service.common.AbstractBaseService;
-import com.baracklee.mq.biz.service.common.AuditUtil;
-import com.baracklee.mq.biz.service.common.CacheUpdateHelper;
-import com.baracklee.mq.biz.service.common.MessageType;
+import com.baracklee.mq.biz.service.common.*;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.ibatis.transaction.Transaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DuplicateKeyException;
@@ -209,19 +208,24 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
     }
 
     private boolean doCheckChanged() {
-        boolean flag=false;
-        LastUpdateEntity temp = consumerGroupRepository.getLastUpdate();
-        if ((lastUpdateEntity == null && temp != null) || (lastUpdateEntity != null && temp == null)) {
-            lastUpdateEntity = temp;
-            flag = true;
-        } else if (lastUpdateEntity != null && temp != null
-                && (temp.getMaxId() != lastUpdateEntity.getMaxId()
-                || temp.getLastDate().getTime() != lastUpdateEntity.getLastDate().getTime()
-                || temp.getCount() != lastUpdateEntity.getCount())) {
-            lastUpdateEntity = temp;
-            flag = true;
+        boolean flag = false;
+        try {
+            LastUpdateEntity temp = consumerGroupRepository.getLastUpdate();
+            if ((lastUpdateEntity == null && temp != null) || (lastUpdateEntity != null && temp == null)) {
+                lastUpdateEntity = temp;
+                flag = true;
+            } else if (lastUpdateEntity != null && temp != null
+                    && (temp.getMaxId() != lastUpdateEntity.getMaxId()
+                    || temp.getLastDate().getTime() != lastUpdateEntity.getLastDate().getTime()
+                    || temp.getCount() != lastUpdateEntity.getCount())) {
+                lastUpdateEntity = temp;
+                flag = true;
+            }
+        } catch (Exception e) {
+            log.warn("comsumerGroupError:",e);
         }
         if (!flag && consumerGroupRefMap.get().size() == 0) {
+            log.warn("consumerGroup数据为空，请注意！");
             return true;
         }
         return flag;
@@ -229,24 +233,31 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
 
     @Override
     public void forceUpdateCache() {
-        List<ConsumerGroupEntity> consumerGroupEntities = getList();
-        HashMap<String, ConsumerGroupEntity> dataMap = new HashMap<>(consumerGroupEntities.size());
-        HashMap<Long, ConsumerGroupEntity> dataIdMap = new HashMap<>(consumerGroupEntities.size());
-        List<String> envList=new ArrayList<>();
-        envList.add("default");
-        consumerGroupEntities.forEach(t1->{
-            dataMap.put(t1.getName(),t1);
-            dataIdMap.put(t1.getId(),t1);
-            if(!envList.contains(t1.getSubEnv())){
-                envList.add(t1.getSubEnv());
+        try {
+            List<ConsumerGroupEntity> consumerGroupEntities = getList();
+            MqReadMap<String, ConsumerGroupEntity> dataMap = new MqReadMap<>(consumerGroupEntities.size());
+            MqReadMap<Long, ConsumerGroupEntity> dataIdMap = new MqReadMap<>(consumerGroupEntities.size());
+            List<String> envList = new ArrayList<>();
+            envList.add(MqConst.DEFAULT_SUBENV);
+            consumerGroupEntities.forEach(t1 -> {
+                dataMap.put(t1.getName(), t1);
+                dataIdMap.put(t1.getId(), t1);
+                if (!envList.contains(t1.getSubEnv())) {
+                    envList.add(t1.getSubEnv());
+                }
+            });
+            dataMap.setOnlyRead();
+            dataIdMap.setOnlyRead();
+            if (dataMap.size() > 0 && dataIdMap.size() > 0) {
+                consumerGroupRefMap.set(dataMap);
+                consumerGroupByIdRefMap.set(dataIdMap);
+                subEnvList.set(envList);
+            }else {
+                lastUpdateEntity = null;
             }
-        });
-        if(dataMap.size()>0&&dataIdMap.size()>0){
-            consumerGroupRefMap.set(dataMap);
-            consumerGroupByIdRefMap.set(dataIdMap);
-            subEnvList.set(envList);
-        }else {
-            lastUpdateEntity=null;
+        } catch (Exception e) {
+            log.warn("consumerGroupUpdate error:",e);
+            lastUpdateEntity = null;
         }
     }
 
@@ -574,6 +585,10 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
 
         CacheUpdateHelper.updateCache();
         ConsumerGroupEntity oldConsumerGroupEntity = get(consumerGroupEntity.getId());
+        if (roleService.getRole(userInfoHolder.getUserId(), oldConsumerGroupEntity.getOwnerIds()) >= UserRoleEnum.USER
+                .getRoleCode()) {
+            return new ConsumerGroupEditResponse("1", "没有操作权限，请进行权限检查。");
+        }
         consumerGroupEntity.setTopicNames(oldConsumerGroupEntity.getTopicNames());
         consumerGroupEntity.setRbVersion(oldConsumerGroupEntity.getRbVersion());
         consumerGroupEntity.setMetaVersion(oldConsumerGroupEntity.getMetaVersion());

@@ -53,6 +53,7 @@ public class MetaServerController {
         response.setMetricUrl(soaConfig.getMetricUrl());
         List<String> lstData = serverService.getBrokerUrlCache();
         int groupCount = soaConfig.getServerGroupCount();
+        // if broker over 12, then, change the make 0-12 as unimportant
         response.setGroupFlag(lstData.size() > (groupCount * 3) ? 1 : 0);
         if (response.getGroupFlag() == 0) {
             response.setBrokerIpG1(lstData);
