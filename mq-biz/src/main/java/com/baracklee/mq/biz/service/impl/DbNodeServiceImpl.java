@@ -16,6 +16,7 @@ import com.baracklee.mq.biz.service.CacheUpdateService;
 import com.baracklee.mq.biz.service.DbNodeService;
 import com.baracklee.mq.biz.service.QueueService;
 import com.baracklee.mq.biz.service.common.AbstractBaseService;
+import org.apache.ibatis.transaction.Transaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +35,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 @Service
 public class DbNodeServiceImpl
@@ -154,32 +157,43 @@ public class DbNodeServiceImpl
         return new DruidDataSource();
     }
 
+    private Lock cacheLock = new ReentrantLock();
+
     @Override
     public Map<Long, DbNodeEntity> getCache() {
-        List<DbNodeEntity> data = dbNodeRepository.getAll();
-        //新出来的Db
-        Map<String, DataSource> dbCache = new ConcurrentHashMap<>(data.size());
-        //当前数据库中的id 号的map
-        Map<Long, DbNodeEntity> dbNodeCache = new ConcurrentHashMap<>(data.size());
-        //ip 和DB 配置的关系
-        Map<String, List<DbNodeEntity>> dbNodeIpCache = new ConcurrentHashMap<>(data.size());
-        for (DbNodeEntity item : data) {
-            createDataSource(item,dbCache);
-            dbNodeCache.put(item.getId(),item);
-            if(dbNodeIpCache.containsKey(item.getIp())){
-                dbNodeIpCache.get(item.getIp()).add(item);
-            }else {
-                List<DbNodeEntity> list = new ArrayList<>();
-                list.add(item);
-                dbNodeIpCache.put(item.getIp(), list);
+        // return cacheNodeMap.get();
+        Map<Long, DbNodeEntity> rs = cacheNodeMap.get();
+        if (rs.size() == 0) {
+            cacheLock.lock();
+            try {
+                rs = cacheNodeMap.get();
+                if (rs.size() == 0) {
+                    updateCache();
+                    rs = cacheNodeMap.get();
+                }
+            } finally {
+                cacheLock.unlock();
             }
         }
-        return dbNodeCache;
+        return rs;
     }
 
     @Override
     public Map<String, List<DbNodeEntity>> getCacheByIp() {
-        return null;
+        Map<String, List<DbNodeEntity>> nodeByIp = cacheNodeIpMap.get();
+        if (nodeByIp.size() == 0) {
+            cacheLock.lock();
+            try {
+                nodeByIp = cacheNodeIpMap.get();
+                if (nodeByIp.size() == 0) {
+                    updateCache();
+                    nodeByIp = cacheNodeIpMap.get();
+                }
+            } finally {
+                cacheLock.unlock();
+            }
+        }
+        return nodeByIp;
     }
 
     @Override
@@ -253,9 +267,37 @@ public class DbNodeServiceImpl
     /**
      * 从数据库create DB， 没有就create
      * 不使用缓存了, do nothing
+     *
+     * 2023年5月31日15:53:35 还是要添加，Datasource 的数据还是放在缓存里面好一些
      */
     private void doForceUpdateCache() {
+        try {
+            List<DbNodeEntity> data = dbNodeRepository.getAll();
+            Map<String, DataSource> dbCache = new ConcurrentHashMap<>(data.size());
+            Map<Long, DbNodeEntity> dbNodeCache = new ConcurrentHashMap<>(data.size());
+            Map<String, List<DbNodeEntity>> dbNodeIpCache = new ConcurrentHashMap<>(data.size());
+            data.forEach(t1 -> {
+                try {
+                    createDataSource(t1, dbCache);
+                    dbNodeCache.put(t1.getId(), t1);
+                    if (dbNodeIpCache.containsKey(t1.getIp())) {
+                        dbNodeIpCache.get(t1.getIp()).add(t1);
+                    } else {
+                        List<DbNodeEntity> list = new ArrayList<>();
+                        list.add(t1);
+                        dbNodeIpCache.put(t1.getIp(), list);
+                    }
+                } catch (Exception ignored) {
 
+                }
+            });
+            cacheNodeMap.set(dbNodeCache);
+            cacheNodeIpMap.set(dbNodeIpCache);
+            cacheDataMap.set(dbCache);
+        } catch (Exception e) {
+            log.error("dbNodeCache", e);
+            lastUpdateEntity = null;
+        }
     }
 
     private void createDataSource(DbNodeEntity dbNode, Map<String, DataSource> dbCache) {
