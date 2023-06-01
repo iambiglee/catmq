@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
@@ -48,6 +49,7 @@ public class RedundancyAllCheckService extends AbstractTimerService{
         this.notifyMessageStatService = notifyMessageStatService;
     }
 
+    @PostConstruct
     private void init(){
         super.init(Constants.REDUNDANCE_CHECK, soaConfig.getCheckExpiredTime(), soaConfig);
 

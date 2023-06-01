@@ -2,6 +2,7 @@ package com.baracklee.mq.biz.polling;
 
 import com.baracklee.mq.biz.common.SoaConfig;
 import com.baracklee.mq.biz.common.util.Util;
+import com.baracklee.mq.biz.dto.Constants;
 import com.baracklee.mq.biz.entity.ConsumerGroupConsumerEntity;
 import com.baracklee.mq.biz.entity.ConsumerGroupEntity;
 import com.baracklee.mq.biz.entity.NotifyMessageStatEntity;
@@ -12,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -40,6 +42,23 @@ public class ConsumerGroupRbService extends AbstractTimerService{
 
     @Resource
     NotifyMessageService notifyMessageService;
+
+
+@PostConstruct
+    private void init(){
+        super.init(Constants.RB, soaConfig.getRbCheckInterval(), soaConfig);
+        soaConfig.registerChanged(new Runnable() {
+            private volatile int interval = soaConfig.getRbCheckInterval();
+
+            @Override
+            public void run() {
+                if (soaConfig.getRbCheckInterval() != interval) {
+                    interval = soaConfig.getRbCheckInterval();
+                    updateInterval(interval);
+                }
+            }
+        });
+    }
 
     private boolean lastMaster= false;
     @Override
