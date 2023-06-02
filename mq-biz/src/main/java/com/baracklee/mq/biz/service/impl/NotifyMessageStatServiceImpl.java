@@ -6,6 +6,7 @@ import com.baracklee.mq.biz.service.NotifyMessageStatService;
 import com.baracklee.mq.biz.service.common.AbstractBaseService;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.HashMap;
 import java.util.Map;
@@ -15,13 +16,16 @@ public class NotifyMessageStatServiceImpl extends AbstractBaseService<NotifyMess
     @Resource
     NotifyMessageStatRepository notifyMessageStatRepository;
 
+    @PostConstruct
+    private void init() {
+        super.setBaseRepository(notifyMessageStatRepository);
+    }
 
     @Override
     public NotifyMessageStatEntity get() {
         Map<String, Object> conMap = new HashMap<>();
         conMap.put("key1", "rb_notifyMessageStat");
-        NotifyMessageStatEntity messageStatEntity = notifyMessageStatRepository.get(conMap);
-        return messageStatEntity;    }
+        return notifyMessageStatRepository.get(conMap);    }
 
     @Override
     public void updateNotifyMessageId() {
