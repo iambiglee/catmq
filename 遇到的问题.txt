@@ -1,6 +1,6 @@
 1. 为什么log都是要输入单前类
-2. /home/barack/develop/java/myMessageQueue/mq-client/mq-core/src/main/java/com/baracklee/mq/biz/common/util/ConsumerUtil.java里面的写法太2了，还限制死了数量，单词还写错了
-3. /home/barack/develop/java/myMessageQueue/mq-client/mq-client-core/pom.xml 里面应该不用加版本号
+2. /home/barack/develop/java/catmq/mq-client/mq-core/src/main/java/com/baracklee/mq/biz/common/util/ConsumerUtil.java里面的写法太2了，还限制死了数量，单词还写错了
+3. /home/barack/develop/java/catmq/mq-client/mq-client-core/pom.xml 里面应该不用加版本号
 4. final 修饰为什么要构造方法
 5. 他的消息偏移request 或者response 是怎么工作的
 6. spring-boot-dependencies 是一种新的代码管理方式
@@ -21,11 +21,11 @@ Time Line
 
 写到了：/mq/biz/dal/common/ConsumerServiceImpl.java
 
-写到了 /home/barack/develop/java/myMessageQueue/mq-biz/src/main/java/com/baracklee/mq/biz/service/impl/ConsumerGroupServiceImpl.java
+写到了 /home/barack/develop/java/catmq/mq-biz/src/main/java/com/baracklee/mq/biz/service/impl/ConsumerGroupServiceImpl.java
 
-写到了/home/barack/develop/java/myMessageQueue/mq-biz/src/main/java/com/baracklee/mq/biz/service/impl/ConsumerGroupTopicServiceImpl.java
+写到了/home/barack/develop/java/catmq/mq-biz/src/main/java/com/baracklee/mq/biz/service/impl/ConsumerGroupTopicServiceImpl.java
 
-写到了/home/barack/develop/java/myMessageQueue/mq-biz/src/main/java/com/baracklee/mq/biz/service/impl/ConsumerServiceImpl.java
+写到了/home/barack/develop/java/catmq/mq-biz/src/main/java/com/baracklee/mq/biz/service/impl/ConsumerServiceImpl.java
 
 com.baracklee.mq.biz.service.impl.ConsumerServiceImpl.checkBroadcastAndSubEnv(com.baracklee.mq.biz.dto.client.ConsumerGroupRegisterRequest, java.util.List<java.lang.String>, java.util.Map<java.lang.String,com.baracklee.mq.biz.entity.ConsumerGroupEntity>, com.baracklee.mq.biz.dto.client.ConsumerGroupRegisterResponse)
 
@@ -35,9 +35,9 @@ com.baracklee.mq.biz.polling.AbstractTimerService.doHeartbeat 和work 代码没�
 
 com.baracklee.mq.biz.service.impl.MqLockServiceImpl.doCheckMaster
 
-/home/barack/develop/java/myMessageQueue/mq-biz/src/main/java/com/baracklee/mq/biz/service/impl/ConsumerGroupServiceImpl.java
+/home/barack/develop/java/catmq/mq-biz/src/main/java/com/baracklee/mq/biz/service/impl/ConsumerGroupServiceImpl.java
 
-/home/barack/develop/java/myMessageQueue/mq-biz/src/main/java/com/baracklee/mq/biz/service/impl/ConsumerGroupServiceImpl.java#copyAndNewConsumerGroup
+/home/barack/develop/java/catmq/mq-biz/src/main/java/com/baracklee/mq/biz/service/impl/ConsumerGroupServiceImpl.java#copyAndNewConsumerGroup
 
 com/baracklee/mq/biz/service/impl/ConsumerGroupTopicServiceImpl.java:77
 

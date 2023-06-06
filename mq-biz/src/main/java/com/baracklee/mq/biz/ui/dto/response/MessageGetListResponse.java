@@ -8,7 +8,7 @@ import java.util.List;
 /**
  * @Author： Barack Lee
  * @Package： com.baracklee.mq.biz.ui.dto.response
- * @Project： myMessageQueue
+ * @Project： catmq
  * @name： MessageGetListResponse
  * @Filename： MessageGetListResponse
  */
