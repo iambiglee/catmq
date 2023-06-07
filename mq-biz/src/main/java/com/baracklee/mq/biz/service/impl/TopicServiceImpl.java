@@ -119,7 +119,7 @@ public class TopicServiceImpl extends AbstractBaseService<TopicEntity> implement
                     return;
                 }
                 distributeQueue(topicEntity,topUndistributed);
-                unselectedSize=topUndistributed.size();
+                unselectedSize-=topUndistributed.size();
             }
     }
 

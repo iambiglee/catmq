@@ -7,6 +7,7 @@ import com.baracklee.mq.biz.service.common.AbstractBaseService;
 import com.baracklee.mq.biz.service.common.MessageType;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 
 @Service
@@ -14,6 +15,11 @@ public class NotifyMessageServiceImpl extends AbstractBaseService<NotifyMessageE
 
     @Resource
     private NotifyMessageRepository notifyMessageRepository;
+
+    @PostConstruct
+    private void init(){
+        super.setBaseRepository(notifyMessageRepository);
+    }
 
     @Override
     public long getDataMaxId(long maxId1) {

@@ -3,6 +3,7 @@ package com.baracklee.mq.biz.dal.meta;
 import com.baracklee.mq.biz.dal.common.BaseRepository;
 import com.baracklee.mq.biz.entity.ConsumerGroupConsumerEntity;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -10,7 +11,7 @@ import java.util.List;
 public interface ConsumerGroupConsumerRepository extends BaseRepository<ConsumerGroupConsumerEntity> {
     int deleteUnActiveConsumer();
 
-    List<ConsumerGroupConsumerEntity> getByConsumerGroupIds(List<Long> consumerGroupIds);
+    List<ConsumerGroupConsumerEntity> getByConsumerGroupIds(@Param("consumerGroupIds") List<Long> consumerGroupIds);
 
-    void deleteByConsumerIds(List<Long> consumerIds);
+    void deleteByConsumerIds(@Param("consumerIds")List<Long> consumerIds);
 }

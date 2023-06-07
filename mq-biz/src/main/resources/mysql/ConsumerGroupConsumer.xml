@@ -22,7 +22,8 @@
         where consumer_group_id in
         (
         <foreach collection="consumerGroupIds" item="item" index="index"
-                 separator=",">#{item}</foreach>
+                 separator=",">#{item}
+            </foreach>
         ) and consumer_id in (select id from consumer)
     </select>
 </mapper>

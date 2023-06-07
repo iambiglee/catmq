@@ -152,13 +152,7 @@
                 <a class="layui-btn layui-btn-normal layui-btn-xs" lay-event="updateQueueOffset">偏移</a>
             {{#  } }}
 
-            {{#  if(d.consumerName!=""&&d.consumerName.startsWith("mq2-") ){ }}
-                <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="clearConsumerId">下线</a>
-            {{#  } }}
 
-            {{#  if(d.consumerName!=""&&!d.consumerName.startsWith("mq2-") ){ }}
-               <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="clientMonitor">监控</a>
-            {{#  } }}
 
         <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="intelligentDetection">智能检测</a>
 
