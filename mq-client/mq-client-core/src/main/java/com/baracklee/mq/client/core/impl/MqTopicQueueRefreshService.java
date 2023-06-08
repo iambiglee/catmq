@@ -24,15 +24,15 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class MqTopicQueueRefreshService implements IMqTopicQueueRefreshService {
 
-    private Logger log = LoggerFactory.getLogger(MqBrokerUrlRefreshService.class);
+    private final static Logger log = LoggerFactory.getLogger(MqBrokerUrlRefreshService.class);
     private ScheduledExecutorService executor = null;
     private GetTopicQueueIdsRequest request = new GetTopicQueueIdsRequest();
     private AtomicBoolean startFlag = new AtomicBoolean(false);
-    private MqContext mqContext;
+    private final MqContext mqContext;
     private volatile boolean isStop = false;
     private volatile boolean runStatus = false;
     private AtomicReference<Map<String, List<Long>>> topicQueueRef = new AtomicReference<>(new ConcurrentHashMap<>());
-    private long lastTime = System.currentTimeMillis();
+    private final long lastTime = System.currentTimeMillis();
 
     private static MqTopicQueueRefreshService instance=null;
 
