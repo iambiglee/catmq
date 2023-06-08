@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import javax.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,6 +19,11 @@ public class ConsumerGroupConsumerServiceImpl extends AbstractBaseService<Consum
     @Override
     public int deleteUnActiveConsumer() {
         return consumerGroupConsumerRepository.deleteUnActiveConsumer();
+    }
+
+    @PostConstruct
+    private void init(){
+        super.setBaseRepository(consumerGroupConsumerRepository);
     }
 
     @Override

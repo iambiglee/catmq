@@ -62,7 +62,6 @@ public class TopicServiceImpl extends AbstractBaseService<TopicEntity> implement
     @PostConstruct
     private void init() {
         super.setBaseRepository(topicRepository);
-        // System.out.println("topic init");
     }
 
     @Override

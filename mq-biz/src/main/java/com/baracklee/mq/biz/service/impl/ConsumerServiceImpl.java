@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -66,6 +67,11 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
 
     @Resource
     private EmailUtil emailUtil;
+
+    @PostConstruct
+    void init(){
+        super.setBaseRepository(consumerRepository);
+    }
 
     //记录topic和dbNode失败时间
     protected Map<String, Long> dbFailMap = new ConcurrentHashMap<>();
