@@ -87,7 +87,7 @@ public class ConsumerGroupCacheServiceImpl implements ConsumerGroupCacheService 
     private List<ConsumerGroupChangedListener> listListener = new ArrayList<>();
 
     private Counter initConsumerGroupCounter = null;
-    private Counter pollingCounter = null;
+    private final Counter pollingCounter = new Counter();
 
     @Override
     public synchronized void addListener(ConsumerGroupChangedListener listener) {

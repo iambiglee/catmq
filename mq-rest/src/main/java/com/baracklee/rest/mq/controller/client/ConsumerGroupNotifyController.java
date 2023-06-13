@@ -135,7 +135,7 @@ public class ConsumerGroupNotifyController implements ConsumerGroupChangedListen
             response.setConsumerGroups(dataRs);
             return response;
         }else {
-            return new GetConsumerGroupResponse();
+            return null;
         }
     }
 }
