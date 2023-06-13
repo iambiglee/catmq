@@ -228,8 +228,7 @@ public class ConsumerGroupCacheServiceImpl implements ConsumerGroupCacheService 
 
     private void doCheckPollingData() {
         try {
-            if (reInit()) {
-            } else {
+            if (!reInit()) {
                 currentMaxId = notifyMessageService.getDataMaxId(lastMaxId);
                 if (currentMaxId > 0 && currentMaxId > lastMaxId) {
                     updateCache();

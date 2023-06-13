@@ -282,7 +282,7 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
             message01Service.setDbId(temp.getDbNodeId());
 
             try {
-                entity = message01Service.getListDy(temp.getTopicName(), temp.getDbName(), request.getOffsetStart(), request.getOffsetEnd());
+                entity = message01Service.getListDy(temp.getTopicName(), temp.getTbName(), request.getOffsetStart(), request.getOffsetEnd());
                 dbFailMap.put(temp.getIp(),System.currentTimeMillis()-soaConfig.getDbFailWaitTime()*2000L);
             } catch (Exception e) {
                 dbFailMap.put(temp.getIp(),System.currentTimeMillis());
