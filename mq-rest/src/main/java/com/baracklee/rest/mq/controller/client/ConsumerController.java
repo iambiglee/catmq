@@ -40,6 +40,7 @@ public class ConsumerController {
         ConsumerDeRegisterResponse response = consumerService.deRegister(request);
         return response;
     }
+    @PostMapping("/publish")
     public PublishMessageResponse publish(@RequestBody PublishMessageRequest request){
 //        return consumerService.deRegister(request);
         return consumerService.publish(request);

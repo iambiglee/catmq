@@ -94,3 +94,9 @@ com.baracklee.mq.biz.service.impl.ConsumerGroupServiceImpl.doDelete
 
 2023年3月12日
 20000/50000
+
+1. 使用pmq 的 test, 本地的队列。可以先看biz的对错
+2. 使用全体，不知道错误在哪里。会烦躁
+
+2023年6月11日
+先跑通consumerGroup然后上action, 然后上test,然后写文档

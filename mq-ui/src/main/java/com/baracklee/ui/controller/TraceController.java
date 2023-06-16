@@ -14,8 +14,6 @@ import java.util.List;
 /**
  * TraceController
  *
- * @author wanghe
- * @date 2018/06/07
  */
 @Controller
 @RequestMapping("/trace")
