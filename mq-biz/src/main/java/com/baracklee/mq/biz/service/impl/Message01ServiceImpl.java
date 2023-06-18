@@ -281,7 +281,12 @@ public class Message01ServiceImpl implements Message01Service {
         Map<String, Map<String, Long>> map = new HashMap<>();
         Map<String, Map<String, TableInfoEntity>> dbMap = new HashMap<>();
         if (getDataSource()==null) return map;
-        List<TableInfoEntity> dataLst = message01Repository.getMaxIdByDb();
+        List<TableInfoEntity> dataLst = new ArrayList<>();
+        try {
+            dataLst = message01Repository.getMaxIdByDb();
+        } catch (Exception e) {
+            log.error("message01service_error",e);
+        }
         for (TableInfoEntity entity : dataLst) {
             if (!map.containsKey(entity.getDbName())){
                 map.put(entity.getDbName(),new HashMap<>());

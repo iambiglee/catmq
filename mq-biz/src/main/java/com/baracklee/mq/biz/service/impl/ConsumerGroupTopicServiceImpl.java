@@ -190,7 +190,7 @@ public class ConsumerGroupTopicServiceImpl
      * 删除customer Group 和关联的所有数据
      * @param groupTopicEntity
      */
-    private void doDelete(ConsumerGroupTopicEntity groupTopicEntity) {
+    public void doDelete(ConsumerGroupTopicEntity groupTopicEntity) {
         List<String> failTopicNames = new ArrayList<>();
         // 删除失败topic，并且清理失败消息并且解绑失败topic
         String failTopicName= String.format("%s_%s_fail", groupTopicEntity.getConsumerGroupName(), groupTopicEntity.getOriginTopicName());
@@ -300,7 +300,7 @@ public class ConsumerGroupTopicServiceImpl
      * @param consumerGroupMap 失败组
      * @return 失败Group
      */
-    private ConsumerGroupTopicCreateResponse createConsumerGroupTopicAndFailTopic(ConsumerGroupTopicCreateRequest consumerGroupTopicCreateRequest, Map<String, ConsumerGroupEntity> consumerGroupMap) {
+    public ConsumerGroupTopicCreateResponse createConsumerGroupTopicAndFailTopic(ConsumerGroupTopicCreateRequest consumerGroupTopicCreateRequest, Map<String, ConsumerGroupEntity> consumerGroupMap) {
         CacheUpdateHelper.updateCache();
         if (roleService.getRole(userInfoHolder.getUserId(), consumerGroupMap
                 .get(consumerGroupTopicCreateRequest.getConsumerGroupName()).getOwnerIds()) >= UserRoleEnum.USER

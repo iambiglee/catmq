@@ -4,6 +4,7 @@ import com.alibaba.druid.filter.Filter;
 import com.alibaba.druid.pool.DruidDataSource;
 import com.baracklee.mq.biz.common.SoaConfig;
 import com.baracklee.mq.biz.common.inf.PortalTimerService;
+import com.baracklee.mq.biz.common.inf.TimerService;
 import com.baracklee.mq.biz.common.plugin.DruidConnectionFilter;
 import com.baracklee.mq.biz.common.thread.SoaThreadFactory;
 import com.baracklee.mq.biz.common.util.DbUtil;
@@ -16,7 +17,6 @@ import com.baracklee.mq.biz.service.CacheUpdateService;
 import com.baracklee.mq.biz.service.DbNodeService;
 import com.baracklee.mq.biz.service.QueueService;
 import com.baracklee.mq.biz.service.common.AbstractBaseService;
-import org.apache.ibatis.transaction.Transaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,7 +45,8 @@ public class DbNodeServiceImpl
         implements
         DbNodeService,
         CacheUpdateService,
-        PortalTimerService {
+        PortalTimerService ,
+        TimerService {
 
     private Logger log = LoggerFactory.getLogger(this.getClass());
 
@@ -94,7 +95,7 @@ public class DbNodeServiceImpl
         });
     }
 
-    private void updateDbProperties() {
+    public void updateDbProperties() {
         if (minEvictableIdleTimeMillis != soaConfig.getDbMinEvictableIdleTimeMillis()) {
             minEvictableIdleTimeMillis = soaConfig.getDbMinEvictableIdleTimeMillis();
             cacheDataMap.get().values().forEach(dataSource -> {
@@ -138,7 +139,8 @@ public class DbNodeServiceImpl
         }
     }
 
-    private void start() {
+    @Override
+    public void start() {
         if(startFlag.compareAndSet(false,true)){
             updateCache();
             ScheduledExecutorService dbNodeServer = Executors.newScheduledThreadPool(1, SoaThreadFactory.create(
@@ -151,6 +153,11 @@ public class DbNodeServiceImpl
             });
 
         }
+    }
+
+    @Override
+    public void stop() {
+        isRunning=false;
     }
 
     private DruidDataSource createDataSouce(){
@@ -216,7 +223,7 @@ public class DbNodeServiceImpl
      * 检查DB是否有过修改
      * @return
      */
-    private boolean checkChanged() {
+    public boolean checkChanged() {
         boolean flag = false;
         try {
             LastUpdateEntity temp = dbNodeRepository.getLastUpdate();
@@ -375,7 +382,7 @@ public class DbNodeServiceImpl
         }
     }
 
-    private String getConKey(DbNodeEntity t1, boolean isMaster) {
+    public String getConKey(DbNodeEntity t1, boolean isMaster) {
         if (isMaster) {
             return String.format("%s|%s|%s|%s", t1.getIp(), t1.getPort(), t1.getDbUserName(), t1.getDbPass());
         } else {
@@ -405,7 +412,7 @@ public class DbNodeServiceImpl
         }
     }
 
-    private void checkSlave(DbNodeEntity dbNodeEntity) throws SQLException {
+    public void checkSlave(DbNodeEntity dbNodeEntity) throws SQLException {
         // 检查slave
         if (hasSlave(dbNodeEntity)) {
             DruidDataSource dataSource = createDataSouce();
