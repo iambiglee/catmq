@@ -52,8 +52,6 @@ public class ConsumerServiceImplTest extends AbstractTest {
 
 	private LogService logService;
 
-	private UserInfoHolder userInfoHolder;
-
 	private AuditLogService auditLogService;
 
 	private ConsumerServiceImpl consumerServiceImpl;
@@ -71,8 +69,6 @@ public class ConsumerServiceImplTest extends AbstractTest {
 		consumerGroupTopicService = mockAndSet(ConsumerGroupTopicService.class);
 
 		consumerGroupService = mockAndSet(ConsumerGroupService.class);
-
-		userInfoHolder = mockAndSet(UserInfoHolder.class);
 
 		topicService = mockAndSet(TopicService.class);
 
