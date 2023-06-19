@@ -195,7 +195,7 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
     protected volatile LastUpdateEntity lastUpdateEntity = null;
     protected long lastTime=System.currentTimeMillis();
 
-    private boolean checkChanged() {
+    public boolean checkChanged() {
         boolean flag = doCheckChanged();
         if(!flag){
             if(System.currentTimeMillis()-lastTime>soaConfig.getMqMetaRebuildMaxInterval()){
@@ -663,7 +663,7 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
         consumerGroupRepository.updateMetaVersion(ids);
     }
 
-    private void updateRbVersion(List<Long> ids) {
+    public void updateRbVersion(List<Long> ids) {
         if (CollectionUtils.isEmpty(ids)) return;
         consumerGroupRepository.updateRbVersion(ids);
 

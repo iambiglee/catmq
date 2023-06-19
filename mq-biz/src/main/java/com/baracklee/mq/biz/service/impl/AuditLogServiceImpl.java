@@ -35,7 +35,7 @@ public class AuditLogServiceImpl extends AbstractBaseService<AuditLogEntity> imp
 
 
     @PostConstruct
-   private void init(){
+   public void init(){
        super.setBaseRepository(auditLogRepository);
    }
 

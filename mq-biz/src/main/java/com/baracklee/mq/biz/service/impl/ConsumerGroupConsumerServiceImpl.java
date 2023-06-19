@@ -22,7 +22,7 @@ public class ConsumerGroupConsumerServiceImpl extends AbstractBaseService<Consum
     }
 
     @PostConstruct
-    private void init(){
+    public void init(){
         super.setBaseRepository(consumerGroupConsumerRepository);
     }
 
@@ -42,4 +42,9 @@ public class ConsumerGroupConsumerServiceImpl extends AbstractBaseService<Consum
     public void deleteByConsumerIds(List<Long> consumerIds) {
         consumerGroupConsumerRepository.deleteByConsumerIds(consumerIds);
     }
+
+    public void deleteByConsumerId(Long consumerIds) {
+        deleteByConsumerIds(new ArrayList<>(Math.toIntExact(consumerIds)));
+    }
+
 }

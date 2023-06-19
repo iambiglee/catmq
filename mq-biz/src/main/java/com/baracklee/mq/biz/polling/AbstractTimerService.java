@@ -1,21 +1,22 @@
 package com.baracklee.mq.biz.polling;
 
+import com.baracklee.mq.biz.common.SoaConfig;
 import com.baracklee.mq.biz.common.inf.PortalTimerService;
 import com.baracklee.mq.biz.common.thread.SoaThreadFactory;
-import com.baracklee.mq.biz.common.SoaConfig;
 import com.baracklee.mq.biz.common.util.Util;
 import com.baracklee.mq.biz.service.MqLockService;
 import com.baracklee.mq.biz.service.impl.MqLockServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 public abstract class AbstractTimerService implements PortalTimerService {
 
-    private final Logger log= LoggerFactory.getLogger(this.getClass());
+    private final Logger log= LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     private String key="";
     private int interval=0;
     private SoaConfig soaConfig;

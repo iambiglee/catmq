@@ -124,7 +124,7 @@ public class ConsumerCommitServiceImpl implements ConsumerCommitService, BrokerT
         }
     }
 
-    private void clearOldData() {
+    public void clearOldData() {
         boolean flag = (System.currentTimeMillis() - lastTime - 10 * 60 * 1000) > 0;
         if (flag) {
             synchronized (lockObj) {
@@ -182,20 +182,22 @@ public class ConsumerCommitServiceImpl implements ConsumerCommitService, BrokerT
         }
     }
 
-    private void doCommit() {
+    public void doCommit() {
         Map<Long, OffsetVersionEntity> offsetVersionMap = queueOffsetService.getOffsetVersion();
         Map<Long, ConsumerQueueVersionDto> map = new HashMap<>(mapAppPolling.get());
         if(map.size()>0){
             final int size = map.size();
 
-            int countSize=map.size()<commitThreadSize?map.size():commitThreadSize;
+            int countSize= Math.min(map.size(), commitThreadSize);
 
             if (countSize==1){
                 for (Map.Entry<Long, ConsumerQueueVersionDto> entry : map.entrySet()) {
                     doCommitOffset(entry.getValue(), 0, offsetVersionMap, size);
                 }
             }else {
+
                 CountDownLatch count= new CountDownLatch(countSize);
+                try {
                 for (Map.Entry<Long, ConsumerQueueVersionDto> entry : map.entrySet()) {
                     executorRun.execute(new Runnable() {
                         @Override
@@ -205,18 +207,16 @@ public class ConsumerCommitServiceImpl implements ConsumerCommitService, BrokerT
                         }
                     });
                 }
-                try {
+
                     count.await();
-                } catch (InterruptedException e) {
+                } catch (Exception e) {
                     log.error("commit thread error",e);
-                }finally {
-                    count.countDown();
                 }
             }
         }
     }
 
-    private boolean doCommitOffset(ConsumerQueueVersionDto request,
+    public boolean doCommitOffset(ConsumerQueueVersionDto request,
                                 int flag,
                                 Map<Long, OffsetVersionEntity> offsetVersionMap,
                                 int count) {

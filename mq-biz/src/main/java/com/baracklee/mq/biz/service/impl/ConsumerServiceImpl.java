@@ -68,6 +68,9 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
     @Resource
     private EmailUtil emailUtil;
 
+    @Resource
+    AuditLogService auditLogService;
+
     @PostConstruct
     void init(){
         super.setBaseRepository(consumerRepository);
@@ -119,9 +122,36 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
         //检查广播模式，广播模式数据可以被每一个消费者消费
         checkBroadcastAndSubEnv(request,response);
         doRegisterConsumerGroup(request,response,consumerEntity);
+        if (!response.isSuc()) {
+            addRegisterConsumerGroupLog(request, response);
+        }
         return response;
     }
-
+    protected void addRegisterConsumerGroupLog(ConsumerGroupRegisterRequest request,
+                                               ConsumerGroupRegisterResponse response) {
+        String json = JsonUtil.toJsonNull(request);
+        if (request != null && request.getConsumerGroupNames() != null) {
+            List<AuditLogEntity> auditLogs = new ArrayList<>(request.getConsumerGroupNames().size());
+            Map<String, ConsumerGroupEntity> consumerGroupMap = consumerGroupService.getCache();
+            request.getConsumerGroupNames().keySet().forEach(t1 -> {
+                ConsumerGroupEntity temp = consumerGroupMap.get(t1);
+                if (temp != null) {
+                    AuditLogEntity auditLog = new AuditLogEntity();
+                    auditLog.setContent("注册失败！入参是：" + json + ",原因是:" + response.getMsg());
+                    auditLog.setTbName(ConsumerGroupEntity.TABLE_NAME);
+                    auditLog.setRefId(temp.getId());
+                    auditLogs.add(auditLog);
+                }
+            });
+            auditLogService.insertBatch(auditLogs);
+        } else {
+            AuditLogEntity auditLog = new AuditLogEntity();
+            auditLog.setContent("注册失败！入参是：" + json + ",原因是:" + response.getMsg());
+            auditLog.setTbName(ConsumerGroupEntity.TABLE_NAME);
+            auditLog.setRefId(0);
+            auditLogService.insert(auditLog);
+        }
+    }
     @Override
     public List<ConsumerGroupConsumerEntity> getConsumerGroupByConsumerGroupIds(List<Long> consumerGroupIds) {
         if(CollectionUtils.isEmpty(consumerGroupIds)){
@@ -215,7 +245,7 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
 
     protected volatile long lastTime = 0;
 
-    private void updateQueueCache(String topicName) {
+    public void updateQueueCache(String topicName) {
         if (System.currentTimeMillis() - lastTime > 10 * 1000) {
             lastTime = System.currentTimeMillis();
             try {
@@ -228,7 +258,7 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
         }
     }
 
-    private boolean checkTopicRate(PublishMessageRequest request, PublishMessageResponse response) {
+    public boolean checkTopicRate(PublishMessageRequest request, PublishMessageResponse response) {
         // 关闭限速
         if (soaConfig.getEnableTopicRate() == 0) {
             return true;
@@ -429,7 +459,7 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
     }
     
 
-    private void saveMsg(PublishMessageRequest request, PublishMessageResponse response, List<QueueEntity> queueEntities) {
+    public void saveMsg(PublishMessageRequest request, PublishMessageResponse response, List<QueueEntity> queueEntities) {
         //<queueId,queue实体对象>
         Map<Long, QueueEntity> queueMap = queueEntities.stream().collect(Collectors.toMap(QueueEntity::getId, a -> a));
 
@@ -538,7 +568,7 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
 
     @Resource
     EmailService emailService;
-    private void sendPublishFailMail(PublishMessageRequest request, Exception last, int type) {
+    public void sendPublishFailMail(PublishMessageRequest request, Exception last, int type) {
         if (soaConfig.enableSendFailTopicMail(request.getTopicName())) {
             SendMailRequest request2 = new SendMailRequest();
             request2.setServer(true);
@@ -808,7 +838,7 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
         doRegisterConsumerGroup(consumerEntity, consumerGroupConsumerEntities, ids, consumerGroupNames);
     }
 
-    private Map<String, ConsumerGroupEntity> checkTopic(ConsumerGroupRegisterRequest request, ConsumerGroupRegisterResponse response) {
+    public Map<String, ConsumerGroupEntity> checkTopic(ConsumerGroupRegisterRequest request, ConsumerGroupRegisterResponse response) {
         Map<String, ConsumerGroupEntity> consumerGroupMap = consumerGroupService
                 .getByNames(new ArrayList<>(request.getConsumerGroupNames().keySet()));
         if (consumerGroupMap.size() == 0) {
@@ -869,14 +899,14 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
         consumerGroupService.notifyRb(ids);
     }
 
-    private void registerConsumerGroupConsumer(List<ConsumerGroupConsumerEntity> consumerGroupConsumerEntities) {
+    public void registerConsumerGroupConsumer(List<ConsumerGroupConsumerEntity> consumerGroupConsumerEntities) {
         if (CollectionUtils.isEmpty(consumerGroupConsumerEntities)) {
             return;
         }
         consumerGroupConsumerService.insertBatch(consumerGroupConsumerEntities);
     }
 
-    private void checkBroadcastAndSubEnv(ConsumerGroupRegisterRequest request,
+    public void checkBroadcastAndSubEnv(ConsumerGroupRegisterRequest request,
                                          ConsumerGroupRegisterResponse response) {
         Map<String, ConsumerGroupEntity> map = consumerGroupService.getCache();
         if(request==null){
@@ -997,7 +1027,7 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
         logService.addBrokerLog(logDto);
     }
 
-    private void checkVaild(ConsumerRegisterRequest request, ConsumerRegisterResponse response) {
+    public void checkVaild(ConsumerRegisterRequest request, ConsumerRegisterResponse response) {
         if (request == null) {
             response.setSuc(false);
             response.setMsg("ConsumerRegisterRequest不能为空！");

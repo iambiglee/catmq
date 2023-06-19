@@ -26,4 +26,13 @@
             </foreach>
         ) and consumer_id in (select id from consumer)
     </select>
-</mapper>
+    <select id="getByConsumerIds" resultMap="BaseResultMap"
+            useCache="false">
+        select *
+        from consumer_group_consumer
+        where consumer_id in
+        (
+        <foreach collection="consumerIds" item="item" index="index"
+                 separator=",">#{item}</foreach>
+        )
+    </select></mapper>
