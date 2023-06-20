@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -111,6 +112,11 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
     @Override
     public ConsumerGroupRegisterResponse registerConsumerGroup(ConsumerGroupRegisterRequest request) {
         ConsumerGroupRegisterResponse response = new ConsumerGroupRegisterResponse();
+        if (null==request){
+            response.setSuc(false);
+            response.setMsg("request cannot be null");
+            return response;
+        }
         ConsumerEntity consumerEntity=get(request.getConsumerId());
         if(null==consumerEntity){
             response.setSuc(false);
@@ -316,8 +322,7 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
                 dbFailMap.put(temp.getIp(),System.currentTimeMillis()-soaConfig.getDbFailWaitTime()*2000L);
             } catch (Exception e) {
                 dbFailMap.put(temp.getIp(),System.currentTimeMillis());
-                throw new RuntimeException(e);
-            }
+            log.error("pulldate_search_error",e);}
 
         }
         List<MessageDto> messageDtos = convertMessageDto(entity);
@@ -352,7 +357,7 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
         FailMsgPublishAndUpdateResultResponse response = new FailMsgPublishAndUpdateResultResponse();
         response.setSuc(true);
         QueueEntity queue = queueService.getAllQueueMap().get(request.getQueueId());
-        if(request.getFailMsg()==null){
+        if(request.getFailMsg()!=null){
             PublishMessageResponse publishMessageResponse = publish(request.getFailMsg());
             response.setSuc(publishMessageResponse.isSuc());
             //删除旧的失败消息
@@ -362,7 +367,7 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
                 });
             }
         }
-        if(CollectionUtils.isEmpty(request.getIds())){
+        if(!CollectionUtils.isEmpty(request.getIds())){
             if(queue!=null&&queue.getNodeType()==2&&!CollectionUtils.isEmpty(request.getIds())){
                 message01Service.setDbId(queue.getDbNodeId());
                 message01Service.updateFailMsgResult(queue.getTbName(),request.getIds(),Message01Service.failMsgRetryCountSuc);
@@ -397,13 +402,15 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
 
         Map<String, Map<String, List<QueueOffsetEntity>>> map = queueOffsetService.getCache();
         List<QueueOffsetEntity> rs = new ArrayList<>();
-        for (String topic : request.getTopics()) {
-            if (map.get(request.getConsumerGroupName()).containsKey(topic)){
-                rs.addAll(map.get(request.getConsumerGroupName()).get(topic));
-            }else {
+        if (!CollectionUtils.isEmpty(request.getTopics())){
+            for (String topic : request.getTopics()) {
+                if (map.get(request.getConsumerGroupName()).containsKey(topic)) {
+                    rs.addAll(map.get(request.getConsumerGroupName()).get(topic));
+                }}
+        }else {
                 map.get(request.getConsumerGroupName()).values().forEach(rs::addAll);
             }
-        }
+
         List<Long> ids = rs.stream().map(QueueOffsetEntity::getId).collect(Collectors.toList());
 
         long offsetSum = queueOffsetService.getOffsetSumByIds(ids);
@@ -612,6 +619,12 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
             dbFailMap.put(getFailDbUp(temp), System.currentTimeMillis() - soaConfig.getDbFailWaitTime() * 2000L);
             response.setSuc(true);
         } catch (Exception e) {
+            if (e instanceof DataIntegrityViolationException
+                    || e.getCause() instanceof DataIntegrityViolationException) {
+                response.setSuc(false);
+                response.setMsg(e.getMessage());
+                return;
+            }
             dbFailMap.put(getFailDbUp(temp), System.currentTimeMillis());
             throw new RuntimeException(e);
         }
@@ -903,7 +916,17 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
         if (CollectionUtils.isEmpty(consumerGroupConsumerEntities)) {
             return;
         }
-        consumerGroupConsumerService.insertBatch(consumerGroupConsumerEntities);
+        try {
+            consumerGroupConsumerService.insertBatch(consumerGroupConsumerEntities);
+        } catch (Exception e) {
+            consumerGroupConsumerEntities.forEach(t1 -> {
+                try {
+                    consumerGroupConsumerService.insert(t1);
+                } catch (Exception e1) {
+                    log.error("insertConsumserGroup_error",e);
+                }
+            });
+        }
     }
 
     public void checkBroadcastAndSubEnv(ConsumerGroupRegisterRequest request,
@@ -918,6 +941,7 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
         ||request.getConsumerGroupNames().size()==0){
             response.setSuc(false);
             response.setMsg("消费者组不能为空");
+            return;
         }
         // 后续有删除操作，此处注意ConcurrentModificationException 异常
         List<String> consumerGroupNames= new ArrayList<>(request.getConsumerGroupNames().keySet());

@@ -17,6 +17,7 @@ import com.baracklee.mq.biz.service.CacheUpdateService;
 import com.baracklee.mq.biz.service.DbNodeService;
 import com.baracklee.mq.biz.service.QueueService;
 import com.baracklee.mq.biz.service.common.AbstractBaseService;
+import com.baracklee.mq.biz.ui.DataSourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,11 +49,12 @@ public class DbNodeServiceImpl
         PortalTimerService ,
         TimerService {
 
-    private Logger log = LoggerFactory.getLogger(this.getClass());
+    private static final Logger log = LoggerFactory.getLogger(DbNodeServiceImpl.class);
 
     protected volatile boolean isRunning = true;
     @Resource
     DbNodeRepository dbNodeRepository;
+    private DataSourceFactory dataSourceFactory;
 
     @Resource
     private SoaConfig soaConfig;
@@ -79,6 +81,8 @@ public class DbNodeServiceImpl
     @PostConstruct
     public void init(){
         super.setBaseRepository(dbNodeRepository);
+        // TODO Auto-generated method stub
+        dataSourceFactory = DruidDataSource::new;
         minIdle = soaConfig.getInitDbCount();
         maxActive = soaConfig.getMaxDbCount();
         minEvictableIdleTimeMillis = soaConfig.getDbMinEvictableIdleTimeMillis();
@@ -336,7 +340,7 @@ public class DbNodeServiceImpl
         try {
             // if (soaConfig.isUseDruid())
             {
-                DruidDataSource dataSource = createDataSouce();
+                DruidDataSource dataSource = dataSourceFactory.createDataSource();
                 dataSource.setDriverClassName("com.mysql.jdbc.Driver");
                 if (isMaster) {
                     dataSource.setUsername(dbNode.getDbUserName());
@@ -415,7 +419,7 @@ public class DbNodeServiceImpl
     public void checkSlave(DbNodeEntity dbNodeEntity) throws SQLException {
         // 检查slave
         if (hasSlave(dbNodeEntity)) {
-            DruidDataSource dataSource = createDataSouce();
+            DruidDataSource dataSource  = dataSourceFactory.createDataSource();
             dataSource.setDriverClassName("com.mysql.jdbc.Driver");
             dataSource.setUsername(dbNodeEntity.getDbUserNameBak());
             dataSource.setPassword(dbNodeEntity.getDbPassBak());
@@ -432,7 +436,7 @@ public class DbNodeServiceImpl
     }
 
     private void checkMaster(DbNodeEntity dbNodeEntity) throws SQLException {
-        DruidDataSource dataSource = createDataSouce();
+        DruidDataSource dataSource = dataSourceFactory.createDataSource();
 
         dataSource.setDriverClassName("com.mysql.jdbc.Driver");
         dataSource.setUsername(dbNodeEntity.getDbUserName());
@@ -506,5 +510,9 @@ public class DbNodeServiceImpl
     @Override
     public String info() {
         return null;
+    }
+
+    public void setDataSourceFactory(DataSourceFactory dataSourceFactory) {
+        this.dataSourceFactory = dataSourceFactory;
     }
 }

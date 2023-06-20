@@ -30,8 +30,8 @@ public class LogServiceImplTest extends AbstractTest {
 	public void init() {
 
 		object = logServiceImpl;
-		auditLogService = mockAndSet(AuditLogService.class);
-		consumerGroupService=mockAndSet(ConsumerGroupService.class);
+		auditLogService = mock(AuditLogService.class);
+		consumerGroupService=mock(ConsumerGroupService.class);
 		logServiceImpl = new LogServiceImpl(consumerGroupService,auditLogService);
 		super.init();
 	}

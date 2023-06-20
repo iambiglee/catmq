@@ -19,6 +19,7 @@ import com.baracklee.mq.biz.service.common.AbstractBaseService;
 import com.baracklee.mq.biz.service.common.CacheUpdateHelper;
 import com.baracklee.mq.biz.service.common.MqReadMap;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
+import org.apache.ibatis.transaction.Transaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -149,6 +150,7 @@ public class ConsumerGroupTopicServiceImpl
             if (roleService.getRole(userInfoHolder.getUserId(), consumerGroupEntity.getOwnerIds()) >= UserRoleEnum.USER
                     .getRoleCode()) {
                 response.setMsg("没有操作权限");
+                response.setCode("1");
                 return response;
             }
 
@@ -333,7 +335,7 @@ public class ConsumerGroupTopicServiceImpl
         }catch (Exception e){
             consumerGroupTopicCreateResponse.setMsg(e.getMessage());
             consumerGroupTopicCreateResponse.setCode("1");
-            throw new RuntimeException(e);
+            log.error("consuemrGroupTopicError",e);
         }
         return consumerGroupTopicCreateResponse;
     }
@@ -423,22 +425,27 @@ public class ConsumerGroupTopicServiceImpl
     }
 
     private boolean doCheckChanged() {
-        boolean flag=false;
-        LastUpdateEntity temp = consumerGroupTopicRepository.getLastUpdate();
-        if((lastUpdateEntity==null&&temp!=null)||(lastUpdateEntity!=null||temp==null)){
-            lastUpdateEntity=temp;
-            flag=true;
-        }else if (lastUpdateEntity!=null&&temp!=null&& (
-                lastUpdateEntity.getMaxId()!=temp.getMaxId()
-                        ||temp.getLastDate().getTime()!=lastUpdateEntity.getLastDate().getTime()
-                        ||temp.getCount() != lastUpdateEntity.getCount()
-                )){
-            lastUpdateEntity=temp;
-            flag=true;
+        boolean flag = false;
+        try {
+            LastUpdateEntity temp = consumerGroupTopicRepository.getLastUpdate();
+            if ((lastUpdateEntity == null && temp != null) || (lastUpdateEntity != null && temp == null)) {
+                lastUpdateEntity = temp;
+                flag = true;
+            } else if (lastUpdateEntity != null && temp != null
+                    && (temp.getMaxId() != lastUpdateEntity.getMaxId()
+                    || temp.getLastDate().getTime() != lastUpdateEntity.getLastDate().getTime()
+                    || temp.getCount() != lastUpdateEntity.getCount())) {
+                lastUpdateEntity = temp;
+                flag = true;
+            }
+        } catch (Exception e) {
+log.error("checkConsumerGroupError",e);
+        } finally {
         }
-        if(!flag&&consumerGroupTopicRefMap.get().size()==0){
+        if(!flag && consumerGroupTopicRefMap.get().size()==0){
             log.warn("consumerGroupTopic数据为空，请注意！");
-            return true;}
+            return true;
+        }
         return flag;
     }
 

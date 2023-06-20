@@ -692,7 +692,7 @@ public class ConsumerServiceImplTest extends AbstractTest {
 
 	@Test
 	public void registConsumerGroupConsumerTest() {
-		doThrow(new RuntimeException()).when(consumerGroupConsumerService)
+		doThrow(new RuntimeException("test")).when(consumerGroupConsumerService)
 				.insertBatch(anyListOf(ConsumerGroupConsumerEntity.class));
 		List<ConsumerGroupConsumerEntity> consumerGroupConsumerEntities = new ArrayList<ConsumerGroupConsumerEntity>(2);
 		consumerGroupConsumerEntities.add(new ConsumerGroupConsumerEntity());

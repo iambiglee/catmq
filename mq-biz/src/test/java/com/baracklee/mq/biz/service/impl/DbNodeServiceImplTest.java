@@ -5,6 +5,7 @@ import com.baracklee.mq.biz.AbstractTest;
 import com.baracklee.mq.biz.dal.meta.DbNodeRepository;
 import com.baracklee.mq.biz.entity.DbNodeEntity;
 import com.baracklee.mq.biz.entity.LastUpdateEntity;
+import com.baracklee.mq.biz.ui.DataSourceFactory;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -80,7 +81,8 @@ public class DbNodeServiceImplTest extends AbstractTest {
 	@Test
 	public void checkDataSourceTest() throws SQLException {
 		DruidDataSource dataSource = mock(DruidDataSource.class);
-
+		DataSourceFactory dataSourceFactory=()->dataSource;
+		dbNodeServiceImpl.setDataSourceFactory(dataSourceFactory);
 		DbNodeEntity dbNodeEntity = new DbNodeEntity();
 		boolean flag = false;
 		try {
@@ -103,6 +105,8 @@ public class DbNodeServiceImplTest extends AbstractTest {
 	@Test
 	public void checkSlaveTest() throws SQLException {
 		DruidDataSource dataSource = mock(DruidDataSource.class);
+		DataSourceFactory dataSourceFactory=()->dataSource;
+		dbNodeServiceImpl.setDataSourceFactory(dataSourceFactory);
 		DbNodeEntity dbNodeEntity = new DbNodeEntity();
 		dbNodeEntity.setIpBak("faf");
 		dbNodeEntity.setDbUserNameBak("fa");
@@ -137,7 +141,8 @@ public class DbNodeServiceImplTest extends AbstractTest {
 	@Test
 	public void createDataSourceTest() throws SQLException {
 		DruidDataSource dataSource = mock(DruidDataSource.class);
-
+		DataSourceFactory dataSourceFactory=()->dataSource;
+		dbNodeServiceImpl.setDataSourceFactory(dataSourceFactory);
 		DbNodeEntity dbNodeEntity = new DbNodeEntity();
 
 		dbNodeEntity.setIp("fasaf");
