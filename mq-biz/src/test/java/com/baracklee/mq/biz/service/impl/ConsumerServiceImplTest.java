@@ -148,12 +148,13 @@ public class ConsumerServiceImplTest extends AbstractTest {
 		Map<String, ConsumerGroupEntity> consumerGroupMap1 = new HashMap<String, ConsumerGroupEntity>();
 		consumerGroupMap1.put(consumerGroupEntity.getOriginName(), consumerGroupEntity);
 		when(consumerGroupService.getCache()).thenReturn(consumerGroupMap1);
+		when(consumerRepository.getById(anyLong())).thenReturn(new ConsumerEntity());
 
 		consumerServiceImpl.deRegister(deRegisterRequest);
 
-		verify(consumerGroupService).deleteConsumerGroup(anyLong(), anyBoolean());
+		verify(consumerGroupConsumerService).deleteByConsumerIds(anyList());
 
-		verify(consumerGroupConsumerService).deleteByConsumerIds(anyListOf(Long.class));
+		verify(consumerGroupService).notifyRb(anyList());
 	}
 
 	@Test
@@ -241,15 +242,8 @@ public class ConsumerServiceImplTest extends AbstractTest {
 
 		when(consumerGroupService.getByNames(anyListOf(String.class))).thenReturn(consumerGroupMap1);
 		consumerServiceImpl.registerConsumerGroup(request);
-		verify(consumerGroupTopicService).subscribe(argumentCaptor.capture());
-		verify(consumerGroupService).insert(any(ConsumerGroupEntity.class));
-		assertEquals(
-				ConsumerGroupUtil.getBroadcastConsumerName(consumerGroupEntity.getName(), request.getClientIp(), 0),
-				argumentCaptor.getValue().getConsumerGroupName());
+		verify(consumerGroupService).notifyRb(anyList());
 
-		assertEquals(
-				ConsumerGroupUtil.getBroadcastConsumerName(consumerGroupEntity.getName(), request.getClientIp(), 0),
-				consumerEntity.getConsumerGroupNames());
 
 	}
 

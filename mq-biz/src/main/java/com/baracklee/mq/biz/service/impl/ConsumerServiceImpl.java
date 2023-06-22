@@ -792,10 +792,10 @@ public class ConsumerServiceImpl extends AbstractBaseService<ConsumerEntity> imp
             ConsumerGroupEntity consumerGroupEntity = cache.get(consumerGroupConsumer.getConsumerGroupId());
             if (consumerGroupEntity==null) continue;
 
-            boolean blackIpFlag = StringUtils.isEmpty(consumerGroupEntity.getIpBlackList()) && consumerGroupEntity.getIpBlackList().contains(consumerGroupConsumer.getIp());
-            boolean whiteFlag = StringUtils.isEmpty(consumerGroupEntity.getIpWhiteList()) && !consumerGroupEntity.getIpWhiteList().contains(consumerGroupConsumer.getIp());
-            boolean notBlackIpFlag = StringUtils.isEmpty(consumerGroupEntity.getIpBlackList()) &&! consumerGroupEntity.getIpBlackList().contains(consumerGroupConsumer.getIp());
-            boolean notWhiteFlag = StringUtils.isEmpty(consumerGroupEntity.getIpWhiteList()) && consumerGroupEntity.getIpWhiteList().contains(consumerGroupConsumer.getIp());
+            boolean blackIpFlag = !StringUtils.isEmpty(consumerGroupEntity.getIpBlackList()) && consumerGroupEntity.getIpBlackList().contains(consumerGroupConsumer.getIp());
+            boolean whiteFlag = !StringUtils.isEmpty(consumerGroupEntity.getIpWhiteList()) && !consumerGroupEntity.getIpWhiteList().contains(consumerGroupConsumer.getIp());
+            boolean notBlackIpFlag = !StringUtils.isEmpty(consumerGroupEntity.getIpBlackList()) &&! consumerGroupEntity.getIpBlackList().contains(consumerGroupConsumer.getIp());
+            boolean notWhiteFlag = !StringUtils.isEmpty(consumerGroupEntity.getIpWhiteList()) && consumerGroupEntity.getIpWhiteList().contains(consumerGroupConsumer.getIp());
 
             if (blackIpFlag) {
                 consumerGroupIds.remove(consumerGroupEntity.getId());

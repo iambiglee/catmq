@@ -2,6 +2,7 @@ package com.baracklee.mq.biz.service.impl;
 
 import com.alibaba.druid.pool.DruidDataSource;
 import com.baracklee.mq.biz.AbstractTest;
+import com.baracklee.mq.biz.common.util.Util;
 import com.baracklee.mq.biz.dal.meta.DbNodeRepository;
 import com.baracklee.mq.biz.entity.DbNodeEntity;
 import com.baracklee.mq.biz.entity.LastUpdateEntity;
@@ -157,6 +158,7 @@ public class DbNodeServiceImplTest extends AbstractTest {
 
 		dbNodeServiceImpl.createDataSource(dbNodeEntity);
 		dbNodeServiceImpl.createDataSource(dbNodeEntity);
+		Util.sleep(2000L);
 		assertEquals(true, dbNodeServiceImpl.cacheDataMap.get().size() == 2);
 
 		doThrow(new SQLException()).when(dataSource).init();

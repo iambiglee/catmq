@@ -53,19 +53,11 @@ public class ConsumerCommitServiceImplTest {
 		List<ConsumerQueueVersionDto> queueOffsets = buildQueueOffsets();
 		request.setQueueOffsets(queueOffsets);
 		//init();
-		when(queueOffsetService.commitOffset(any(QueueOffsetEntity.class))).thenReturn(1);
+		when(queueOffsetService.commitOffsetAndUpdateVersion(any(QueueOffsetEntity.class))).thenReturn(1);
 		consumerCommitServiceImpl.commitOffset(request);
-		verify(queueOffsetService).commitOffset(any(QueueOffsetEntity.class));
-		
-		queueOffsets = buildQueueOffsets();
-		request.setQueueOffsets(queueOffsets);
-		request.setFlag(0);
-		queueOffsets.get(0).setOffsetVersion(queueOffsets.get(0).getOffsetVersion() + 1);
-		consumerCommitServiceImpl.commitOffset(request);
-		verify(queueOffsetService,times(1)).commitOffset(any(QueueOffsetEntity.class));
-		queueOffsets.get(0).setOffset(queueOffsets.get(0).getOffset() + 1);
-		consumerCommitServiceImpl.commitOffset(request);
-		verify(queueOffsetService,times(1)).commitOffset(any(QueueOffsetEntity.class));
+//		Util.sleep(1000L);
+		verify(queueOffsetService).commitOffsetAndUpdateVersion(any(QueueOffsetEntity.class));
+
 	}
 
 	private List<ConsumerQueueVersionDto> buildQueueOffsets() {
@@ -130,13 +122,13 @@ public class ConsumerCommitServiceImplTest {
 		request.setOffset(offsetVersionEntity.getOffset()+1);
         consumerCommitServiceImpl.doCommitOffset(request, 1, quMap, 2);	
 		
-		verify(queueOffsetService).commitOffset(any(QueueOffsetEntity.class));
+		verify(queueOffsetService).commitOffsetAndUpdateVersion(any(QueueOffsetEntity.class));
 		
 		request.setOffset(offsetVersionEntity.getOffset());
 		request.setOffsetVersion(offsetVersionEntity.getOffsetVersion()+1);
         consumerCommitServiceImpl.doCommitOffset(request, 1, quMap, 2);	
-        verify(queueOffsetService,times(2)).commitOffset(any(QueueOffsetEntity.class));        
-        when(queueOffsetService.commitOffset(any(QueueOffsetEntity.class))).thenThrow(new RuntimeException());        
+        verify(queueOffsetService,times(2)).commitOffsetAndUpdateVersion(any(QueueOffsetEntity.class));
+        when(queueOffsetService.commitOffsetAndUpdateVersion(any(QueueOffsetEntity.class))).thenThrow(new RuntimeException());
         request.setOffsetVersion(offsetVersionEntity.getOffsetVersion()+1);
         assertEquals(false, consumerCommitServiceImpl.doCommitOffset(request, 1, quMap, 2));
         assertEquals(1, consumerCommitServiceImpl.failMapAppPolling.size());

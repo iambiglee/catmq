@@ -12,7 +12,7 @@ import org.junit.runners.Suite;
         ConsumerGroupCheckServiceImplTest.class, ConsumerGroupConsumerCheckServiceImplTest.class,
         ConsumerGroupServiceImplTest.class, ConsumerGroupTopicCheckServiceImplTest.class,
         ConsumerGroupTopicServiceImplTest.class, ConsumerGroupTopicServiceImplTest.class, ConsumerServiceImplTest.class,
-        DbNodeServiceImplTest.class, DbNodeServiceImplTest.class, EmailServiceImplTest.class, LogServiceImplTest.class,
+        DbNodeServiceImplTest.class, EmailServiceImplTest.class, LogServiceImplTest.class,
         Message01ServiceImplTest.class })
 public class AllBizTests {
 }

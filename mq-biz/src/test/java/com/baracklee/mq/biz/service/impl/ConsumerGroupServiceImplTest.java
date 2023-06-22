@@ -9,7 +9,6 @@ import com.baracklee.mq.biz.dto.response.ConsumerGroupCreateResponse;
 import com.baracklee.mq.biz.dto.response.ConsumerGroupDeleteResponse;
 import com.baracklee.mq.biz.entity.*;
 import com.baracklee.mq.biz.service.*;
-import com.baracklee.mq.biz.ui.exceptions.CheckFailException;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -414,6 +413,9 @@ public class ConsumerGroupServiceImplTest extends AbstractTest {
 		consumerGroupCreateRequest.setIpFlag(0);
 		consumerGroupCreateRequest.setIpList("213");
 		ArgumentCaptor<ConsumerGroupEntity> argument = ArgumentCaptor.forClass(ConsumerGroupEntity.class);
+		ConsumerGroupEntity consumerGroupEntity1 = buildConsumerGroupEntity();
+		consumerGroupEntity1.setMode(1);
+		when(consumerGroupRepository.getById(anyLong())).thenReturn(consumerGroupEntity1);
 		consumerGroupServiceImpl.createConsumerGroup(consumerGroupCreateRequest);
 		verify(consumerGroupRepository).update(argument.capture()); 
 		verify(topicService).updateFailTopic(any(ConsumerGroupEntity.class));

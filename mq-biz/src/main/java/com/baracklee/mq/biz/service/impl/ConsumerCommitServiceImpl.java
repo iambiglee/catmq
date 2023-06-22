@@ -97,15 +97,12 @@ public class ConsumerCommitServiceImpl implements ConsumerCommitService, BrokerT
                     }
                 });
                 if (request.getFlag() == 1) {
-                    executorCommit.submit(new Runnable() {
-                        @Override
-                        public void run() {
-                            commitAndUpdate(request);
-                        }
-                    });
+//                    executorCommit.submit(() -> commitAndUpdate(request));
+                    commitAndUpdate(request);
                 }
             }
         } catch (Exception e) {
+            log.error("commitoffsetError",e);
         }
         // catTransaction.setStatus(Transaction.SUCCESS);
         // catTransaction.complete();
@@ -251,6 +248,7 @@ public class ConsumerCommitServiceImpl implements ConsumerCommitService, BrokerT
                 }
             }
         } catch (Exception e) {
+            failMapAppPolling.put(request.getQueueOffsetId(), request);
             log.error("commit_offset_error",e);
             return false;
         }
