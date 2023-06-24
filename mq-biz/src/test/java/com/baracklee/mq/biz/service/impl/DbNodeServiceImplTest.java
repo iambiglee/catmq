@@ -11,6 +11,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.mockito.invocation.InvocationOnMock;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import javax.sql.DataSource;
@@ -82,6 +83,7 @@ public class DbNodeServiceImplTest extends AbstractTest {
 	@Test
 	public void checkDataSourceTest() throws SQLException {
 		DruidDataSource dataSource = mock(DruidDataSource.class);
+		doAnswer(InvocationOnMock::getArguments).when(dataSource).init();
 		DataSourceFactory dataSourceFactory=()->dataSource;
 		dbNodeServiceImpl.setDataSourceFactory(dataSourceFactory);
 		DbNodeEntity dbNodeEntity = new DbNodeEntity();

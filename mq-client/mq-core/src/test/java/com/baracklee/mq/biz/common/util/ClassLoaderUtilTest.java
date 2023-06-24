@@ -22,6 +22,6 @@ public class ClassLoaderUtilTest {
 	public void isClassPresentTest() {
 		assertEquals(false, ClassLoaderUtil.isClassPresent("tt.tt"));
 		
-		assertEquals(true, ClassLoaderUtil.isClassPresent("com.ppdai.infrastructure.mq.biz.common.util.ClassLoaderUtilTest"));
+		assertEquals(true, ClassLoaderUtil.isClassPresent("com.baracklee.mq.biz.common.util.ClassLoaderUtilTest"));
 	}
 }

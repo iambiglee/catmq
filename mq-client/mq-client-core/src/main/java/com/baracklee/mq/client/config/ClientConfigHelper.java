@@ -1,5 +1,6 @@
 package com.baracklee.mq.client.config;
 
+import com.baracklee.mq.biz.common.util.Util;
 import com.baracklee.mq.biz.event.IAsynSubscriber;
 import com.baracklee.mq.biz.event.ISubscriber;
 import com.baracklee.mq.client.MqClient;
@@ -13,7 +14,10 @@ import org.w3c.dom.NodeList;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -41,8 +45,23 @@ public class ClientConfigHelper {
         }
     }
 
+    public static Map<String, ConsumerGroupVo> getConfig(String xml) {
+        if (Util.isEmpty(xml)) {
+            return null;
+        }
+        ClientConfigHelper configHelper = new ClientConfigHelper();
+        InputStream inputStream;
+        try {
+            inputStream = new ByteArrayInputStream(xml.getBytes("UTF-8"));
+        } catch (UnsupportedEncodingException e) {
+
+            return null;
+        }
+        return configHelper.getConfig(inputStream);
+    }
+
     private Map<String, ConsumerGroupVo> getConfig(InputStream inputStream) {
-        if(inputStream==null) return null;
+        if(inputStream==null) return new HashMap<>();
         Document document = loadDocument(inputStream);
         Element rootElement = document.getDocumentElement();
         Map<String, ConsumerGroupVo> config = getConsumerConfig(rootElement);

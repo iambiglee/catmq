@@ -8,6 +8,7 @@ import com.baracklee.mq.biz.dto.client.*;
 import com.baracklee.mq.client.metic.MetricSingleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -43,10 +44,12 @@ public class MqResource implements IMqResource{
     }
 
     public MqResource(IHttpClient httpClient, String url) {
+        if (!StringUtils.isEmpty(url)){
         this.urlsG1.set(Arrays.asList(url.trim().split(",")));
         this.urlsG2.set(Arrays.asList(url.trim().split(",")));
         this.urlsOrigin.get().addAll(this.urlsG1.get());
         this.httpClient = httpClient;
+        }
         executor = new ThreadPoolExecutor(0, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(500),
                 SoaThreadFactory.create("MqResource-heartbeat", true), new ThreadPoolExecutor.DiscardOldestPolicy());
         executor1 = new ThreadPoolExecutor(0, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(500),

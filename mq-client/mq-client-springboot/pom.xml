@@ -53,6 +53,10 @@
             <version>5.2.15.RELEASE</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+        </dependency>
 
     </dependencies>
 </project>

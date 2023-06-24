@@ -41,7 +41,7 @@ public class MqHandler implements Handler {
                     "<!doctype html><html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\"></head><body>");
 
             try {
-                sbHtml.append(maps.get(request.getRequestURI()).invoke(mqClientStatController).toString());
+                sbHtml.append(maps.get(request.getRequestURI()));
                 sbHtml.append("</body></html>");
                 response.getWriter().write(sbHtml.toString());
                 response.flushBuffer();

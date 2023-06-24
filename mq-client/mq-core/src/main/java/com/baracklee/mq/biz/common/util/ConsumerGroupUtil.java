@@ -8,7 +8,7 @@ public class ConsumerGroupUtil {
         if(!consumerGroupName.contains("_")){
             return consumerGroupName;
         }else {
-            return consumerGroupName.substring(0,consumerGroupName.lastIndexOf("-"));
+            return consumerGroupName.substring(0,consumerGroupName.lastIndexOf("_"));
         }
     }
 }
