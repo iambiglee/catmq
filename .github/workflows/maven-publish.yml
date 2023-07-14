@@ -30,6 +30,6 @@ jobs:
         if: always()
         with:
           name: Maven Tests
-          path: reports/jest-*.xml
+          path: target/surefire-reports/*.xml
           reporter: java-junit
           fail-on-error: true
