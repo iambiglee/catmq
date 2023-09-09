@@ -1,4 +1,4 @@
-<mxfile host="app.diagrams.net" modified="2023-09-09T15:36:32.881Z" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36" etag="jdzBh0scTSqrPZAcMFXP" version="21.7.3" type="github">
+<mxfile host="app.diagrams.net" modified="2023-09-09T15:38:52.394Z" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36" etag="eH5tLoNa2gwr_k0FfSZg" version="21.7.3" type="github">
   <diagram name="第 1 页" id="4FZ-Mj-Us1MuQtvURsM1">
     <mxGraphModel dx="635" dy="408" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
@@ -46,8 +46,23 @@
         <mxCell id="99CHxskMBwQNS0QZeeR7-18" value="Pulling &lt;br&gt;Message Thread" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=12;fontFamily=Helvetica;fontColor=default;" vertex="1" parent="1">
           <mxGeometry x="384" y="159" width="108" height="41" as="geometry" />
         </mxCell>
+        <mxCell id="99CHxskMBwQNS0QZeeR7-21" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Helvetica;fontSize=12;fontColor=default;" edge="1" parent="1" source="99CHxskMBwQNS0QZeeR7-19" target="99CHxskMBwQNS0QZeeR7-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
         <mxCell id="99CHxskMBwQNS0QZeeR7-19" value="" style="shape=image;html=1;verticalAlign=top;verticalLabelPosition=bottom;labelBackgroundColor=#ffffff;imageAspect=0;aspect=fixed;image=https://cdn1.iconfinder.com/data/icons/user-interface-flat-5/32/Cycle_refresh_turn_app_repeat_web_user_interface-128.png;rounded=0;sketch=1;jiggle=2;curveFitting=1;strokeColor=default;fontFamily=Helvetica;fontSize=12;fontColor=default;fillColor=default;" vertex="1" parent="1">
-          <mxGeometry x="513.5" y="245" width="41" height="41" as="geometry" />
+          <mxGeometry x="513.5" y="259" width="41" height="41" as="geometry" />
+        </mxCell>
+        <mxCell id="99CHxskMBwQNS0QZeeR7-20" value="QueueOffset &lt;br&gt;Commit Thread" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=12;fontFamily=Helvetica;fontColor=default;" vertex="1" parent="1">
+          <mxGeometry x="540" y="262" width="100" height="41" as="geometry" />
+        </mxCell>
+        <mxCell id="99CHxskMBwQNS0QZeeR7-24" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;fontFamily=Helvetica;fontSize=12;fontColor=default;" edge="1" parent="1" source="99CHxskMBwQNS0QZeeR7-22" target="99CHxskMBwQNS0QZeeR7-5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="99CHxskMBwQNS0QZeeR7-22" value="" style="shape=image;html=1;verticalAlign=top;verticalLabelPosition=bottom;labelBackgroundColor=#ffffff;imageAspect=0;aspect=fixed;image=https://cdn1.iconfinder.com/data/icons/user-interface-flat-5/32/Cycle_refresh_turn_app_repeat_web_user_interface-128.png;rounded=0;sketch=1;jiggle=2;curveFitting=1;strokeColor=default;fontFamily=Helvetica;fontSize=12;fontColor=default;fillColor=default;" vertex="1" parent="1">
+          <mxGeometry x="415" y="331.5" width="41" height="41" as="geometry" />
+        </mxCell>
+        <mxCell id="99CHxskMBwQNS0QZeeR7-23" value="Health &lt;br&gt;Check Thread" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=12;fontFamily=Helvetica;fontColor=default;" vertex="1" parent="1">
+          <mxGeometry x="425" y="348" width="93" height="41" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
