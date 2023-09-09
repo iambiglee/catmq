@@ -1,9 +1,30 @@
-<mxfile host="app.diagrams.net" modified="2023-09-09T05:52:43.122Z" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36" version="21.7.3" etag="rQikesJb_HfjFwKUTaGo" type="github">
+<mxfile host="app.diagrams.net" modified="2023-09-09T06:01:36.856Z" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36" etag="TrTJ0jTdBDQMch_TqPSp" version="21.7.3" type="github">
   <diagram name="第 1 页" id="-2Tpd6Gwmfbw-QOLrvA1">
-    <mxGraphModel>
+    <mxGraphModel dx="794" dy="510" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
+        <mxCell id="RPNr1QBlwAPa-9aBPBtk-9" value="Broker" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fontSize=22;sketch=1;curveFitting=1;jiggle=2;glass=0;" vertex="1" parent="1">
+          <mxGeometry x="120" y="156" width="282" height="264" as="geometry" />
+        </mxCell>
+        <mxCell id="RPNr1QBlwAPa-9aBPBtk-4" value="&lt;font color=&quot;#ff3333&quot;&gt;Topic A&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;sketch=1;curveFitting=1;jiggle=2;" vertex="1" parent="1">
+          <mxGeometry x="190" y="210" width="128" height="81" as="geometry" />
+        </mxCell>
+        <mxCell id="RPNr1QBlwAPa-9aBPBtk-2" value="Queue" style="rounded=1;whiteSpace=wrap;html=1;sketch=1;curveFitting=1;jiggle=2;fontFamily=Verdana;" vertex="1" parent="1">
+          <mxGeometry x="230" y="222" width="46" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="RPNr1QBlwAPa-9aBPBtk-3" value="Queue" style="rounded=1;whiteSpace=wrap;html=1;sketch=1;curveFitting=1;jiggle=2;fontFamily=Verdana;" vertex="1" parent="1">
+          <mxGeometry x="232" y="260" width="46" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="RPNr1QBlwAPa-9aBPBtk-6" value="&lt;font color=&quot;#ff3333&quot;&gt;Topic B&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;sketch=1;curveFitting=1;jiggle=2;" vertex="1" parent="1">
+          <mxGeometry x="189" y="322" width="128" height="81" as="geometry" />
+        </mxCell>
+        <mxCell id="RPNr1QBlwAPa-9aBPBtk-7" value="Queue" style="rounded=1;whiteSpace=wrap;html=1;sketch=1;curveFitting=1;jiggle=2;fontFamily=Verdana;" vertex="1" parent="1">
+          <mxGeometry x="229" y="334" width="46" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="RPNr1QBlwAPa-9aBPBtk-8" value="Queue" style="rounded=1;whiteSpace=wrap;html=1;sketch=1;curveFitting=1;jiggle=2;fontFamily=Verdana;" vertex="1" parent="1">
+          <mxGeometry x="231" y="372" width="46" height="20" as="geometry" />
+        </mxCell>
       </root>
     </mxGraphModel>
   </diagram>
