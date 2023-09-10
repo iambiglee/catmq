@@ -1,4 +1,4 @@
-<mxfile host="app.diagrams.net" modified="2023-09-10T02:31:19.328Z" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36" etag="PO3zJ7Mi0SSUsR84Czpa" version="21.7.3" type="github">
+<mxfile host="app.diagrams.net" modified="2023-09-10T02:35:56.445Z" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36" etag="d8OSF02J6cksWfscG_Jw" version="21.7.3" type="github">
   <diagram name="第 1 页" id="DwfznrJ5i_sDUHdfCodq">
     <mxGraphModel dx="794" dy="510" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
@@ -24,7 +24,7 @@
         <mxCell id="ODLYF-Jf8RMYePjoSlRv-8" value="Message Send Thread" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
           <mxGeometry x="109.5" y="221" width="139" height="26" as="geometry" />
         </mxCell>
-        <mxCell id="ODLYF-Jf8RMYePjoSlRv-10" value="" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#050505;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.rds_mysql_instance;" vertex="1" parent="1">
+        <mxCell id="ODLYF-Jf8RMYePjoSlRv-10" value="" style="outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#050505;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.rds_mysql_instance;shadow=0;" vertex="1" parent="1">
           <mxGeometry x="482" y="237" width="78" height="78" as="geometry" />
         </mxCell>
       </root>
