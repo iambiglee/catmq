@@ -1,4 +1,4 @@
-<mxfile host="app.diagrams.net" modified="2023-09-10T02:37:07.029Z" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36" etag="zwTnwP6m82zEkSAO9mmg" version="21.7.3" type="github">
+<mxfile host="app.diagrams.net" modified="2023-09-10T02:56:41.129Z" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36" etag="X9FP7PMUnECMrGGYi_tb" version="21.7.3" type="github">
   <diagram name="第 1 页" id="DwfznrJ5i_sDUHdfCodq">
     <mxGraphModel dx="794" dy="510" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
@@ -31,6 +31,45 @@
         </mxCell>
         <mxCell id="ODLYF-Jf8RMYePjoSlRv-10" value="" style="outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#050505;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.rds_mysql_instance;shadow=0;labelBackgroundColor=none;labelBorderColor=none;" vertex="1" parent="1">
           <mxGeometry x="482" y="237" width="78" height="78" as="geometry" />
+        </mxCell>
+        <mxCell id="ODLYF-Jf8RMYePjoSlRv-12" value="&lt;font style=&quot;font-size: 16px;&quot;&gt;Produce&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;fillColor=#dae8fc;strokeColor=#6c8ebf;sketch=1;curveFitting=1;jiggle=2;" vertex="1" parent="1">
+          <mxGeometry x="48" y="422" width="324" height="152" as="geometry" />
+        </mxCell>
+        <mxCell id="ODLYF-Jf8RMYePjoSlRv-19" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="ODLYF-Jf8RMYePjoSlRv-13" target="ODLYF-Jf8RMYePjoSlRv-14">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ODLYF-Jf8RMYePjoSlRv-13" value="" style="shape=image;html=1;verticalAlign=top;verticalLabelPosition=bottom;labelBackgroundColor=#ffffff;imageAspect=0;aspect=fixed;image=https://cdn1.iconfinder.com/data/icons/user-interface-flat-5/32/Cycle_refresh_turn_app_repeat_web_user_interface-128.png" vertex="1" parent="1">
+          <mxGeometry x="80" y="463" width="49" height="49" as="geometry" />
+        </mxCell>
+        <mxCell id="ODLYF-Jf8RMYePjoSlRv-21" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="ODLYF-Jf8RMYePjoSlRv-14" target="ODLYF-Jf8RMYePjoSlRv-15">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ODLYF-Jf8RMYePjoSlRv-14" value="" style="shape=image;verticalLabelPosition=bottom;labelBackgroundColor=default;verticalAlign=top;aspect=fixed;imageAspect=0;image=data:image/svg+xml,PHN2ZyB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiBoZWlnaHQ9IjIwMCIgd2lkdGg9IjIwMCIgdmVyc2lvbj0iMS4xIiB2aWV3Qm94PSIwIDAgMTAyNCAxMDI0IiBjbGFzcz0iaWNvbiI+PHBhdGggZmlsbD0iIzI2MzU1NCIgZD0iTTUwOC44IDc1NC43bS04NC4yIDBhODQuMiA4NC4yIDAgMSAwIDE2OC40IDAgODQuMiA4NC4yIDAgMSAwLTE2OC40IDBaIi8+PHBhdGggZmlsbD0iIzI2MzU1NCIgZD0iTTUwOC44IDg1Mi45Yy0yNS44IDAtNTAuMi0xMC02OC43LTI4LTE4LjUtMTguMS0yOS00Mi4zLTI5LjUtNjguMi0wLjUtMjYuMiA5LjItNTEuMSAyNy40LTcwczQyLjYtMjkuNiA2OC45LTMwLjFoMmMyNS44IDAgNTAuMiAxMCA2OC43IDI4IDE4LjUgMTguMSAyOSA0Mi4zIDI5LjUgNjguMiAwLjUgMjYuMi05LjIgNTEuMS0yNy40IDcwcy00Mi42IDI5LjYtNjguOSAzMC4xaC0yeiBtMC4xLTE2OC40aC0xLjRjLTE4LjcgMC40LTM2LjIgOC00OS4yIDIxLjVzLTE5LjkgMzEuMy0xOS42IDUwYzAuOCAzOC40IDMzIDY5LjYgNzEuNiA2OC44IDE4LjgtMC40IDM2LjItOCA0OS4yLTIxLjVzMTkuOS0zMS4zIDE5LjYtNTBjLTAuOC0zOC0zMi4zLTY4LjgtNzAuMi02OC44eiIvPjxwYXRoIGZpbGw9IiMyNjM1NTQiIGQ9Ik01MDcuMSAyMjEuN20tODQuMiAwYTg0LjIgODQuMiAwIDEgMCAxNjguNCAwIDg0LjIgODQuMiAwIDEgMC0xNjguNCAwWiIvPjxwYXRoIGZpbGw9IiMyNjM1NTQiIGQ9Ik01MDcuMSAzMTkuOWMtMjUuOCAwLTUwLjItMTAtNjguNy0yOC0xOC41LTE4LjEtMjktNDIuMy0yOS41LTY4LjItMC41LTI2LjIgOS4yLTUxLjEgMjcuNC03MHM0Mi42LTI5LjYgNjguOS0zMC4xYzI2LjYtMC41IDUxLjcgOS41IDcwLjcgMjggMTguNSAxOC4xIDI5IDQyLjMgMjkuNSA2OC4yIDAuNSAyNi4yLTkuMiA1MS4xLTI3LjQgNzBzLTQyLjYgMjkuNi02OC45IDMwLjFoLTJ6IG0wLTE2OC40aC0xLjRjLTE4LjggMC40LTM2LjIgOC00OS4yIDIxLjVzLTE5LjkgMzEuMy0xOS42IDUwYzAuOCAzNy45IDMyLjIgNjguOCA3MC4yIDY4LjhoMS40YzE4LjctMC40IDM2LjItOCA0OS4yLTIxLjVzMTkuOS0zMS4zIDE5LjYtNTBjLTAuOC0zOC0zMi4yLTY4LjgtNzAuMi02OC44eiIvPjxwYXRoIGZpbGw9IiMyNjM1NTQiIGQ9Ik0yMTQgNzU0LjdtLTg0LjIgMGE4NC4yIDg0LjIgMCAxIDAgMTY4LjQgMCA4NC4yIDg0LjIgMCAxIDAtMTY4LjQgMFoiLz48cGF0aCBmaWxsPSIjMjYzNTU0IiBkPSJNMjE0IDg1Mi45Yy0yNS44IDAtNTAuMi0xMC02OC43LTI4LTE4LjUtMTguMS0yOS00Mi4zLTI5LjUtNjguMi0xLjEtNTQuMSA0Mi4xLTk5LjEgOTYuMi0xMDAuMWgyYzI1LjggMCA1MC4yIDEwIDY4LjcgMjggMTguNSAxOC4xIDI5IDQyLjMgMjkuNSA2OC4yIDAuNSAyNi4yLTkuMiA1MS4xLTI3LjQgNzBzLTQyLjYgMjkuNi02OC45IDMwLjFIMjE0eiBtMC4xLTE2OC40aC0xLjRjLTM4LjcgMC44LTY5LjYgMzIuOS02OC44IDcxLjYgMC44IDM4LjQgMzMgNjkuNiA3MS42IDY4LjggMTguOC0wLjQgMzYuMi04IDQ5LjItMjEuNXMxOS45LTMxLjMgMTkuNi01MGMtMC44LTM4LjEtMzIuMy02OC45LTcwLjItNjguOXoiLz48cGF0aCBmaWxsPSIjMjYzNTU0IiBkPSJNODAzLjcgNzU0LjdtLTg0LjIgMGE4NC4yIDg0LjIgMCAxIDAgMTY4LjQgMCA4NC4yIDg0LjIgMCAxIDAtMTY4LjQgMFoiLz48cGF0aCBmaWxsPSIjMjYzNTU0IiBkPSJNODAzLjYgODUyLjljLTI1LjggMC01MC4yLTEwLTY4LjctMjgtMTguNS0xOC4xLTI5LTQyLjMtMjkuNS02OC4yLTEuMS01NC4xIDQyLjEtOTkuMSA5Ni4yLTEwMC4xaDJjMjUuOCAwIDUwLjIgMTAgNjguNyAyOCAxOC41IDE4LjEgMjkgNDIuMyAyOS41IDY4LjIgMC41IDI2LjItOS4yIDUxLjEtMjcuNCA3MHMtNDIuNiAyOS42LTY4LjkgMzAuMWgtMS45eiBtMC4xLTE2OC40aC0xLjRjLTM4LjcgMC44LTY5LjYgMzIuOS02OC44IDcxLjYgMC44IDM4LjQgMzMgNjkuNiA3MS42IDY4LjggMTguOC0wLjQgMzYuMi04IDQ5LjItMjEuNXMxOS45LTMxLjMgMTkuNi01MGMtMC44LTM4LjEtMzIuMy02OC45LTcwLjItNjguOXoiLz48cGF0aCBmaWxsPSIjMjYzNTU0IiBkPSJNODAxLjQgNDc3LjZoLTU4OWMtNS44IDAtMTAuNS00LjctMTAuNS0xMC41czQuNy0xMC41IDEwLjUtMTAuNWg1ODguOWM1LjggMCAxMC41IDQuNyAxMC41IDEwLjUgMC4xIDUuOC00LjYgMTAuNS0xMC40IDEwLjV6Ii8+PHBhdGggZmlsbD0iIzI2MzU1NCIgZD0iTTUxNy42IDMwOS4zdjM1MS41YzAgNS44LTQuNyAxMC41LTEwLjUgMTAuNXMtMTAuNS00LjctMTAuNS0xMC41VjMwOS4zYzAtNS44IDQuNy0xMC41IDEwLjUtMTAuNXMxMC41IDQuNyAxMC41IDEwLjV6Ii8+PHBhdGggZmlsbD0iIzI2MzU1NCIgZD0iTTIyMyA0NjcuNHYxOTMuNGMwIDUuOC00LjcgMTAuNS0xMC41IDEwLjVzLTEwLjUtNC43LTEwLjUtMTAuNVY0NjcuNGMwLTUuOCA0LjctMTAuNSAxMC41LTEwLjVzMTAuNSA0LjcgMTAuNSAxMC41eiIvPjxwYXRoIGZpbGw9IiMyNjM1NTQiIGQ9Ik04MTIuMiA0NjcuMnYxOTMuNGMwIDUuOC00LjcgMTAuNS0xMC41IDEwLjVzLTEwLjUtNC43LTEwLjUtMTAuNVY0NjcuMmMwLTUuOCA0LjctMTAuNSAxMC41LTEwLjVzMTAuNSA0LjcgMTAuNSAxMC41eiIvPjwvc3ZnPg==;" vertex="1" parent="1">
+          <mxGeometry x="178" y="455.25" width="66" height="66" as="geometry" />
+        </mxCell>
+        <mxCell id="ODLYF-Jf8RMYePjoSlRv-25" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="ODLYF-Jf8RMYePjoSlRv-15" target="ODLYF-Jf8RMYePjoSlRv-17">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ODLYF-Jf8RMYePjoSlRv-15" value="" style="shape=image;html=1;verticalAlign=top;verticalLabelPosition=bottom;labelBackgroundColor=#ffffff;imageAspect=0;aspect=fixed;image=https://cdn1.iconfinder.com/data/icons/user-interface-flat-5/32/Cycle_refresh_turn_app_repeat_web_user_interface-128.png" vertex="1" parent="1">
+          <mxGeometry x="292" y="464" width="49" height="49" as="geometry" />
+        </mxCell>
+        <mxCell id="ODLYF-Jf8RMYePjoSlRv-26" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="ODLYF-Jf8RMYePjoSlRv-17" target="ODLYF-Jf8RMYePjoSlRv-18">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ODLYF-Jf8RMYePjoSlRv-17" value="Broker" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;sketch=1;curveFitting=1;jiggle=2;" vertex="1" parent="1">
+          <mxGeometry x="439" y="451.5" width="120" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="ODLYF-Jf8RMYePjoSlRv-18" value="" style="outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#050505;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.rds_mysql_instance;shadow=0;labelBackgroundColor=none;labelBorderColor=none;" vertex="1" parent="1">
+          <mxGeometry x="630" y="523.75" width="78" height="78" as="geometry" />
+        </mxCell>
+        <mxCell id="ODLYF-Jf8RMYePjoSlRv-22" value="Message Send&amp;nbsp;&lt;br&gt;Thread" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="54" y="521.25" width="101" height="41" as="geometry" />
+        </mxCell>
+        <mxCell id="ODLYF-Jf8RMYePjoSlRv-23" value="Local Cache&lt;br&gt;Queue" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="168.5" y="523.75" width="85" height="41" as="geometry" />
+        </mxCell>
+        <mxCell id="ODLYF-Jf8RMYePjoSlRv-24" value="Batch send&lt;br&gt;Thread" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="272" y="521.25" width="78" height="41" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
