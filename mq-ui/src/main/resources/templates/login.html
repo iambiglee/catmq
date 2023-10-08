@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>后台管理系统登陆</title>
+    <title>CatMQ</title>
     <header th:include="common/header::header"></header>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     <link rel="shortcut icon" href="/images/favicon.ico"/>
@@ -15,18 +15,18 @@
         <!--<div class="carousel_div3"></div>-->
     </div>
     <div class="login layui-anim layui-anim-up">
-        <h1>消息系统后台管理系统</h1>
+        <h1>CatMq Background</h1>
         <form class="layui-form" method="post">
             <div class="layui-form-item">
-                <input type="text" id="userName" name="userName" lay-verify="required" placeholder="请输入账号" autocomplete="off" value=""
+                <input type="text" id="userName" name="userName" lay-verify="required" placeholder="userName" autocomplete="off" value=""
                        class="layui-input"/>
             </div>
             <div class="layui-form-item">
-                <input type="password" id="passWord" name="passWord" lay-verify="required" placeholder="请输入密码" autocomplete="off"
+                <input type="password" id="passWord" name="passWord" lay-verify="required" placeholder="password" autocomplete="off"
                        value="" class="layui-input"/>
             </div>
 
-            <button class="layui-btn login_btn" lay-submit="" lay-filter="login">登陆系统</button>
+            <button class="layui-btn login_btn" lay-submit="" lay-filter="login">Login</button>
         </form>
     </div>
 </div>
@@ -64,10 +64,10 @@
                     if(data==1){
                         window.location.href="/index";
                     } else {
-                        layer.msg("用户名密码错误！")
+                        layer.msg("Wrong User or Password！")
                     }
                 }, error: function (data) {
-                    layer.msg("登录失败")
+                    layer.msg("login error")
                 }
             });
             return false;

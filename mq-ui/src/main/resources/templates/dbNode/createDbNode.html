@@ -3,63 +3,63 @@
 
     <div class="layui-row">
         <fieldset class="layui-elem-field layui-field-title layui-input-inline">
-            <legend>主库</legend>
+            <legend>Master</legend>
             <div class="layui-form-item">
                 <label class="layui-form-label">ip*</label>
                 <div class="layui-input-block">
-                    <input type="text" name="ip" required lay-verify="required" placeholder="请输入主库ip" autocomplete="off" class="layui-input">
+                    <input type="text" name="ip" required lay-verify="required" placeholder="Master DB IP" autocomplete="off" class="layui-input">
                 </div>
             </div>
 
             <div class="layui-form-item">
-                <label class="layui-form-label">端口*</label>
+                <label class="layui-form-label">Port*</label>
                 <div class="layui-input-block">
-                    <input type="text" name="port" required lay-verify="required" placeholder="请输入主库端口号" autocomplete="off" class="layui-input">
+                    <input type="text" name="port" required lay-verify="required" placeholder="Master DB Port" autocomplete="off" class="layui-input">
                 </div>
             </div>
 
             <div class="layui-form-item">
-                <label class="layui-form-label">用户名*</label>
+                <label class="layui-form-label">UserName*</label>
                 <div class="layui-input-block">
-                    <input type="text" name="dbUserName" required lay-verify="required" placeholder="请输入主库用户名" autocomplete="off" class="layui-input">
+                    <input type="text" name="dbUserName" required lay-verify="required" placeholder="Master Username" autocomplete="off" class="layui-input">
                 </div>
             </div>
 
             <div class="layui-form-item">
-                <label class="layui-form-label">密码*</label>
+                <label class="layui-form-label">Password*</label>
                 <div class="layui-input-block">
-                    <input type="text" name="dbPass" required lay-verify="required" placeholder="请输入主库密码" autocomplete="off" class="layui-input">
+                    <input type="text" name="dbPass" required lay-verify="required" placeholder="Master Password" autocomplete="off" class="layui-input">
                 </div>
             </div>
         </fieldset>
 
         <fieldset class="layui-elem-field layui-field-title layui-input-inline">
-            <legend>从库</legend>
+            <legend>Slave DB</legend>
             <div class="layui-form-item">
                 <label class="layui-form-label">ip_bak</label>
                 <div class="layui-input-block">
-                    <input type="text" name="ipBak"  placeholder="请输入从库ip" autocomplete="off" class="layui-input">
+                    <input type="text" name="ipBak"  placeholder="Slave DB IP" autocomplete="off" class="layui-input">
                 </div>
             </div>
 
             <div class="layui-form-item">
-                <label class="layui-form-label">端口_bak</label>
+                <label class="layui-form-label">Port_bak</label>
                 <div class="layui-input-block">
-                    <input type="text" name="portBak"  placeholder="请输入从库端口号" autocomplete="off" class="layui-input">
+                    <input type="text" name="portBak"  placeholder="Slave DB Port" autocomplete="off" class="layui-input">
                 </div>
             </div>
 
             <div class="layui-form-item">
-                <label class="layui-form-label">用户名_bak</label>
+                <label class="layui-form-label">Username_bak</label>
                 <div class="layui-input-block">
-                    <input type="text" name="dbUserNameBak"  placeholder="请输入从库用户名" autocomplete="off" class="layui-input">
+                    <input type="text" name="dbUserNameBak"  placeholder="Slave Username" autocomplete="off" class="layui-input">
                 </div>
             </div>
 
             <div class="layui-form-item">
-                <label class="layui-form-label">密码_bak</label>
+                <label class="layui-form-label">Password_bak</label>
                 <div class="layui-input-block">
-                    <input type="text" name="dbPassBak"  placeholder="请输入从库密码" autocomplete="off" class="layui-input">
+                    <input type="text" name="dbPassBak"  placeholder="Slave Password" autocomplete="off" class="layui-input">
                 </div>
             </div>
         </fieldset>
@@ -67,26 +67,26 @@
 
 
     <div class="layui-form-item">
-        <label class="layui-form-label">数据库名*</label>
+        <label class="layui-form-label">Database*</label>
         <div class="layui-input-block">
-            <input type="text" name="dbName" required lay-verify="required" placeholder="请输入数据库名" autocomplete="off" class="layui-input">
+            <input type="text" name="dbName" required lay-verify="required" placeholder="Database" autocomplete="off" class="layui-input">
         </div>
     </div>
 
     <div class="layui-form-item">
-        <label class="layui-form-label">读写状态*</label>
+        <label class="layui-form-label">Write Status*</label>
         <div class="layui-input-block">
-            <input type="radio" name="readOnly"  value="1" title="可读可写" checked="checked">
-            <input type="radio" name="readOnly"  value="2" title="只读" >
-            <input type="radio" name="readOnly"  value="3" title="不可读不可写">
+            <input type="radio" name="readOnly"  value="1" title="Read and Wirte" checked="checked">
+            <input type="radio" name="readOnly"  value="2" title="Read Only" >
+            <input type="radio" name="readOnly"  value="3" title="useless">
         </div>
     </div>
 
     <div class="layui-form-item">
-        <label class="layui-form-label">存储类型*</label>
+        <label class="layui-form-label">Store Type*</label>
         <div class="layui-input-block">
-            <input type="radio" name="nodeTypes" value="1" title="正常队列消息" checked="checked">
-            <input type="radio" name="nodeTypes" value="2" title="失败队列消息">
+            <input type="radio" name="nodeTypes" value="1" title="Normal" checked="checked">
+            <input type="radio" name="nodeTypes" value="2" title="AbNormal">
         </div>
     </div>
 
@@ -99,18 +99,18 @@
     </div>-->
 
     <div class="layui-form-item layui-form-text">
-        <label class="layui-form-label">备注</label>
+        <label class="layui-form-label">Remark</label>
         <div class="layui-input-block">
-            <textarea name="remark" placeholder="请输入内容" class="layui-textarea"></textarea>
+            <textarea name="remark" placeholder="Remarks" class="layui-textarea"></textarea>
         </div>
     </div>
 
     <div class="layui-form-item">
         <div class="layui-input-block">
-            <button class="layui-btn" type="button" lay-submit lay-filter="createSubmit" id="createSubmit">提交</button>
-            <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+            <button class="layui-btn" type="button" lay-submit lay-filter="createSubmit" id="createSubmit">Submit</button>
+            <button type="reset" class="layui-btn layui-btn-primary">Clear</button>
         </div>
     </div>
 
-    <p>如果设置了从库,消息查询时,会去从库查询</p>
+    <p>If a slave database is set, when querying messages, the slave database will be queried.</p>
 </form>

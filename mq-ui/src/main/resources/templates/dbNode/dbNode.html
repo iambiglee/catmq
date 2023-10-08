@@ -15,37 +15,37 @@
                 <input type="text" value="" id="id" name="id" placeholder="ID" class="layui-input search_input"/>
             </div>
             <div class="layui-input-inline">
-                <input type="text" value="" id="ip" name="ip" placeholder="ip地址" class="layui-input search_input"/>
+                <input type="text" value="" id="ip" name="ip" placeholder="ip" class="layui-input search_input"/>
             </div>
             <div class="layui-input-inline">
-                <input type="text" value="" id="dbName" name="dbName" placeholder="数据库名称" class="layui-input search_input"/>
+                <input type="text" value="" id="dbName" name="dbName" placeholder="schema" class="layui-input search_input"/>
             </div>
             <div class="layui-input-inline">
                 <select id="isReadOnly" class="search-select">
-                    <option value="">请选择读写状态</option>
-                    <option value ="1">可读可写</option>
-                    <option value ="2">只读</option>
-                    <option value ="3">不可读不可写</option>
+                    <option value="">choose usable</option>
+                    <option value ="1">Read and Wirte</option>
+                    <option value ="2">Read Only</option>
+                    <option value ="3">Useless</option>
                 </select>
             </div>
-            <a class="layui-btn" id="nodeSearchList_btn" lay-filter="nodeSearchList_btn"><i class="layui-icon">&#xe615;</i>查询</a>
-            <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+            <a class="layui-btn" id="nodeSearchList_btn" lay-filter="nodeSearchList_btn"><i class="layui-icon">&#xe615;</i>Search</a>
+            <button type="reset" class="layui-btn layui-btn-primary">Clear</button>
         </div>
     </form>
-    <a class="layui-btn topicSearchList_btn" id="createDbNode"><i class="layui-icon">&#xe608;</i>创建</a>
-    <button class="layui-btn batchDilatation_btn" id="batchDilatation"><i class="layui-icon">&#xe608;</i>批量对比</button>
+    <a class="layui-btn topicSearchList_btn" id="createDbNode"><i class="layui-icon">&#xe608;</i>Create</a>
+    <button class="layui-btn batchDilatation_btn" id="batchDilatation"><i class="layui-icon">&#xe608;</i>Detect Matches</button>
     <table id="dbNodeTable" class="layui-table" lay-data="{height:'full', url:'/dbNode/list2/data', page:true,limit: 10, id:'dbNodeTable'}" lay-filter="dbNodeTable">
         <thead>
         <tr>
             <th lay-data="{field: 'id', align: 'center', sort: true,width:80, templet:'#idDb'}">ID</th>
-            <th lay-data="{field: 'nodeType', align: 'center', templet:'#nodeTypeTpl'}">存储类型</th>
-            <th lay-data="{field: 'normalFlag', align: 'center', templet:'#normalFlagTpl'}">Topic分配方式</th>
-            <th lay-data="{field: 'readOnly', align: 'center', templet:'#readOnlyTpl'}">读写状态</th>
+            <th lay-data="{field: 'nodeType', align: 'center', templet:'#nodeTypeTpl'}">Node Type</th>
+            <th lay-data="{field: 'normalFlag', align: 'center', templet:'#normalFlagTpl'}">Topic Assign</th>
+            <th lay-data="{field: 'readOnly', align: 'center', templet:'#readOnlyTpl'}">Status</th>
             <th lay-data="{field: 'ip', align: 'center'}">ip</th>
-            <th lay-data="{field: 'conStr', align: 'center',width:300}">连接字符串</th>
-            <th lay-data="{field: 'insertTime',align: 'center'}">创建时间</th>
-            <th lay-data="{field: 'updateTime',align: 'center'}">更新时间</th>
-            <th lay-data="{fixed: 'right', align:'center', width:360, toolbar: '#ctrlBar'}">操作区</th>
+            <th lay-data="{field: 'conStr', align: 'center',width:300}">JDBC URL</th>
+            <th lay-data="{field: 'insertTime',align: 'center'}">Create Time</th>
+            <th lay-data="{field: 'updateTime',align: 'center'}">Update Time</th>
+            <th lay-data="{fixed: 'right', align:'center', width:360, toolbar: '#ctrlBar'}">Operation</th>
         </tr>
         </thead>
     </table>
@@ -88,7 +88,7 @@
 
     <div style="display: none">
         <div id="analysisFormDiv">
-            <form th:include="dbNode/analysis::#analysisTable" class="layui-form" id="analysisForm" action="" ></form>
+            <form th:include="dbNode/analysis::analysisForm" class="layui-form" id="analysisForm" action="" ></form>
         </div>
     </div>
 
@@ -98,9 +98,9 @@
     <script th:src="@{/js/dbNode.js}"></script>
     <script th:src="@{/js/analysis.js}"></script>
     <script th:src="@{/dist/clipboard.min.js}"></script>
-    <script type="text/html" id="idDb"> 
+    <script type="text/html" id="idDb">
         <a href onclick="return false" ><img src="/images/log.png"  data-id="{{= d.id }}"
-                                          class="logSearch"/></a>&nbsp;&nbsp;{{= d.id }}
+                                             class="logSearch"/></a>&nbsp;&nbsp;{{= d.id }}
     </script>
     <script >
         /*$("body").on("click", "#showSqlForm .btn",function(){
@@ -128,25 +128,25 @@
     </script>
     <script type="text/html" id="nodeTypeTpl">
         {{# if (d.nodeType == 1) { }}
-        <label><span class="layui-badge layui-bg-green">正常</span></label>
+        <label><span class="layui-badge layui-bg-green">Normal</span></label>
         {{# } else { }}
-        <label><span class="layui-badge">失败</span></label>
+        <label><span class="layui-badge">Abnormal</span></label>
         {{# } }}
     </script>
     <script type="text/html" id="normalFlagTpl">
         {{# if (d.normalFlag == 1) { }}
-        自动分配
+        Auto
         {{# } else { }}
-        手动分配
+        Manual
         {{# } }}
     </script>
     <script type="text/html" id="readOnlyTpl">
         {{# if (d.readOnly == 1) { }}
-        <label><span class="layui-badge layui-bg-green">读写</span></label>
+        <label><span class="layui-badge layui-bg-green">Read&Wirte</span></label>
         {{# } else if (d.readOnly == 2) { }}
-        <label><span class="layui-badge">只读</span></label>
+        <label><span class="layui-badge">Read Only</span></label>
         {{# } else if (d.readOnly == 3) { }}
-        <label><span class="layui-badge layui-bg-orange">不可读写</span></label>
+        <label><span class="layui-badge layui-bg-orange">Useless</span></label>
         {{# } }}
     </script>
     <script type="text/html" id="servUpdate">
@@ -157,12 +157,12 @@
         </div>
     </script>
     <script type="text/html" id="ctrlBar">
-        <a class="layui-btn layui-btn-normal layui-btn-xs" lay-event="editDbNode">编辑</a>
-        <a class="layui-btn layui-btn-normal layui-btn-xs" lay-event="createSql">生成Sql</a>
-        <a class="layui-btn layui-btn-normal layui-btn-xs" lay-event="compareDbNode">对比</a>
-        <a class="layui-btn layui-btn-normal layui-btn-xs" lay-event="analyseDbNode">分析</a>
-        <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="changeStatus">更改状态</a>
-        <a class="layui-btn layui-btn-normal layui-btn-xs" lay-event="createInsert">生成Insert</a>
+        <a class="layui-btn layui-btn-normal layui-btn-xs" lay-event="editDbNode">Edit</a>
+        <a class="layui-btn layui-btn-normal layui-btn-xs" lay-event="createSql">Gene Sql</a>
+        <a class="layui-btn layui-btn-normal layui-btn-xs" lay-event="compareDbNode">Compare</a>
+        <a class="layui-btn layui-btn-normal layui-btn-xs" lay-event="analyseDbNode">Analysis</a>
+        <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="changeStatus">Change Status</a>
+        <a class="layui-btn layui-btn-normal layui-btn-xs" lay-event="createInsert">Insert SQL</a>
     </script>
     <style type="text/css">
         .warn1 {

@@ -24,13 +24,12 @@ public class HomeController {
         sbHtml.append("<!doctype html><html><body>");
         sbHtml.append("当前ip地址为：" + IPUtil.getLocalIP() + "\n");
         sbHtml.append(
-                "欢迎使用消息3.0管理中心，需要操作broker和接入，请访问以下地址:<br/><a href='http://fat-mqbroker4.ppdapi.com'>fat-mqbroker4.ppdapi.com</a><br/><a href='http://uat-mqbroker4.ppdapi.com'>uat-mqbroker4.ppdapi.com</a><br/><a href='http://mqbroker4.ppdapi.com'>mqbroker4.ppdapi.com</a><br/>");
+                "欢迎使用消息管理中心CatMQ，需要操作broker和接入，请访问以下地址:<br/><a href='https://iambiglee.github.io/'>catMQ doc</a>");
         sbHtml.append("</body></html>");
         try {
             response.getWriter().write(sbHtml.toString());
             response.getWriter().close();
         } catch (IOException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
     }
