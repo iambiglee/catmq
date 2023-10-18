@@ -595,7 +595,7 @@ public class QueueServiceImpl extends
         MqReadMap<String, List<QueueEntity>> topicWriteQueueMap1 = new MqReadMap<>(size);
         MqReadMap<Long, QueueEntity> queueIdMap = new MqReadMap<>(data.size());
         Map<Long, DbNodeEntity> dbNodeCache = dbNodeService.getCache();
-        if (dbNodeCache.size() == 0) {
+        if (dbNodeCache.isEmpty()) {
             List<DbNodeEntity> dbNodes = dbNodeService.getList();
             dbNodeCache = new HashMap<>(dbNodes.size());
             for (DbNodeEntity t1 : dbNodes) {
