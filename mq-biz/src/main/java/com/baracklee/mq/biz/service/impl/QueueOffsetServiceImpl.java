@@ -527,10 +527,10 @@ public class QueueOffsetServiceImpl extends AbstractBaseService<QueueOffsetEntit
 
     }
 
+    ExecutorService executorService = Executors.newSingleThreadExecutor(SoaThreadFactory.create("queue_offset_service", true));
     @Override
     public void start() {
         if (startFlag.compareAndSet(false, true)) {
-            ExecutorService executorService = Executors.newSingleThreadExecutor(SoaThreadFactory.create("queue_offset_service", true));
             // updateCache();
             executorService.execute(() -> {
                 while (isRunning) {

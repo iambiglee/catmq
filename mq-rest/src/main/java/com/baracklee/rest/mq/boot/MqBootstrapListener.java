@@ -4,6 +4,7 @@ package com.baracklee.rest.mq.boot;
 import com.baracklee.mq.biz.cache.ConsumerGroupCacheService;
 import com.baracklee.mq.biz.common.inf.BrokerTimerService;
 import com.baracklee.mq.biz.common.inf.ConsumerGroupChangedListener;
+import com.baracklee.mq.biz.common.inf.TimerService;
 import com.baracklee.mq.biz.common.util.SpringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,7 +44,7 @@ public class MqBootstrapListener implements ApplicationListener<ContextRefreshed
                 registerEvent();
                 reportService.registerReport();
                 isInit = true;
-                log.info("mq初始化成功！");
+                log.info("mq init successfully！");
             } catch (Exception e) {
                 log.error("mq初始化异常", e);
                 throw e;
@@ -53,14 +54,14 @@ public class MqBootstrapListener implements ApplicationListener<ContextRefreshed
     }
 
     private void startTimer() {
-        Map<String, BrokerTimerService> startedServices = SpringUtil.getBeans(BrokerTimerService.class);
+        Map<String, TimerService> startedServices = SpringUtil.getBeans(TimerService.class);
         if (startedServices != null) {
-            startedServices.entrySet().forEach(t1 -> {
+            startedServices.forEach((key, value) -> {
                 try {
-                    t1.getValue().startBroker();
-                    log.info(t1.getKey() + "启动完成！");
+                    value.start();
+                    log.info(key + "启动完成！");
                 } catch (Exception e) {
-                    log.error(t1.getKey() + "启动异常！", e);
+                    log.error(key + "启动异常！", e);
                 }
             });
         }

@@ -40,7 +40,7 @@ public class MqBootstrapListener implements ApplicationListener<ContextRefreshed
                 startPortalTimer();
 //                reportService.registerReport();
                 isInit = true;
-                log.info("mq初始化成功！");
+                log.info("mq init successfully！");
             } catch (Exception e) {
                 log.error("mq初始化异常", e);
                 throw e;

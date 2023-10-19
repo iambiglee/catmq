@@ -67,8 +67,11 @@ public class QueueServiceImpl extends
     private volatile boolean isRunning = true;
 
     private volatile boolean isPortal = true;
-    private ThreadPoolExecutor executor = null;
-    private ThreadPoolExecutor executorPortal = null;
+    private final ThreadPoolExecutor executor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(50),
+            SoaThreadFactory.create("QueueService"), new ThreadPoolExecutor.DiscardOldestPolicy());;
+    private final ThreadPoolExecutor executorPortal = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
+            new LinkedBlockingQueue<Runnable>(50), SoaThreadFactory.create("QueueService-portal", true),
+            new ThreadPoolExecutor.DiscardOldestPolicy());;
     private AtomicLong lastVersion = new AtomicLong(0);
     // 记录上次获取最大值的时间
     private volatile long lastMaxTime = System.currentTimeMillis();
@@ -446,9 +449,7 @@ public class QueueServiceImpl extends
     @Override
     public void startPortal() {
         if (startPortalFlag.compareAndSet(false,true)){
-            executorPortal = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
-                    new LinkedBlockingQueue<Runnable>(50), SoaThreadFactory.create("QueueService-portal", true),
-                    new ThreadPoolExecutor.DiscardOldestPolicy());
+
             executorPortal.execute(()->{
                 while (isRunning){
                     if (System.currentTimeMillis() - lastMaxTime < soaConfig.getMqQueueMaxRebuildInterval() * 1.6) {
@@ -513,8 +514,7 @@ public class QueueServiceImpl extends
     public void start() {
         if (startFlag.compareAndSet(false,true)){
             updateCache();
-            executor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(50),
-                    SoaThreadFactory.create("QueueService"), new ThreadPoolExecutor.DiscardOldestPolicy());
+
             executor.execute(() -> {
                 // 因为第一次的时候，会由topic和dbnode 触发初始化，所以自身初始化可以减少一次
                 checkChanged();

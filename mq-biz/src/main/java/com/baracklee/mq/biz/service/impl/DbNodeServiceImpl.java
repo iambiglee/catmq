@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -147,7 +148,7 @@ public class DbNodeServiceImpl
     public void start() {
         if(startFlag.compareAndSet(false,true)){
             updateCache();
-            ScheduledExecutorService dbNodeServer = Executors.newScheduledThreadPool(1, SoaThreadFactory.create(
+            ExecutorService dbNodeServer = Executors.newSingleThreadExecutor( SoaThreadFactory.create(
                     "DbNodeServer_", true));
             dbNodeServer.execute(()->{
                 while (isRunning){
@@ -257,13 +258,11 @@ public class DbNodeServiceImpl
         doForceUpdateCache();
         updateQueueCache();
     }
-
+    ExecutorService executor = Executors.newSingleThreadExecutor(SoaThreadFactory.create(
+            "DbNodeServer_", true));
     @Autowired
     private QueueService queueService;
     private void updateQueueCache() {
-
-        ScheduledExecutorService executor = Executors.newScheduledThreadPool(1, SoaThreadFactory.create(
-                "DbNodeServer_", true));
         executor.submit(new Runnable() {
             @Override
             public void run() {
@@ -271,8 +270,6 @@ public class DbNodeServiceImpl
                 queueService.forceUpdateCache();
             }
         });
-        executor.shutdown();
-
     }
 
     /**

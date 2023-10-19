@@ -689,11 +689,12 @@ public class ConsumerGroupServiceImpl extends AbstractBaseService<ConsumerGroupE
         return JsonUtil.toJsonNull(getCache());
     }
 
+    ScheduledExecutorService service = Executors.newScheduledThreadPool(1, SoaThreadFactory.create("ConsumerGroupService_"));
+
     @Override
     public void start() {
         if(startFlag.compareAndSet(false,true)){
             updateCache();
-            ScheduledExecutorService service = Executors.newScheduledThreadPool(1, SoaThreadFactory.create("ConsumerGroupService_"));
             service.submit(()->{
                 while (isRunning){
                     updateCache();
