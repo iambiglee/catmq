@@ -34,7 +34,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
@@ -144,13 +143,12 @@ public class DbNodeServiceImpl
         }
     }
 
+
     @Override
     public void start() {
         if(startFlag.compareAndSet(false,true)){
             updateCache();
-            ExecutorService dbNodeServer = Executors.newSingleThreadExecutor( SoaThreadFactory.create(
-                    "DbNodeServer_", true));
-            dbNodeServer.execute(()->{
+            executor.execute(()->{
                 while (isRunning){
                     updateCache();
                     Util.sleep(soaConfig.getMqDbNodeCacheInterval());
@@ -263,12 +261,8 @@ public class DbNodeServiceImpl
     @Autowired
     private QueueService queueService;
     private void updateQueueCache() {
-        executor.submit(new Runnable() {
-            @Override
-            public void run() {
-                // TODO Auto-generated method stub
-                queueService.forceUpdateCache();
-            }
+        executor.submit(() -> {
+            queueService.forceUpdateCache();
         });
     }
 
