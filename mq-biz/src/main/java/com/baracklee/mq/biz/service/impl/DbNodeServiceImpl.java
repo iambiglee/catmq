@@ -243,7 +243,7 @@ public class DbNodeServiceImpl
         } catch (Exception e) {
             log.error("DbNodeServiceImpl_",e);
         }
-        if (!flag && cacheDataMap.get().size() == 0) {
+        if (!flag && cacheDataMap.get().isEmpty()) {
             log.warn("dbNode数据为空，请注意！");
             return true;
         }

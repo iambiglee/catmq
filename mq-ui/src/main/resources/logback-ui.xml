@@ -41,7 +41,7 @@
 	<!-- <manualStart>true</manualStart> -->
 	<!-- </appender> -->
 	<root>
-		<level value="info" />
+		<level value="warn" />
 		<appender-ref ref="stdout"></appender-ref>
 		<appender-ref ref="file"></appender-ref>
 		<!-- <appender-ref ref="KafkaAppender" /> -->

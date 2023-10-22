@@ -181,7 +181,7 @@ public class MqClient {
                 log.info("ConsumerGroup:" + consumerGroup.getMeta().getName() + " has  subscribed,已订阅！");
                 return false;
             }
-            if (consumerGroup.getMeta().getOriginName().isEmpty()) {
+            if (Util.isEmpty(consumerGroup.getMeta().getOriginName())) {
                 consumerGroup.getMeta().setOriginName(consumerGroup.getMeta().getName());
             }
             if (consumerGroup.getTopics() != null) {

@@ -20,6 +20,30 @@ public class ProducerDataDto {
 
     private PartitionInfo partitionInfo;
 
+    public ProducerDataDto() {
+
+    }
+
+    public ProducerDataDto(String bizId, String body) {
+        this(bizId, "", null, body);
+    }
+
+    public ProducerDataDto(String body) {
+        this("", "", null, body);
+    }
+
+    public ProducerDataDto(String bizId, String body, String tag) {
+        this(bizId, tag, null, body);
+    }
+
+    public ProducerDataDto(String bizId, String tag, Map<String, String> header, String body) {
+        setBizId(bizId);
+        setTag(tag);
+        setHead(header);
+        setBody(body);
+    }
+
+
     public long getId() {
         return id;
     }

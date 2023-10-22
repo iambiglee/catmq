@@ -12,6 +12,7 @@
         <module>mq-rest</module>
         <module>mq-biz</module>
         <module>mq-ui</module>
+        <module>mq-client-test</module>
 
     </modules>
 

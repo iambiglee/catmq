@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<messageQueue>
+	<consumer groupName="TestConsumerGroup">
+		<topics>
+			<topic name="testtopic" receiverType="com.baracklee.TestSub.java"></topic>
+		</topics>
+	</consumer>
+</messageQueue>

@@ -67,8 +67,8 @@ public abstract class AbstractTimerService implements PortalTimerService {
     private void doHeartbeat() {
         while (isRunning){
             isMaster=mqLockService.updateHeatTime();
+            Util.sleep(soaConfig.getMqLockHeartBeatTime() * 1000);
         }
-        Util.sleep(soaConfig.getMqLockHeartBeatTime() * 1000);
     }
 
     private void work() {
