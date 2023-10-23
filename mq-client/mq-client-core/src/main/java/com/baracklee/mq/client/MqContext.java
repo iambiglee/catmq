@@ -266,6 +266,12 @@ public class MqContext {
             rs=mqEvent.getiSubscriberSelector().getSubscriber(consumerGroupName,originTopicName);
             if (rs!=null) return rs;
         }
+        if (rs == null && configConsumerGroup != null && configConsumerGroup.containsKey(consumerGroupName)) {
+            if (configConsumerGroup.get(consumerGroupName).getTopics() != null
+                    && configConsumerGroup.get(consumerGroupName).getTopics().containsKey(originTopicName)) {
+                return configConsumerGroup.get(consumerGroupName).getTopics().get(originTopicName).getSubscriber();
+            }
+        }
         return rs;
     }
 

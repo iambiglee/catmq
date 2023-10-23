@@ -2,7 +2,7 @@
 <messageQueue>
 	<consumer groupName="TestConsumerGroup">
 		<topics>
-			<topic name="testtopic" receiverType="com.baracklee.TestSub.java"></topic>
+			<topic name="testtopic" receiverType="com.baracklee.TestSub"></topic>
 		</topics>
 	</consumer>
 </messageQueue>
