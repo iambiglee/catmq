@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalTime;
 import java.util.concurrent.Executors;
 
 ;
@@ -20,7 +21,7 @@ public class TestController {
 			public void run() {
 				for(int i=1;i<count;i++) {
 					try {
-						MqClient.publish(topicName, "",new ProducerDataDto(String.valueOf(i)));
+						MqClient.publish(topicName, "",new ProducerDataDto(String.valueOf(LocalTime.now())));
 					} catch (Exception e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();

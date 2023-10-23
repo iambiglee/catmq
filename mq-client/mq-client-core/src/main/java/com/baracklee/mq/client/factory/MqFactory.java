@@ -95,10 +95,18 @@ public class MqFactory implements IMqFactory{
     public IMsgNotifyService createMsgNotifyService() {
         return null;
     }
+    private IMqCommitService iMqCommitService;
 
     @Override
     public IMqCommitService createCommitService() {
-        return null;
+        if (iMqCommitService == null) {
+            synchronized (lockObj){
+                if (iMqCommitService==null){
+                    iMqCommitService=new MqCommitService();
+                }
+            }
+        }
+        return iMqCommitService;
     }
 
 

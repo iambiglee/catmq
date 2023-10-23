@@ -54,7 +54,7 @@ public class ConsumerPollingService implements IConsumerPollingService {
     @Override
     public void start() {
         if(startFlag.compareAndSet(false,true)){
-            isStop=true;
+            isStop=false;
             runStatus=false;
             executor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(100),
                     SoaThreadFactory.create("ConsumerPollingService", true),

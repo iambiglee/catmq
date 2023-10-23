@@ -125,13 +125,14 @@ public class MqGroupExecutorService implements IMqGroupExecutorService {
     @Override
     public void rbOrUpdate(ConsumerGroupOneDto consumerGroupOne, String serverIp) {
         mqContext.getConsumerGroupMap().put(consumerGroupOne.getMeta().getName(),consumerGroupOne);
-        if(localConsumerGroup==null){
-            localConsumerGroup=new ConsumerGroupOneDto();
+        if(localConsumerGroup==null) {
+            localConsumerGroup = new ConsumerGroupOneDto();
             localConsumerGroup.setMeta(consumerGroupOne.getMeta());
-            if(consumerGroupOne.getQueues()!=null){
+            if (consumerGroupOne.getQueues() != null) {
                 localConsumerGroup.setQueues(new ConcurrentHashMap<>(consumerGroupOne.getQueues()));
             }
-            versionCount=0;
+            versionCount = 0;
+        }
             if (consumerGroupOne.getMeta().getRbVersion() > localConsumerGroup.getMeta().getRbVersion()) {
                 doRb(consumerGroupOne, serverIp);
             }
@@ -143,7 +144,7 @@ public class MqGroupExecutorService implements IMqGroupExecutorService {
             }
             localConsumerGroup.getMeta().setVersion(consumerGroupOne.getMeta().getVersion());
         }
-    }
+
 
     private void updateMeta(ConsumerGroupOneDto consumerGroupOne) {
         mqContext.getConsumerGroupMap().put(consumerGroupOne.getMeta().getName(),consumerGroupOne);
@@ -164,13 +165,14 @@ public class MqGroupExecutorService implements IMqGroupExecutorService {
         log.info("raised rebalance,发生重平衡" + consumerGroupOne.getMeta().getName());
         versionCount=0;
         //重平衡版本号不一致的时候,需要先停止当前服务
-        if(isRunning){
+        if(isRunning) {
             log.info("commit offset,提交偏移" + consumerGroupOne.getMeta().getName());
             close();
             //等待系统中的消费被消费完成,防止重复消费
-            if(mqContext.getConfig().getRbTimes()<=1){
+            if (mqContext.getConfig().getRbTimes() <= 1) {
                 Util.sleep(1000);
             }
+        }
             localConsumerGroup.getMeta().setRbVersion(consumerGroupOne.getMeta().getRbVersion());
             if (localConsumerGroup.getQueues() != null) {
                 localConsumerGroup.setQueues(new ConcurrentHashMap<>(consumerGroupOne.getQueues()));
@@ -178,7 +180,7 @@ public class MqGroupExecutorService implements IMqGroupExecutorService {
                 localConsumerGroup.setQueues(new ConcurrentHashMap<>(15));
             }
             isRunning=false;
-        }
+
         log.info("update offset version,更新重平衡版本号" + consumerGroupOne.getMeta().getName());
         localConsumerGroup.getMeta().setRbVersion(consumerGroupOne.getMeta().getRbVersion());
 
