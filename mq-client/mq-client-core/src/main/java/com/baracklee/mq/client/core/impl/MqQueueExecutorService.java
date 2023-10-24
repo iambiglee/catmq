@@ -248,6 +248,7 @@ public class MqQueueExecutorService implements IMqQueueExecutorService {
                     if(checkOffsetVersion(consumerQueueDto)){
                         consumerQueueDto.setLastId(lastId);
                         request.setOffsetStart(lastId);
+                        request.setOffsetEnd(lastId + consumerQueueDto.getPullBatchSize());
                         request.setConsumerGroupName(consumerQueueDto.getConsumerGroupName());
                         request.setTopicName(consumerQueueDto.getTopicName());
                         PullDataResponse response = null;
@@ -286,6 +287,7 @@ public class MqQueueExecutorService implements IMqQueueExecutorService {
                     }
                     try {
                         messages.put(traceMessageDto);
+                        break;
                     } catch (InterruptedException ignore) {
                     }
                     Util.sleep(100);

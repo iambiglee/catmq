@@ -33,7 +33,10 @@ public class MqClientStatController {
         }
         return "";
     }
-
+    @GetMapping("/mq/client/hs")
+    public String hs() {
+        return "Ok";
+    }
     @GetMapping("/mq/client/th")
     public String th() {
         if (isOpenFlag()) {

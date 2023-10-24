@@ -15,7 +15,7 @@ public class TestSub implements ISubscriber {
 	public List<Long> onMessageReceived(List<MessageDto> messages) {
 		try {
 			for (MessageDto message : messages) {
-				System.out.println(LocalTime.now()+" "+message.getBody());
+				System.out.println("message is "+LocalTime.now()+" "+message.getBody());
 			}
 		} catch (Exception e) {
 			// TODO Auto-generated catch block

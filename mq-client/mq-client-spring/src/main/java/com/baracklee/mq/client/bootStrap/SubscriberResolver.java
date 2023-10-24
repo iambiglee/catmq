@@ -23,10 +23,10 @@ public class SubscriberResolver implements ISubscriberResolver {
 
     @Override
     public ISubscriber getSubscriber(String className) throws Exception {
-        Class<IAsynSubscriber> onwClass = (Class<IAsynSubscriber>) Class.forName(className);
+        Class<ISubscriber> onwClass = (Class<ISubscriber>) Class.forName(className);
         ISubscriber iAsynSubscriber = (ISubscriber) MqSpringUtil.getBean(className);
         if (iAsynSubscriber == null) {
-            if (IAsynSubscriber.class.isAssignableFrom(onwClass)) {
+            if (ISubscriber.class.isAssignableFrom(onwClass)) {
                 iAsynSubscriber = (ISubscriber) onwClass.newInstance();
             }
         }
