@@ -212,8 +212,17 @@ public class MqQueueExecutorService implements IMqQueueExecutorService {
     }
 
     private boolean checkPreHand(ConsumerQueueDto temp) {
-        if(MqClient.getContext().getMqEvent().getPreHandleListener()==null) return false;
-        return (MqClient.getContext().getMqEvent().getPreHandleListener().preHandle(temp));
+        if (MqClient.getContext().getMqEvent().getPreHandleListener() != null) {
+            try {
+                if (!MqClient.getContext().getMqEvent().getPreHandleListener().preHandle(temp)) {
+                    return false;
+                }
+            } catch (Exception e) {
+                log.error("PreHandle_error", e);
+                return false;
+            }
+        }
+        return true;
     }
 
     private void pullingData() {
@@ -255,8 +264,7 @@ public class MqQueueExecutorService implements IMqQueueExecutorService {
                         if(checkOffsetVersion(consumerQueueDto)){
                             response=mqResource.pullData(request);
                         }
-                        log.warn("拉去消息lastid:{}",lastId);
-                        log.warn("拉去的消息信息{}", JsonUtil.toJson(response));
+                        log.debug("pull message{}", JsonUtil.toJson(response));
                         if (response != null && response.getMsgs() != null && response.getMsgs().size() > 0) {
                             cacheData(response, consumerQueueDto);
                             return true;
@@ -554,7 +562,7 @@ public class MqQueueExecutorService implements IMqQueueExecutorService {
             }
             return request;
         }
-        return new PublishMessageRequest();
+        return null;
     }
 
     private void failAlarm(Map<Long, MessageDto> failMsg, ConsumerQueueDto pre) {

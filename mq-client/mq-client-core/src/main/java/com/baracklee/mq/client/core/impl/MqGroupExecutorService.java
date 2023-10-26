@@ -51,6 +51,9 @@ public class MqGroupExecutorService implements IMqGroupExecutorService {
         if(!isRunning){
             versionCount++;
             if(versionCount>=mqContext.getConfig().getRbTimes()){
+                log.info("retry_" + localConsumerGroup.getMeta().getName() + "_version_"
+                        + localConsumerGroup.getMeta().getRbVersion() + "_retrying_" + versionCount + " of "
+                        + mqContext.getConfig().getRbTimes() + " times");
                 doStartQueue();
                 isRunning=true;
             }
