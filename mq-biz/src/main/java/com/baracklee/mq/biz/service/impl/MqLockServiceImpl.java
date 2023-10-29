@@ -52,17 +52,26 @@ public class MqLockServiceImpl extends AbstractBaseService<MqLockEntity> impleme
 
     @Override
     public boolean isMaster() {
-        if(!isLoad()) return false;
-        init();
-        boolean temp=checkMaster();
-        if(temp!=isMaster){
-            isMaster=temp;
-            if(temp) log.warn("ip_{}_key{} 获取到锁",ip,key);
-            else log.warn("ip_{}_key{} 失去锁",ip,key);
+        boolean temp= false;
+        try {
+            if(!isLoad())
+                return false;
+            init();
+            temp = checkMaster();
+            if(temp!=isMaster){
+                isMaster=temp;
+                if(temp) log.warn("ip_{}_key{} 获取到锁",ip,key);
+                else log.warn("ip_{}_key{} 失去锁",ip,key);
+                isMaster=temp;
+                return isMaster;
+            }
             isMaster=temp;
             return isMaster;
+        } catch (Exception e) {
+            log.error("MqlockService error",e);
+            return false;
         }
-        return false;
+
     }
 
     private boolean checkMaster() {
@@ -155,7 +164,14 @@ public class MqLockServiceImpl extends AbstractBaseService<MqLockEntity> impleme
 
     @Override
     public boolean isInLock() {
-        return false;
+        boolean flag=true;
+        if(!Util.isEmpty(soaConfig.getLockWhiteIps(key))){
+            flag= soaConfig.getLockWhiteIps(key).contains(IPUtil.getLocalIP());
+        }
+        else if(!Util.isEmpty(soaConfig.getLockBlackIps(key))) {
+            flag= !soaConfig.getLockBlackIps(key).contains(IPUtil.getLocalIP());
+        }
+        return flag;
     }
 
 

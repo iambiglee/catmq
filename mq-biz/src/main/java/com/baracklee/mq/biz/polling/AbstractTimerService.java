@@ -83,7 +83,7 @@ public abstract class AbstractTimerService implements PortalTimerService {
                     log.error(key+":_work_error",e);
                 }
             }
-            Util.sleep(1000);
+            Util.sleep(1000*interval+1000);
         }
     }
 

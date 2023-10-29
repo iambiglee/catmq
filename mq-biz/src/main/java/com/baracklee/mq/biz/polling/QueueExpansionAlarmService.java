@@ -26,7 +26,7 @@ public class QueueExpansionAlarmService extends AbstractTimerService{
 
     @PostConstruct
     private void init(){
-        super.init("mq_queueExpansion_sk", 0, soaConfig);
+        super.init("mq_queueExpansion_sk", soaConfig.getQueueExpansionCheckInterval(), soaConfig);
         soaConfig.registerChanged(new Runnable() {
             private volatile int interval = soaConfig.getQueueExpansionCheckInterval();
             @Override

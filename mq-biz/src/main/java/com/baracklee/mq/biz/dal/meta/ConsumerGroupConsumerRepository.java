@@ -15,6 +15,6 @@ public interface ConsumerGroupConsumerRepository extends BaseRepository<Consumer
 
     void deleteByConsumerIds(@Param("consumerIds")List<Long> consumerIds);
 
-    List<ConsumerGroupConsumerEntity> getByConsumerIds(List<Long> consumerIds);
+    List<ConsumerGroupConsumerEntity> getByConsumerIds(@Param("consumerIds")List<Long> consumerIds);
 
 }
