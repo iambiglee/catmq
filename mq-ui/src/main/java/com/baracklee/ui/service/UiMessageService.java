@@ -194,7 +194,8 @@ public class UiMessageService {
     private long getMinId(Message01Service message01Service, QueueEntity queueEntity,
                           MessageConditionRequest messageConditionRequest){
         long minId = queueEntity.getMinId();
-        if(StringUtils.isEmpty(messageConditionRequest.getStartTime())){
+        if(!StringUtils.isEmpty(messageConditionRequest.getStartTime())){
+            message01Service.setDbId(queueEntity.getDbNodeId());
             List<Message01Entity> list = message01Service.getListByTime(queueEntity.getTbName(), messageConditionRequest.getStartTime());
             if (!CollectionUtils.isEmpty(list)) {
                 Message01Entity message01Entity = list.get(0);

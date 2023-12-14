@@ -115,7 +115,7 @@ public class UiQueueService implements TimerService {
                 while (isRunning) {
                     try {
                         if (System.currentTimeMillis() - lastAccessTime < soaConfig.getMqReportInterval()
-                                || System.currentTimeMillis() - lastAccessTime > 1000 * 60 * 60 * 60) {
+                                || System.currentTimeMillis() - lastAccessTime > 1000 * 60 * 60 ) {
                             if (System.currentTimeMillis() - lastUpdateTime > soaConfig.getMqReportInterval()) {
                                 initCache();
                                 initMessageCount();
@@ -269,7 +269,7 @@ public class UiQueueService implements TimerService {
         }
 
         for (QueueEntity queueEntity : queueList) {
-            TopicEntity topicEntity = topicMap.get(queueEntity);
+            TopicEntity topicEntity = topicMap.get(queueEntity.getTopicName());
             if (topicEntity==null){
                 continue;
             }
