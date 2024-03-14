@@ -26,6 +26,7 @@ Lightweight, distributed message queue with visual operation and maintenance
 - [x] Added a timed consumption thread to clean up long-unused information.
 - [x] Added an automatic system configuration check thread.
 - [x] Wrote documentation, published the website, making it easier for more people to understand the project.
+- [ ] Kakfa has new incremental rebalance protocol([KIP-429] (https://cwiki.apache.org/confluence/display/KAFKA/KIP-429%3A+Kafka+Consumer+Incremental+Rebalance+Protocol)), match it
 - [ ] Adapting to JDK21, hoping to support both JDK8 and JDK21 simultaneously.
 
 ## Install
