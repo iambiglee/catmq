@@ -34,7 +34,7 @@ Lightweight, distributed message queue with visual operation and maintenance
 [QuickStart for English user](https://iambiglee.github.io/en/docs/example/quickstart/)
 
 ## Document
-You can see the all information in [CatMQ](https://iambiglee.github.io/en/docs/example/introduce/) [中文文档](https://iambiglee.github.io/docs/example/introduce/)
+You can see the all information in [CatMQ](https://iambiglee.github.io/en/docs/example/introduce/) ，and Chinese version is [中文文档](https://iambiglee.github.io/docs/example/introduce/)
 
 ## Contribute
 The CatMQ project welcomes everyone to participate in maintenance. You can participate by submitting an Issue or RP.
