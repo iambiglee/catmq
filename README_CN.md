@@ -2,7 +2,7 @@
 <h1 align="center">CatMQ</h1>
 
 [English](./README.md) / [简体中文](./README_CN.md)
-
+![img.png](img.png)
 轻量级, 拥有完善的可视化消息管理后代的分布式消息队列系统
 </div>
 

@@ -2,7 +2,7 @@
 <h1 align="center">CatMQ</h1>
 
 [English](./README.md) / [简体中文](./README_CN.md)
-
+![img.png](img.png)
 Lightweight, distributed message queue with visual operation and maintenance
 </div>
 
